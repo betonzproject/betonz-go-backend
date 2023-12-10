@@ -26,9 +26,20 @@ func PostLogin(app *app.App) http.HandlerFunc {
 		var user db.User
 		var err error
 		if adminMode {
-			user, err = app.DB.GetExtendedAdminByUsername(r.Context(), loginForm.Username)
+			user, err = app.DB.GetExtendedUserByUsername(r.Context(), db.GetExtendedUserByUsernameParams{
+				Username: loginForm.Username,
+				Roles: []db.Role{
+					db.RoleADMIN,
+					db.RoleSUPERADMIN,
+				},
+			})
 		} else {
-			user, err = app.DB.GetExtendedPlayerByUsername(r.Context(), loginForm.Username)
+			user, err = app.DB.GetExtendedUserByUsername(r.Context(), db.GetExtendedUserByUsernameParams{
+				Username: loginForm.Username,
+				Roles: []db.Role{
+					db.RolePLAYER,
+				},
+			})
 		}
 		if err != nil {
 			// Dummy hash to prevent timing attack
