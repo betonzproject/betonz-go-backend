@@ -192,3 +192,164 @@ func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (GetUserByIdR
 	)
 	return i, err
 }
+
+const getUsers = `-- name: GetUsers :many
+SELECT
+	"rowNumber", id, username, role, email, dob, "displayName", "phoneNumber", "profileImage", "mainWallet", status, "lastLoginIp", "createdAt", "lastLogin", "lastDeposit", "lastWithdraw"
+FROM (
+	SELECT
+		ROW_NUMBER() OVER (ORDER BY "createdAt") "rowNumber",
+		u.id,
+		u.username,
+		u.role,
+		u.email,
+		u.dob,
+		u."displayName",
+		u."phoneNumber",
+		u."profileImage",
+		u."mainWallet",
+		u.status,
+		u."lastLoginIp",
+		u."createdAt",
+		st."lastLogin"::timestamptz AS "lastLogin",
+		tr1."lastDeposit"::timestamptz AS "lastDeposit",
+		tr2."lastWithdraw"::timestamptz AS "lastWithdraw"
+	FROM
+		"User" u
+	LEFT JOIN (
+		-- Get last login time
+		SELECT "userId", max("createdAt") "lastLogin" FROM "SessionToken" GROUP BY "userId"
+	) st ON 
+		u.id = st."userId"
+	LEFT JOIN (
+		-- Get last deposit time
+		SELECT
+			"userId",
+			max("updatedAt") "lastDeposit"
+		FROM
+			"TransactionRequest"
+		WHERE
+			"type" = 'DEPOSIT'::"TransactionType"
+		AND
+			"status" = 'APPROVED'::"TransactionStatus"
+		GROUP BY
+			"userId"
+	) tr1 ON
+		u.id = tr1."userId"
+	LEFT JOIN (
+		-- Get last withdraw time
+		SELECT
+			"userId",
+			max("updatedAt") "lastWithdraw"
+		FROM
+			"TransactionRequest"
+		WHERE
+			"type" = 'WITHDRAW'::"TransactionType"
+		AND
+			"status" = 'APPROVED'::"TransactionStatus"
+		GROUP BY
+			"userId"
+	) tr2 ON
+		u.id = tr2."userId"
+	WHERE
+		u.role <> 'SYSTEM'::"Role"
+	AND
+		($1::"UserStatus"[] IS NULL OR u.status = ANY($1))
+	AND (
+		$2::text IS NULL
+		OR u.username ILIKE '%' || $2 || '%' 
+		OR u.email ILIKE '%' || $2 || '%'
+		OR u."displayName" ILIKE '%' || $2 || '%'
+		OR u."phoneNumber" ILIKE '%' || $2 || '%'
+		OR u."lastLoginIp" ILIKE '%' || $2 || '%'
+	)
+	AND
+		u."createdAt" >= $3
+	AND
+		u."createdAt" < $4
+) q
+ORDER BY
+	"rowNumber" DESC, "createdAt" DESC
+`
+
+type GetUsersParams struct {
+	Statuses []UserStatus       `json:"statuses"`
+	Search   pgtype.Text        `json:"search"`
+	FromDate pgtype.Timestamptz `json:"fromDate"`
+	ToDate   pgtype.Timestamptz `json:"toDate"`
+}
+
+type GetUsersRow struct {
+	RowNumber    int64              `json:"rowNumber"`
+	ID           pgtype.UUID        `json:"id"`
+	Username     string             `json:"username"`
+	Role         Role               `json:"role"`
+	Email        string             `json:"email"`
+	Dob          pgtype.Date        `json:"dob"`
+	DisplayName  pgtype.Text        `json:"displayName"`
+	PhoneNumber  pgtype.Text        `json:"phoneNumber"`
+	ProfileImage pgtype.Text        `json:"profileImage"`
+	MainWallet   pgtype.Numeric     `json:"mainWallet"`
+	Status       UserStatus         `json:"status"`
+	LastLoginIp  pgtype.Text        `json:"lastLoginIp"`
+	CreatedAt    pgtype.Timestamptz `json:"createdAt"`
+	LastLogin    pgtype.Timestamptz `json:"lastLogin"`
+	LastDeposit  pgtype.Timestamptz `json:"lastDeposit"`
+	LastWithdraw pgtype.Timestamptz `json:"lastWithdraw"`
+}
+
+func (q *Queries) GetUsers(ctx context.Context, arg GetUsersParams) ([]GetUsersRow, error) {
+	rows, err := q.db.Query(ctx, getUsers,
+		arg.Statuses,
+		arg.Search,
+		arg.FromDate,
+		arg.ToDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUsersRow
+	for rows.Next() {
+		var i GetUsersRow
+		if err := rows.Scan(
+			&i.RowNumber,
+			&i.ID,
+			&i.Username,
+			&i.Role,
+			&i.Email,
+			&i.Dob,
+			&i.DisplayName,
+			&i.PhoneNumber,
+			&i.ProfileImage,
+			&i.MainWallet,
+			&i.Status,
+			&i.LastLoginIp,
+			&i.CreatedAt,
+			&i.LastLogin,
+			&i.LastDeposit,
+			&i.LastWithdraw,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateUserStatus = `-- name: UpdateUserStatus :exec
+UPDATE "User" SET status = $2, "updatedAt" = now() WHERE id = $1
+`
+
+type UpdateUserStatusParams struct {
+	ID     pgtype.UUID `json:"id"`
+	Status UserStatus  `json:"status"`
+}
+
+func (q *Queries) UpdateUserStatus(ctx context.Context, arg UpdateUserStatusParams) error {
+	_, err := q.db.Exec(ctx, updateUserStatus, arg.ID, arg.Status)
+	return err
+}

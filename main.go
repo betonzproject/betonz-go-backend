@@ -24,6 +24,8 @@ func main() {
 	r.Post("/logout", routes.PostLogout(app))
 	r.Route("/admin", func(r chi.Router) {
 		r.Get("/transaction-request", admin.GetTransactionRequest(app))
+		r.Get("/players", admin.GetPlayers(app))
+		r.Post("/players", admin.PostPlayers(app))
 	})
 
 	log.Println("🥖 Server started at port 8080!")

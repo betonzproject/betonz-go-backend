@@ -3,6 +3,7 @@ package routes
 import (
 	"net/http"
 
+	"github.com/doorman2137/betonz-go/internal/acl"
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/db"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
@@ -10,7 +11,8 @@ import (
 )
 
 type Response struct {
-	User *db.GetUserByIdRow `json:"user"`
+	User       *db.GetUserByIdRow `json:"user"`
+	Permissons []acl.Permission   `json:"permissions"`
 }
 
 func GetIndex(app *app.App) http.HandlerFunc {
@@ -27,6 +29,6 @@ func GetIndex(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		jsonutils.Write(w, Response{User: &user}, http.StatusOK)
+		jsonutils.Write(w, Response{User: &user, Permissons: acl.Acl[user.Role]}, http.StatusOK)
 	}
 }

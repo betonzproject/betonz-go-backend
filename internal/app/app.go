@@ -30,7 +30,12 @@ func NewApp() *App {
 	}
 
 	config.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
-		err := registerType(ctx, c, "Role")
+		err := registerType(ctx, c, "UserStatus")
+		if err != nil {
+			return err
+		}
+
+		err = registerType(ctx, c, "Role")
 		if err != nil {
 			return err
 		}

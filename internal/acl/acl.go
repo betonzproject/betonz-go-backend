@@ -13,20 +13,25 @@ type Permission string
 
 const (
 	ManageTransactionRequests Permission = "ManageTransactionRequests"
+	ManagePlayers             Permission = "ManagePlayers"
+	ManageAdmins              Permission = "ManageAdmins"
 )
 
-var acl = map[db.Role][]Permission{
+var Acl = map[db.Role][]Permission{
 	db.RoleADMIN: {
 		ManageTransactionRequests,
+		ManagePlayers,
 	},
 	db.RoleSUPERADMIN: {
 		ManageTransactionRequests,
+		ManagePlayers,
+		ManageAdmins,
 	},
 }
 
 // Returns a bool indicating whether a role is authorized with a given permission
 func IsAuthorized(role db.Role, permission Permission) bool {
-	return slices.Contains(acl[role], permission)
+	return slices.Contains(Acl[role], permission)
 }
 
 // Checks that the user is authorized with the given permission. If not, return an error and show 404 to the
