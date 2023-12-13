@@ -411,10 +411,10 @@ type Event struct {
 	Type        EventType          `json:"type"`
 	Result      EventResult        `json:"result"`
 	Reason      pgtype.Text        `json:"reason"`
-	Data        []byte             `json:"data"`
+	Data        map[string]string  `json:"data"`
 	CreatedAt   pgtype.Timestamptz `json:"createdAt"`
 	UpdatedAt   pgtype.Timestamptz `json:"updatedAt"`
-	HttpRequest []byte             `json:"httpRequest"`
+	HttpRequest HttpRequest        `json:"httpRequest"`
 }
 
 type Notification struct {

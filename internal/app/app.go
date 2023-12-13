@@ -30,25 +30,12 @@ func NewApp() *App {
 	}
 
 	config.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
-		err := registerType(ctx, c, "UserStatus")
-		if err != nil {
-			return err
-		}
-
-		err = registerType(ctx, c, "Role")
-		if err != nil {
-			return err
-		}
-
-		err = registerType(ctx, c, "TransactionType")
-		if err != nil {
-			return err
-		}
-
-		err = registerType(ctx, c, "TransactionStatus")
-		if err != nil {
-			return err
-		}
+		registerType(ctx, c, "UserStatus")
+		registerType(ctx, c, "Role")
+		registerType(ctx, c, "TransactionType")
+		registerType(ctx, c, "TransactionStatus")
+		registerType(ctx, c, "EventType")
+		registerType(ctx, c, "EventResult")
 		return nil
 	}
 
@@ -84,18 +71,16 @@ func NewApp() *App {
 	}
 }
 
-func registerType(ctx context.Context, c *pgx.Conn, name string) error {
+func registerType(ctx context.Context, c *pgx.Conn, name string) {
 	t, err := c.LoadType(ctx, "\""+name+"\"")
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 	c.TypeMap().RegisterType(t)
 
 	t, err = c.LoadType(ctx, "\"_"+name+"\"")
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 	c.TypeMap().RegisterType(t)
-
-	return nil
 }

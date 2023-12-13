@@ -26,6 +26,7 @@ func main() {
 		r.Get("/transaction-request", admin.GetTransactionRequest(app))
 		r.Get("/players", admin.GetPlayers(app))
 		r.Post("/players", admin.PostPlayers(app))
+		r.Get("/activity-log", admin.GetActivityLog(app))
 	})
 
 	log.Println("🥖 Server started at port 8080!")
