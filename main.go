@@ -24,6 +24,7 @@ func main() {
 	r.Post("/logout", routes.PostLogout(app))
 	r.Route("/admin", func(r chi.Router) {
 		r.Get("/transaction-request", admin.GetTransactionRequest(app))
+		r.Get("/transaction-log", admin.GetTransactionLog(app))
 		r.Get("/players", admin.GetPlayers(app))
 		r.Post("/players", admin.PostPlayers(app))
 		r.Get("/activity-log", admin.GetActivityLog(app))
