@@ -27,6 +27,9 @@ func main() {
 		r.Get("/transaction-log", admin.GetTransactionLog(app))
 		r.Get("/players", admin.GetPlayers(app))
 		r.Post("/players", admin.PostPlayers(app))
+		r.Get("/banks", admin.GetBanks(app))
+		r.Post("/banks", admin.PostBanks(app))
+		r.Patch("/banks", admin.PatchBanks(app))
 		r.Get("/activity-log", admin.GetActivityLog(app))
 	})
 
