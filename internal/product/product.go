@@ -25,6 +25,15 @@ const (
 	Cockfighting ProductType = 9
 )
 
+var AllProductTypes = []ProductType{
+	LiveCasino,
+	Slots,
+	Sports,
+	CardAndBoard,
+	Fishing,
+	Cockfighting,
+}
+
 func (p ProductType) String() string {
 	switch p {
 	case LiveCasino:

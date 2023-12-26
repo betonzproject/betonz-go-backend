@@ -19,16 +19,17 @@ const (
 	ViewOwnTransactionHistory                    Permission = "ViewOwnTransactionHistory"
 	ManageOwnBankingDetails                      Permission = "ManageOwnBankingDetails"
 	ViewNotifications                            Permission = "ViewNotifications"
-	ManageTransactionRequests                    Permission = "ManageTransactionRequests"
 	ViewReports                                  Permission = "ViewReports"
+	ManageTransactionRequests                    Permission = "ManageTransactionRequests"
+	ManageIdentityVerificationRequests           Permission = "ManageIdentityVerificationRequests"
+	OverruleApprovedIdentityVerificationRequests Permission = "OverruleApprovedIdentityVerificationRequests"
 	ManagePlayers                                Permission = "ManagePlayers"
 	ManageAdmins                                 Permission = "ManageAdmins"
 	ToggleSystemBanks                            Permission = "ToggleSystemBanks"
 	ManageSystemBanks                            Permission = "ManageSystemBanks"
+	ViewBetHistory                               Permission = "ViewBetHistory"
 	ViewActivityLog                              Permission = "ViewActivityLog"
 	ViewSuperadminActivityLog                    Permission = "ViewSuperadminActivityLog"
-	ManageIdentityVerificationRequests           Permission = "ManageIdentityVerificationRequests"
-	OverruleApprovedIdentityVerificationRequests Permission = "OverruleApprovedIdentityVerificationRequests"
 	ViewFiles                                    Permission = "ViewFiles"
 )
 
@@ -43,12 +44,13 @@ var Acl = map[db.Role][]Permission{
 		ViewNotifications,
 	},
 	db.RoleADMIN: {
-		ManageTransactionRequests,
 		ViewReports,
+		ManageTransactionRequests,
+		ManageIdentityVerificationRequests,
 		ManagePlayers,
 		ToggleSystemBanks,
+		ViewBetHistory,
 		ViewActivityLog,
-		ManageIdentityVerificationRequests,
 		ViewFiles,
 	},
 	db.RoleSUPERADMIN: {
@@ -59,16 +61,17 @@ var Acl = map[db.Role][]Permission{
 		ViewOwnTransactionHistory,
 		ManageOwnBankingDetails,
 		ViewNotifications,
-		ManageTransactionRequests,
 		ViewReports,
+		ManageTransactionRequests,
+		ManageIdentityVerificationRequests,
+		OverruleApprovedIdentityVerificationRequests,
 		ManagePlayers,
 		ManageAdmins,
 		ToggleSystemBanks,
 		ManageSystemBanks,
+		ViewBetHistory,
 		ViewActivityLog,
 		ViewSuperadminActivityLog,
-		ManageIdentityVerificationRequests,
-		OverruleApprovedIdentityVerificationRequests,
 		ViewFiles,
 	},
 }

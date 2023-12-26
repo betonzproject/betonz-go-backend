@@ -25,7 +25,7 @@ SELECT
 	vt."tokenHash", vt."userId", vt."createdAt", vt."updatedAt", vt."registerInfo",
 	u.username,
 	u.email,
-    u."pendingEmail"
+	u."pendingEmail"
 FROM
 	"VerificationToken" vt
 	LEFT JOIN "User" u ON vt."userId" = u.id

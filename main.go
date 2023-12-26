@@ -92,6 +92,7 @@ func main() {
 		r.Get("/banks", admin.GetBanks(app))
 		r.Post("/banks", admin.PostBanks(app))
 		r.Patch("/banks", admin.PatchBanks(app))
+		r.Get("/bet-history", admin.GetBetHistory(app))
 		r.Get("/activity-log", admin.GetActivityLog(app))
 		r.Get("/identity-verification-request", admin.GetIdentityVerificationRequest(app))
 		r.Post("/identity-verification-request", admin.PostIdentityVerificationRequest(app))
