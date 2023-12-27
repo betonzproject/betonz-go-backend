@@ -1,6 +1,7 @@
-package admin
+package players
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -82,10 +83,36 @@ func PostPlayers(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		app.DB.UpdateUserStatus(r.Context(), db.UpdateUserStatusParams{
+		tx, err := app.Pool.Begin(r.Context())
+		if err != nil {
+			log.Panicln("Can't start transaction: " + err.Error())
+		}
+		defer tx.Rollback(r.Context())
+		qtx := app.DB.WithTx(tx)
+
+		err = qtx.UpdateUserStatus(r.Context(), db.UpdateUserStatusParams{
 			ID:     userToManageId,
 			Status: db.UserStatus(manageUserForm.Status),
 		})
+		if err != nil {
+			log.Panicln("Can't update user status: " + err.Error())
+		}
+
+		err = qtx.CreateEvent(r.Context(), db.CreateEventParams{
+			UserId: user.ID,
+			Type:   db.EventTypeCHANGEUSERSTATUS,
+			Result: db.EventResultSUCCESS,
+			Data: map[string]string{
+				"userId": manageUserForm.UserId,
+				"status": manageUserForm.Status,
+				"reason": manageUserForm.Reason,
+			},
+		})
+		if err != nil {
+			log.Panicln("Can't create event: " + err.Error())
+		}
+
+		tx.Commit(r.Context())
 
 		w.WriteHeader(http.StatusOK)
 	}

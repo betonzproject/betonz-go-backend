@@ -6,7 +6,14 @@ import (
 	"time"
 )
 
-// Returns the end of day of the timem object in Asia/Yangon timezone
+// Returns a `time.Time` object representing the start of today in Asia/Yangon timezone
+func StartOfToday() time.Time {
+	location, _ := time.LoadLocation("Asia/Yangon")
+	now := time.Now().In(location)
+	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, location)
+}
+
+// Returns a `time.Time` object representing the end of today in Asia/Yangon timezone
 func EndOfToday() time.Time {
 	location, _ := time.LoadLocation("Asia/Yangon")
 	now := time.Now().In(location)

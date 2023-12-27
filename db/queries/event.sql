@@ -30,3 +30,27 @@ AND (
 )
 ORDER BY
 	e.id DESC;
+
+-- name: GetRestrictionEventsByUserId :many
+SELECT
+	e.id,
+	e."userId",
+	u.username,
+	u.role,
+	e.data,
+	e."createdAt"
+FROM
+	"Event" e
+JOIN
+	"User" u
+ON
+	e."userId" = u.id
+WHERE
+	type = 'CHANGE_USER_STATUS'::"EventType" AND data->>'userId' = sqlc.arg('userId')::uuid::text
+ORDER BY
+	e."createdAt" DESC;
+
+
+
+-- name: CreateEvent :exec
+INSERT INTO "Event" ("sourceIp", "userId", type, result, reason, data, "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, now());

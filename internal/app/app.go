@@ -17,6 +17,7 @@ import (
 
 type App struct {
 	DB       *db.Queries
+	Pool     *pgxpool.Pool
 	Redis    *redis.Client
 	Scs      *scs.SessionManager
 	Validate *validator.Validate
@@ -65,6 +66,7 @@ func NewApp() *App {
 
 	return &App{
 		DB:       db.New(pool),
+		Pool:     pool,
 		Redis:    client,
 		Scs:      sessionManager,
 		Validate: validator,

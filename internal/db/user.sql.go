@@ -45,6 +45,83 @@ func (q *Queries) GetExtendedUserByUsername(ctx context.Context, arg GetExtended
 	return i, err
 }
 
+const getPlayerInfoById = `-- name: GetPlayerInfoById :one
+SELECT
+	u.id,
+	u.username,
+	u.role,
+	u.email,
+	u.dob,
+	u."displayName",
+	u."phoneNumber",
+	u."profileImage",
+	u."mainWallet",
+	u.status,
+	u."createdAt",
+	e."sourceIp" AS "lastLoginIp",
+	e2."createdAt"::timestamptz AS "lastActiveAt"
+FROM
+	"User" u
+LEFT JOIN (
+	-- Get last login IP
+	SELECT
+		DISTINCT ON ("userId")
+		"userId",
+		"sourceIp"
+	FROM
+		"Event"
+	WHERE
+		result = 'SUCCESS'::"EventResult" AND type = 'LOGIN'::"EventType"
+	ORDER BY
+		"userId", "createdAt" DESC
+) e ON 
+	u.id = e."userId"
+LEFT JOIN (
+	-- Get last active time
+	SELECT DISTINCT ON ("userId") "userId", "createdAt" FROM "Event" WHERE type = 'ACTIVE'::"EventType" ORDER BY "userId", "createdAt" DESC
+) e2 ON
+	u.id = e2."userId"
+WHERE
+	u.id = $1
+`
+
+type GetPlayerInfoByIdRow struct {
+	ID           pgtype.UUID        `json:"id"`
+	Username     string             `json:"username"`
+	Role         Role               `json:"role"`
+	Email        string             `json:"email"`
+	Dob          pgtype.Date        `json:"dob"`
+	DisplayName  pgtype.Text        `json:"displayName"`
+	PhoneNumber  pgtype.Text        `json:"phoneNumber"`
+	ProfileImage pgtype.Text        `json:"profileImage"`
+	MainWallet   pgtype.Numeric     `json:"mainWallet"`
+	Status       UserStatus         `json:"status"`
+	CreatedAt    pgtype.Timestamptz `json:"createdAt"`
+	LastLoginIp  pgtype.Text        `json:"lastLoginIp"`
+	LastActiveAt pgtype.Timestamptz `json:"lastActiveAt"`
+}
+
+func (q *Queries) GetPlayerInfoById(ctx context.Context, id pgtype.UUID) (GetPlayerInfoByIdRow, error) {
+	row := q.db.QueryRow(ctx, getPlayerInfoById, id)
+	var i GetPlayerInfoByIdRow
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Role,
+		&i.Email,
+		&i.Dob,
+		&i.DisplayName,
+		&i.PhoneNumber,
+		&i.ProfileImage,
+		&i.MainWallet,
+		&i.Status,
+		&i.CreatedAt,
+		&i.LastLoginIp,
+		&i.LastActiveAt,
+	)
+	return i, err
+}
+
 const getUserById = `-- name: GetUserById :one
 SELECT id, username, role, email, "displayName", "phoneNumber", "mainWallet", dob, "profileImage", "isEmailVerified" FROM "User" WHERE id = $1
 `
@@ -82,10 +159,10 @@ func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (GetUserByIdR
 
 const getUsers = `-- name: GetUsers :many
 SELECT
-	"rowNumber", id, username, role, email, dob, "displayName", "phoneNumber", "profileImage", "mainWallet", status, "lastLoginIp", "createdAt", "lastLogin", "lastDeposit", "lastWithdraw"
+	"rowNumber", id, username, role, email, dob, "displayName", "phoneNumber", "profileImage", "mainWallet", status, "createdAt", "lastLoginIp", "lastLogin", "lastDeposit", "lastWithdraw"
 FROM (
 	SELECT
-		ROW_NUMBER() OVER (ORDER BY "createdAt") "rowNumber",
+		ROW_NUMBER() OVER (ORDER BY u."createdAt") "rowNumber",
 		u.id,
 		u.username,
 		u.role,
@@ -96,18 +173,28 @@ FROM (
 		u."profileImage",
 		u."mainWallet",
 		u.status,
-		u."lastLoginIp",
 		u."createdAt",
-		st."lastLogin"::timestamptz AS "lastLogin",
+		e."sourceIp" AS "lastLoginIp",
+		e."createdAt"::timestamptz AS "lastLogin",
 		tr1."lastDeposit"::timestamptz AS "lastDeposit",
 		tr2."lastWithdraw"::timestamptz AS "lastWithdraw"
 	FROM
 		"User" u
 	LEFT JOIN (
-		-- Get last login time
-		SELECT "userId", max("createdAt") "lastLogin" FROM "SessionToken" GROUP BY "userId"
-	) st ON 
-		u.id = st."userId"
+		-- Get last login IP and time
+		SELECT
+			DISTINCT ON ("userId")
+			"userId",
+			"sourceIp",
+			"createdAt"
+		FROM
+			"Event"
+		WHERE
+			result = 'SUCCESS'::"EventResult" AND type = 'LOGIN'::"EventType"
+		ORDER BY
+			"userId", "createdAt" DESC
+	) e ON 
+		u.id = e."userId"
 	LEFT JOIN (
 		-- Get last deposit time
 		SELECT
@@ -116,9 +203,7 @@ FROM (
 		FROM
 			"TransactionRequest"
 		WHERE
-			"type" = 'DEPOSIT'::"TransactionType"
-		AND
-			"status" = 'APPROVED'::"TransactionStatus"
+			type = 'DEPOSIT'::"TransactionType" AND status = 'APPROVED'::"TransactionStatus"
 		GROUP BY
 			"userId"
 	) tr1 ON
@@ -131,9 +216,7 @@ FROM (
 		FROM
 			"TransactionRequest"
 		WHERE
-			"type" = 'WITHDRAW'::"TransactionType"
-		AND
-			"status" = 'APPROVED'::"TransactionStatus"
+			type = 'WITHDRAW'::"TransactionType" AND status = 'APPROVED'::"TransactionStatus"
 		GROUP BY
 			"userId"
 	) tr2 ON
@@ -178,8 +261,8 @@ type GetUsersRow struct {
 	ProfileImage pgtype.Text        `json:"profileImage"`
 	MainWallet   pgtype.Numeric     `json:"mainWallet"`
 	Status       UserStatus         `json:"status"`
-	LastLoginIp  pgtype.Text        `json:"lastLoginIp"`
 	CreatedAt    pgtype.Timestamptz `json:"createdAt"`
+	LastLoginIp  pgtype.Text        `json:"lastLoginIp"`
 	LastLogin    pgtype.Timestamptz `json:"lastLogin"`
 	LastDeposit  pgtype.Timestamptz `json:"lastDeposit"`
 	LastWithdraw pgtype.Timestamptz `json:"lastWithdraw"`
@@ -211,8 +294,8 @@ func (q *Queries) GetUsers(ctx context.Context, arg GetUsersParams) ([]GetUsersR
 			&i.ProfileImage,
 			&i.MainWallet,
 			&i.Status,
-			&i.LastLoginIp,
 			&i.CreatedAt,
+			&i.LastLoginIp,
 			&i.LastLogin,
 			&i.LastDeposit,
 			&i.LastWithdraw,

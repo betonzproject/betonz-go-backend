@@ -36,41 +36,60 @@ func (q *Queries) DeleteSystemBankById(ctx context.Context, id pgtype.UUID) erro
 	return err
 }
 
-const getSystemBanks = `-- name: GetSystemBanks :many
-SELECT
-	b.id, b.name, b."accountName", b."accountNumber", b.disabled
-FROM
-	"Bank" b
-JOIN "User" u ON
-	b."userId" = u.id
-WHERE
-	u.ROLE = 'SYSTEM'::"Role"
-ORDER BY
-	b."createdAt", b."accountName"
+const getBanksByUserId = `-- name: GetBanksByUserId :many
+SELECT id, "userId", name, "accountName", "accountNumber", "createdAt", "updatedAt", disabled FROM "Bank" WHERE "userId" = $1
 `
 
-type GetSystemBanksRow struct {
-	ID            pgtype.UUID `json:"id"`
-	Name          BankName    `json:"name"`
-	AccountName   string      `json:"accountName"`
-	AccountNumber string      `json:"accountNumber"`
-	Disabled      bool        `json:"disabled"`
+func (q *Queries) GetBanksByUserId(ctx context.Context, userid pgtype.UUID) ([]Bank, error) {
+	rows, err := q.db.Query(ctx, getBanksByUserId, userid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Bank
+	for rows.Next() {
+		var i Bank
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserId,
+			&i.Name,
+			&i.AccountName,
+			&i.AccountNumber,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Disabled,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-func (q *Queries) GetSystemBanks(ctx context.Context) ([]GetSystemBanksRow, error) {
+const getSystemBanks = `-- name: GetSystemBanks :many
+SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.ROLE = 'SYSTEM'::"Role" ORDER BY b."createdAt", b."accountName"
+`
+
+func (q *Queries) GetSystemBanks(ctx context.Context) ([]Bank, error) {
 	rows, err := q.db.Query(ctx, getSystemBanks)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetSystemBanksRow
+	var items []Bank
 	for rows.Next() {
-		var i GetSystemBanksRow
+		var i Bank
 		if err := rows.Scan(
 			&i.ID,
+			&i.UserId,
 			&i.Name,
 			&i.AccountName,
 			&i.AccountNumber,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 			&i.Disabled,
 		); err != nil {
 			return nil, err

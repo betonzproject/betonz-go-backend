@@ -1,14 +1,8 @@
+-- name: GetBanksByUserId :many
+SELECT * FROM "Bank" WHERE "userId" = $1;
+
 -- name: GetSystemBanks :many
-SELECT
-	b.id, b.name, b."accountName", b."accountNumber", b.disabled
-FROM
-	"Bank" b
-JOIN "User" u ON
-	b."userId" = u.id
-WHERE
-	u.ROLE = 'SYSTEM'::"Role"
-ORDER BY
-	b."createdAt", b."accountName";
+SELECT b.* FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.ROLE = 'SYSTEM'::"Role" ORDER BY b."createdAt", b."accountName";
 
 
 

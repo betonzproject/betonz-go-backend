@@ -11,6 +11,31 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createEvent = `-- name: CreateEvent :exec
+INSERT INTO "Event" ("sourceIp", "userId", type, result, reason, data, "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, now())
+`
+
+type CreateEventParams struct {
+	SourceIp pgtype.Text       `json:"sourceIp"`
+	UserId   pgtype.UUID       `json:"userId"`
+	Type     EventType         `json:"type"`
+	Result   EventResult       `json:"result"`
+	Reason   pgtype.Text       `json:"reason"`
+	Data     map[string]string `json:"data"`
+}
+
+func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) error {
+	_, err := q.db.Exec(ctx, createEvent,
+		arg.SourceIp,
+		arg.UserId,
+		arg.Type,
+		arg.Result,
+		arg.Reason,
+		arg.Data,
+	)
+	return err
+}
+
 const getEvents = `-- name: GetEvents :many
 SELECT
 	e.id, e."sourceIp", e."userId", e.type, e.result, e.reason, e.data, e."createdAt", e."updatedAt", e."httpRequest",
@@ -100,6 +125,62 @@ func (q *Queries) GetEvents(ctx context.Context, arg GetEventsParams) ([]GetEven
 			&i.HttpRequest,
 			&i.Username,
 			&i.Role,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRestrictionEventsByUserId = `-- name: GetRestrictionEventsByUserId :many
+SELECT
+	e.id,
+	e."userId",
+	u.username,
+	u.role,
+	e.data,
+	e."createdAt"
+FROM
+	"Event" e
+JOIN
+	"User" u
+ON
+	e."userId" = u.id
+WHERE
+	type = 'CHANGE_USER_STATUS'::"EventType" AND data->>'userId' = $1::uuid::text
+ORDER BY
+	e."createdAt" DESC
+`
+
+type GetRestrictionEventsByUserIdRow struct {
+	ID        int32              `json:"id"`
+	UserId    pgtype.UUID        `json:"userId"`
+	Username  string             `json:"username"`
+	Role      Role               `json:"role"`
+	Data      map[string]string  `json:"data"`
+	CreatedAt pgtype.Timestamptz `json:"createdAt"`
+}
+
+func (q *Queries) GetRestrictionEventsByUserId(ctx context.Context, userid pgtype.UUID) ([]GetRestrictionEventsByUserIdRow, error) {
+	rows, err := q.db.Query(ctx, getRestrictionEventsByUserId, userid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRestrictionEventsByUserIdRow
+	for rows.Next() {
+		var i GetRestrictionEventsByUserIdRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserId,
+			&i.Username,
+			&i.Role,
+			&i.Data,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
