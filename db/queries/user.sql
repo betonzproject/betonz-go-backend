@@ -127,5 +127,8 @@ LEFT JOIN (
 WHERE
 	u.id = $1;
 
+-- name: UpdateUser :exec
+UPDATE "User" SET "displayName" = $2, email = $3, "phoneNumber" = $4, "updatedAt" = now() WHERE id = $1;
+
 -- name: UpdateUserStatus :exec
 UPDATE "User" SET status = $2, "updatedAt" = now() WHERE id = $1;

@@ -310,6 +310,27 @@ func (q *Queries) GetUsers(ctx context.Context, arg GetUsersParams) ([]GetUsersR
 	return items, nil
 }
 
+const updateUser = `-- name: UpdateUser :exec
+UPDATE "User" SET "displayName" = $2, email = $3, "phoneNumber" = $4, "updatedAt" = now() WHERE id = $1
+`
+
+type UpdateUserParams struct {
+	ID          pgtype.UUID `json:"id"`
+	DisplayName pgtype.Text `json:"displayName"`
+	Email       string      `json:"email"`
+	PhoneNumber pgtype.Text `json:"phoneNumber"`
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
+	_, err := q.db.Exec(ctx, updateUser,
+		arg.ID,
+		arg.DisplayName,
+		arg.Email,
+		arg.PhoneNumber,
+	)
+	return err
+}
+
 const updateUserStatus = `-- name: UpdateUserStatus :exec
 UPDATE "User" SET status = $2, "updatedAt" = now() WHERE id = $1
 `

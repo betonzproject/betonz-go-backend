@@ -12,6 +12,7 @@ import (
 type Permission string
 
 const (
+	UpdateProfile             Permission = "UpdateProfile"
 	ManageTransactionRequests Permission = "ManageTransactionRequests"
 	ViewTransactionLogs       Permission = "ViewTransactionLogs"
 	ManagePlayers             Permission = "ManagePlayers"
@@ -23,6 +24,9 @@ const (
 )
 
 var Acl = map[db.Role][]Permission{
+	db.RolePLAYER: {
+		UpdateProfile,
+	},
 	db.RoleADMIN: {
 		ManageTransactionRequests,
 		ViewTransactionLogs,
@@ -31,6 +35,7 @@ var Acl = map[db.Role][]Permission{
 		ViewActivityLog,
 	},
 	db.RoleSUPERADMIN: {
+		UpdateProfile,
 		ManageTransactionRequests,
 		ViewTransactionLogs,
 		ManagePlayers,

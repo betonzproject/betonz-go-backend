@@ -82,6 +82,10 @@ func errorTagFunc[T interface{}](obj *T, snp string, fieldname, actualTag string
 					message = "tooLong.message"
 				} else if actualTag == "username" {
 					message = "invalidCharacters.message"
+				} else if actualTag == "number" {
+					message = "numbersOnly.message"
+				} else {
+					message = "invalid.message"
 				}
 
 				if errorKey != "" {
