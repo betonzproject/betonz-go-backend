@@ -9,6 +9,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/routes/admin"
 	"github.com/doorman2137/betonz-go/internal/routes/admin/players"
 	"github.com/doorman2137/betonz-go/internal/routes/profile"
+	"github.com/doorman2137/betonz-go/internal/routes/profile/bankingdetails"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
@@ -26,6 +27,13 @@ func main() {
 	r.Post("/logout", routes.PostLogout(app))
 	r.Route("/profile", func(r chi.Router) {
 		r.Post("/", profile.PostProfile(app))
+		r.Route("/banking-details", func(r chi.Router) {
+			r.Get("/", bankingdetails.GetBanks(app))
+			r.Post("/", bankingdetails.DeleteBank(app))
+			r.Post("/add-bank", bankingdetails.AddBank(app))
+			r.Get("/{bankId}", bankingdetails.GetBankById(app))
+			r.Patch("/{bankId}", bankingdetails.PatchBankById(app))
+		})
 	})
 	r.Route("/admin", func(r chi.Router) {
 		r.Get("/transaction-request", admin.GetTransactionRequest(app))

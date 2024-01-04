@@ -28,3 +28,8 @@ func ParseUUID(src string) (pgtype.UUID, error) {
 	copy(dst[:], buf)
 	return pgtype.UUID{Bytes: dst, Valid: true}, err
 }
+
+// `EncodeUUID` converts a uuid byte array to UUID standard string form.
+func EncodeUUID(src [16]byte) string {
+	return fmt.Sprintf("%x-%x-%x-%x-%x", src[0:4], src[4:6], src[6:8], src[8:10], src[10:16])
+}

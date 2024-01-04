@@ -4,12 +4,12 @@ import (
 	"context"
 	"log"
 	"os"
-	"regexp"
 	"time"
 
 	"github.com/alexedwards/scs/goredisstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/doorman2137/betonz-go/internal/db"
+	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -64,10 +64,8 @@ func NewApp() *App {
 
 	// Validator
 	validate := validator.New(validator.WithRequiredStructEnabled())
-	validate.RegisterValidation("username", func(fl validator.FieldLevel) bool {
-		regex := regexp.MustCompile("^[a-zA-Z0-9_]+$")
-		return regex.MatchString(fl.Field().String())
-	})
+	validate.RegisterValidation("username", utils.ValidateUsername)
+	validate.RegisterValidation("accountnumber", utils.ValidateBankAccountNumber)
 
 	return &App{
 		DB:       db.New(pool),
