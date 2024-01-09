@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/alexedwards/scs/goredisstore"
@@ -62,14 +63,18 @@ func NewApp() *App {
 	}
 
 	// Validator
-	validator := validator.New(validator.WithRequiredStructEnabled())
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	validate.RegisterValidation("username", func(fl validator.FieldLevel) bool {
+		regex := regexp.MustCompile("^[a-zA-Z0-9_]+$")
+		return regex.MatchString(fl.Field().String())
+	})
 
 	return &App{
 		DB:       db.New(pool),
 		Pool:     pool,
 		Redis:    client,
 		Scs:      sessionManager,
-		Validate: validator,
+		Validate: validate,
 	}
 }
 

@@ -10,8 +10,8 @@ import (
 )
 
 type LoginForm struct {
-	Username string `formam:"username" validate:"required"`
-	Password string `formam:"password" validate:"required"`
+	Username string `formam:"username" validate:"required,min=3,max=20,username" key:"user.username"`
+	Password string `formam:"password" validate:"required,min=8,max=512"`
 }
 
 func PostLogin(app *app.App) http.HandlerFunc {
