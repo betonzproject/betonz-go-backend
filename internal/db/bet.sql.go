@@ -11,6 +11,65 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getTopPayout = `-- name: GetTopPayout :many
+SELECT
+	b1.id,
+    u.username,
+    u."displayName",
+    u."profileImage",
+    b1.payout
+FROM
+	"Bet" b1 
+INNER JOIN (
+	SELECT b."etgUsername", MAX(b.payout) AS payout	FROM "Bet" b GROUP BY b."etgUsername" HAVING MAX(b.payout) > 0
+) b2
+ON
+	b1."etgUsername" = b2."etgUsername" AND b1.payout = b2.payout
+INNER JOIN
+	"User" u ON b1."etgUsername" = u."etgUsername"
+WHERE (
+	$1::int IS NULL
+	OR b1."productType" = $1
+	OR $1 = 0
+)
+AND
+	u.status = 'NORMAL'
+`
+
+type GetTopPayoutRow struct {
+	ID           int32          `json:"id"`
+	Username     string         `json:"username"`
+	DisplayName  pgtype.Text    `json:"displayName"`
+	ProfileImage pgtype.Text    `json:"profileImage"`
+	Payout       pgtype.Numeric `json:"payout"`
+}
+
+func (q *Queries) GetTopPayout(ctx context.Context, producttype int32) ([]GetTopPayoutRow, error) {
+	rows, err := q.db.Query(ctx, getTopPayout, producttype)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTopPayoutRow
+	for rows.Next() {
+		var i GetTopPayoutRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.DisplayName,
+			&i.ProfileImage,
+			&i.Payout,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTurnoverByUserId = `-- name: GetTurnoverByUserId :many
 SELECT
 	b."productCode", sum(b.turnover) AS turnover

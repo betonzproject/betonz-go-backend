@@ -28,6 +28,7 @@ func main() {
 	r.Get("/", routes.GetIndex(app))
 	r.Post("/login", routes.PostLogin(app))
 	r.Post("/logout", routes.PostLogout(app))
+	r.Get("/leaderboard/{productType}", routes.GetLeaderboard(app))
 	r.Route("/profile", func(r chi.Router) {
 		r.Post("/", profile.PostProfile(app))
 		r.Post("/avatar", profile.PostAvatar(app))
