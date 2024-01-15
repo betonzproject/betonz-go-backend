@@ -27,6 +27,7 @@ func main() {
 	r.Post("/logout", routes.PostLogout(app))
 	r.Route("/profile", func(r chi.Router) {
 		r.Post("/", profile.PostProfile(app))
+		r.Post("/avatar", profile.PostAvatar(app))
 		r.Route("/banking-details", func(r chi.Router) {
 			r.Get("/", bankingdetails.GetBanks(app))
 			r.Post("/", bankingdetails.DeleteBank(app))
