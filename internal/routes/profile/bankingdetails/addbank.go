@@ -22,7 +22,7 @@ type BankForm struct {
 
 func AddBank(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, err := auth.Authenticate(app, w, r, "")
+		user, err := auth.Authenticate(app, w, r)
 		if err != nil {
 			return
 		}

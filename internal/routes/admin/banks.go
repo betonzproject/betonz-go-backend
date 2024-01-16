@@ -15,7 +15,7 @@ import (
 
 func GetBanks(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, err := auth.Authenticate(app, w, r, "")
+		user, err := auth.Authenticate(app, w, r)
 		if err != nil {
 			return
 		}
@@ -41,7 +41,7 @@ type DeleteBankForm struct {
 
 func PostBanks(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, err := auth.Authenticate(app, w, r, "")
+		user, err := auth.Authenticate(app, w, r)
 		if err != nil {
 			return
 		}
@@ -88,7 +88,7 @@ type PatchBankForm struct {
 
 func PatchBanks(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, err := auth.Authenticate(app, w, r, "")
+		user, err := auth.Authenticate(app, w, r)
 		if err != nil {
 			return
 		}

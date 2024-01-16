@@ -2,6 +2,7 @@ package routes
 
 import (
 	"net/http"
+	"net/url"
 
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/db"
@@ -57,6 +58,14 @@ func PostLogin(app *app.App) http.HandlerFunc {
 		app.Scs.RenewToken(r.Context())
 		app.Scs.Put(r.Context(), "userId", user.ID.Bytes[:])
 
-		http.Redirect(w, r, "/", http.StatusFound)
+		redirectParam := r.URL.Query().Get("redirect")
+		redirectTo, err := url.QueryUnescape(redirectParam);
+		if err != nil || redirectTo == "" {
+			redirectTo = "/"
+		} else {
+			redirectTo = "/" + redirectTo[1:]
+		}
+
+		http.Redirect(w, r, redirectTo, http.StatusFound)
 	}
 }
