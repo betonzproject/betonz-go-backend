@@ -35,6 +35,8 @@ func main() {
 			r.Get("/{bankId}", bankingdetails.GetBankById(app))
 			r.Patch("/{bankId}", bankingdetails.PatchBankById(app))
 		})
+		r.Get("/notifications", profile.GetNotifications(app))
+		r.Post("/notifications", profile.PostNotifications(app))
 	})
 	r.Route("/admin", func(r chi.Router) {
 		r.Get("/transaction-request", admin.GetTransactionRequest(app))

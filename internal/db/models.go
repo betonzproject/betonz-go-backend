@@ -422,7 +422,7 @@ type Notification struct {
 	UserId    pgtype.UUID        `json:"userId"`
 	Type      NotificationType   `json:"type"`
 	Message   pgtype.Text        `json:"message"`
-	Variables []byte             `json:"variables"`
+	Variables map[string]any     `json:"variables"`
 	Read      bool               `json:"read"`
 	CreatedAt pgtype.Timestamptz `json:"createdAt"`
 	UpdatedAt pgtype.Timestamptz `json:"updatedAt"`

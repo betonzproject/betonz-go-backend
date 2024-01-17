@@ -11,8 +11,9 @@ import (
 )
 
 type Response struct {
-	User       *db.GetUserByIdRow `json:"user"`
-	Permissons []acl.Permission   `json:"permissions"`
+	User                    *db.GetUserByIdRow `json:"user"`
+	UnreadNotificationCount int64              `json:"unreadNotificationCount"`
+	Permissons              []acl.Permission   `json:"permissions"`
 }
 
 func GetIndex(app *app.App) http.HandlerFunc {
@@ -29,6 +30,11 @@ func GetIndex(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		jsonutils.Write(w, Response{User: &user, Permissons: acl.Acl[user.Role]}, http.StatusOK)
+		var unreadNotificationCount int64
+		if acl.IsAuthorized(user.Role, acl.ViewNotifications) {
+			unreadNotificationCount, err = app.DB.GetUnreadNotificationCountByUserId(r.Context(), user.ID)
+		}
+
+		jsonutils.Write(w, Response{User: &user, UnreadNotificationCount: unreadNotificationCount, Permissons: acl.Acl[user.Role]}, http.StatusOK)
 	}
 }
