@@ -21,7 +21,10 @@ func main() {
 	app := app.NewApp()
 
 	r := chi.NewRouter()
+
+	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
+
 	r.Get("/", routes.GetIndex(app))
 	r.Post("/login", routes.PostLogin(app))
 	r.Post("/logout", routes.PostLogout(app))
@@ -38,6 +41,7 @@ func main() {
 		r.Get("/notifications", profile.GetNotifications(app))
 		r.Post("/notifications", profile.PostNotifications(app))
 	})
+
 	r.Route("/admin", func(r chi.Router) {
 		r.Get("/transaction-request", admin.GetTransactionRequest(app))
 		r.Get("/transaction-log", admin.GetTransactionLog(app))

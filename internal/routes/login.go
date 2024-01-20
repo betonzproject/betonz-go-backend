@@ -59,7 +59,7 @@ func PostLogin(app *app.App) http.HandlerFunc {
 		app.Scs.Put(r.Context(), "userId", user.ID.Bytes[:])
 
 		redirectParam := r.URL.Query().Get("redirect")
-		redirectTo, err := url.QueryUnescape(redirectParam);
+		redirectTo, err := url.QueryUnescape(redirectParam)
 		if err != nil || redirectTo == "" {
 			redirectTo = "/"
 		} else {

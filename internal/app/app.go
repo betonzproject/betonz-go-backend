@@ -55,7 +55,6 @@ func NewApp() *App {
 
 	// Sessions
 	sessionManager := scs.New()
-	sessionManager.Cookie.Domain = os.Getenv("DOMAIN")
 	sessionManager.Store = goredisstore.New(client)
 	sessionManager.Lifetime = time.Duration(30 * 24 * time.Hour)
 	if os.Getenv("ENVIRONMENT") != "development" {
