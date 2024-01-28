@@ -1,5 +1,5 @@
 -- name: GetUserById :one
-SELECT id, username, role, email, "displayName", "phoneNumber", "mainWallet", dob, "profileImage", "isEmailVerified" FROM "User" WHERE id = $1;
+SELECT id, username, role, email, "displayName", "phoneNumber", "mainWallet", dob, "profileImage", "lastUsedBankId", "isEmailVerified", status FROM "User" WHERE id = $1;
 
 -- name: GetExtendedUserByUsername :one
 SELECT * FROM "User" WHERE username = $1 AND (@roles::"Role"[] IS NULL OR role = ANY(@roles));
@@ -132,6 +132,9 @@ UPDATE "User" SET "displayName" = $2, email = $3, "phoneNumber" = $4, "updatedAt
 
 -- name: UpdateUserProfileImage :exec
 UPDATE "User" SET "profileImage" = $2, "updatedAt" = now() WHERE id = $1;
+
+-- name: UpdateUserLastUsedBank :exec
+UPDATE "User" SET "lastUsedBankId" = $2, "updatedAt" = now() WHERE id = $1;
 
 -- name: UpdateUserStatus :exec
 UPDATE "User" SET status = $2, "updatedAt" = now() WHERE id = $1;

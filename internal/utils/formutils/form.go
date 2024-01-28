@@ -1,18 +1,23 @@
 package formutils
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
 	"reflect"
-	"strings"
 
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/utils"
+	"github.com/doorman2137/betonz-go/internal/utils/fileutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/go-playground/validator/v10"
-	"github.com/monoculum/formam/v3"
 )
 
 // Convenient all-in-one function to parse, decode, and validate a POST request form.
@@ -28,20 +33,14 @@ func ParseDecodeValidate[T interface{}](app *app.App, w http.ResponseWriter, r *
 		return err
 	}
 
-	err = formam.Decode(r.PostForm, dst)
-	if err != nil {
-		obj, _ := err.(*formam.Error).MarshalJSON()
-		http.Error(w, string(obj), http.StatusBadRequest)
-		return err
-	}
-
+	_ = app.Decoder.Decode(dst, r.PostForm)
 	err = app.Validate.Struct(dst)
 	if err != nil {
 		var ve validator.ValidationErrors
 		veMap := make(map[string]string)
 		if errors.As(err, &ve) {
 			for _, fe := range ve {
-				err := errorTagFunc[T](dst, fe.StructNamespace(), fe.Field(), fe.Tag())
+				err := errorTagFunc[T](dst, fe.Field(), fe.Tag())
 				if err != nil {
 					veMap[utils.ToLowerFirst(fe.Field())] = err.Error()
 				}
@@ -60,47 +59,136 @@ func ParseDecodeValidate[T interface{}](app *app.App, w http.ResponseWriter, r *
 	return nil
 }
 
-func errorTagFunc[T interface{}](obj *T, snp string, fieldname, actualTag string) error {
-	if !strings.Contains(snp, fieldname) {
-		return nil
+func ParseDecodeValidateMultipart[T interface{}](app *app.App, w http.ResponseWriter, r *http.Request, dst *T) error {
+	multipart, err := r.MultipartReader()
+	if err != nil {
+		http.Error(w, "Can't parse multipart", http.StatusBadRequest)
+		return err
 	}
 
-	fieldArr := strings.Split(snp, ".")
-	rsf := reflect.TypeOf(*obj)
+	values := make(url.Values)
+	tempFileSums := make(map[string]string)
+	errorMap := make(map[string]string)
+	hasError := false
+	for {
+		part, err := multipart.NextPart()
+		if err == io.EOF {
+			break
+		}
+		defer part.Close()
 
-	for i := 1; i < len(fieldArr); i++ {
-		field, found := rsf.FieldByName(fieldArr[i])
-		if found {
-			if fieldArr[i] == fieldname {
-				errorKey := field.Tag.Get("key")
-				var message string
-				if actualTag == "required" {
-					message = "required.message"
-				} else if actualTag == "min" {
-					message = "tooShort.message"
-				} else if actualTag == "max" {
-					message = "tooLong.message"
-				} else if actualTag == "username" {
-					message = "invalidCharacters.message"
-				} else if actualTag == "number" {
-					message = "numbersOnly.message"
-				} else {
-					message = "invalid.message"
-				}
-
-				if errorKey != "" {
-					return fmt.Errorf("%s.%s", errorKey, message)
-				}
-				return fmt.Errorf("%s", message)
-			} else {
-				if field.Type.Kind() == reflect.Ptr {
-					// If the field type is a pointer, dereference it
-					rsf = field.Type.Elem()
-				} else {
-					rsf = field.Type
-				}
+		if part.FileName() == "" {
+			buf := new(bytes.Buffer)
+			_, err = buf.ReadFrom(part)
+			if err != nil {
+				http.Error(w, "Can't parse multipart", http.StatusBadRequest)
 			}
+			values.Add(part.FormName(), buf.String())
+		} else if !r.URL.Query().Has("validate") {
+			tempFile, err := os.CreateTemp("", part.FormName())
+			if err != nil {
+				log.Panicln("Can't create temp directory: " + err.Error())
+			}
+			defer fileutils.CloseAndDelete(tempFile)
+
+			hash := sha256.New()
+
+			multiWriter := io.MultiWriter(tempFile, hash)
+
+			_, err = io.Copy(multiWriter, part)
+			if err != nil {
+				log.Panicln(err)
+			}
+
+			sum := fmt.Sprintf("%x", hash.Sum(nil))
+			tempFileSums[tempFile.Name()] = sum
+
+			if !fileutils.IsSupportedFileType(tempFile.Name()) {
+				errorMap[part.FormName()] = "upload.fileTypeNotSupported.message"
+				hasError = true
+			}
+
+			values.Add(part.FormName(), sum)
 		}
 	}
+
+	_ = app.Decoder.Decode(dst, values)
+	err = app.Validate.Struct(dst)
+	if err != nil {
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			for _, fe := range ve {
+				err := errorTagFunc[T](dst, fe.Field(), fe.Tag())
+				if err != nil && errorMap[fe.Field()] == "" {
+					errorMap[utils.ToLowerFirst(fe.Field())] = err.Error()
+					hasError = true
+				}
+			}
+		} else {
+			log.Panicln("Not a validator.ValidationErrors")
+		}
+	}
+
+	if hasError {
+		jsonutils.Write(w, errorMap, http.StatusBadRequest)
+		return errors.New("Upload error")
+	}
+
+	if r.URL.Query().Has("validate") {
+		w.WriteHeader(http.StatusOK)
+		return errors.New("Validate only")
+	}
+
+	// Copy uploaded files to uploads folder
+	for filename, sum := range tempFileSums {
+		path := filepath.Join("uploads", sum[:2], sum[2:4], sum[4:])
+		os.MkdirAll(filepath.Dir(path), os.ModePerm)
+		err = fileutils.Copy(filename, path)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func errorTagFunc[T interface{}](obj *T, fieldname, actualTag string) error {
+	t := reflect.TypeOf(*obj)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	field, found := t.FieldByName(fieldname)
+	if found {
+		errorKey := field.Tag.Get("key")
+		var message string
+		if actualTag == "required" {
+			message = "required.message"
+		} else if actualTag == "min" {
+			if field.Type.Kind() == reflect.Int64 {
+				message = "tooLow.message"
+			} else {
+				message = "tooShort.message"
+			}
+		} else if actualTag == "max" {
+			if field.Type.Kind() == reflect.Int64 {
+				message = "tooHigh.message"
+			} else {
+				message = "tooLong.message"
+			}
+		} else if actualTag == "username" {
+			message = "invalidCharacters.message"
+		} else if actualTag == "number" {
+			message = "numbersOnly.message"
+		} else {
+			message = "invalid.message"
+		}
+
+		if errorKey != "" {
+			return fmt.Errorf("%s.%s", errorKey, message)
+		}
+		return fmt.Errorf("%s", message)
+	}
+
 	return nil
 }

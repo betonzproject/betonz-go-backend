@@ -15,9 +15,9 @@ import (
 )
 
 type BankForm struct {
-	BankName      string `formam:"bankName" validate:"oneof=AGD AYA CB KBZ KBZPAY OK_DOLLAR WAVE_PAY YOMA"`
-	AccountName   string `formam:"accountName" validate:"required"`
-	AccountNumber string `formam:"accountNumber" validate:"required,accountnumber" key:"bank.accountNumber"`
+	BankName      string `form:"bankName" validate:"oneof=AGD AYA CB KBZ KBZPAY OK_DOLLAR WAVE_PAY YOMA"`
+	AccountName   string `form:"accountName" validate:"required"`
+	AccountNumber string `form:"accountNumber" validate:"required,accountnumber" key:"bank.accountNumber"`
 }
 
 func AddBank(app *app.App) http.HandlerFunc {

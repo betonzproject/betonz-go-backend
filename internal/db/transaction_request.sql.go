@@ -11,6 +11,54 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createDepositRequest = `-- name: CreateDepositRequest :exec
+INSERT INTO "TransactionRequest" (
+	"userId",
+	"bankName",
+	"bankAccountName",
+	"bankAccountNumber",
+	"beneficiaryBankAccountName",
+	"beneficiaryBankAccountNumber",
+	amount,
+	bonus,
+	type,
+	"receiptPath",
+	status,
+	"updatedAt"
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now())
+`
+
+type CreateDepositRequestParams struct {
+	UserId                       pgtype.UUID       `json:"userId"`
+	BankName                     BankName          `json:"bankName"`
+	BankAccountName              string            `json:"bankAccountName"`
+	BankAccountNumber            string            `json:"bankAccountNumber"`
+	BeneficiaryBankAccountName   pgtype.Text       `json:"beneficiaryBankAccountName"`
+	BeneficiaryBankAccountNumber pgtype.Text       `json:"beneficiaryBankAccountNumber"`
+	Amount                       pgtype.Numeric    `json:"amount"`
+	Bonus                        pgtype.Numeric    `json:"bonus"`
+	Type                         TransactionType   `json:"type"`
+	ReceiptPath                  pgtype.Text       `json:"receiptPath"`
+	Status                       TransactionStatus `json:"status"`
+}
+
+func (q *Queries) CreateDepositRequest(ctx context.Context, arg CreateDepositRequestParams) error {
+	_, err := q.db.Exec(ctx, createDepositRequest,
+		arg.UserId,
+		arg.BankName,
+		arg.BankAccountName,
+		arg.BankAccountNumber,
+		arg.BeneficiaryBankAccountName,
+		arg.BeneficiaryBankAccountNumber,
+		arg.Amount,
+		arg.Bonus,
+		arg.Type,
+		arg.ReceiptPath,
+		arg.Status,
+	)
+	return err
+}
+
 const getTransactionRequests = `-- name: GetTransactionRequests :many
 SELECT
 	tr.id, tr."userId", tr."modifiedById", tr."bankName", tr."bankAccountName", tr."bankAccountNumber", tr."beneficiaryBankAccountName", tr."beneficiaryBankAccountNumber", tr.amount, tr.type, tr."receiptPath", tr.status, tr.remarks, tr."createdAt", tr."updatedAt", tr.bonus, tr."withdrawBankFees",
@@ -122,4 +170,25 @@ func (q *Queries) GetTransactionRequests(ctx context.Context, arg GetTransaction
 		return nil, err
 	}
 	return items, nil
+}
+
+const hasRecentDepositRequestsByUserId = `-- name: HasRecentDepositRequestsByUserId :one
+SELECT EXISTS (
+	SELECT
+		id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees"
+	FROM
+		"TransactionRequest"
+	WHERE
+		"userId" = $1
+	AND type = 'DEPOSIT'::"TransactionType"
+		AND status = 'PENDING'::"TransactionStatus"
+		AND "createdAt" >= now() - INTERVAL '1 minute'
+)
+`
+
+func (q *Queries) HasRecentDepositRequestsByUserId(ctx context.Context, userid pgtype.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, hasRecentDepositRequestsByUserId, userid)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }

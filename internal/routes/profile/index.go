@@ -13,10 +13,10 @@ import (
 )
 
 type UpdateForm struct {
-	DisplayName string `formam:"displayName" validate:"max=30"`
-	Email       string `formam:"email" validate:"required,email" key:"user.email"`
-	CountryCode string `formam:"countryCode" validate:"omitempty,number"`
-	PhoneNumber string `formam:"phoneNumber" validate:"omitempty,number,max=14"`
+	DisplayName string `form:"displayName" validate:"max=30"`
+	Email       string `form:"email" validate:"required,email" key:"user.email"`
+	CountryCode string `form:"countryCode" validate:"omitempty,number"`
+	PhoneNumber string `form:"phoneNumber" validate:"omitempty,number,max=14"`
 }
 
 func PostProfile(app *app.App) http.HandlerFunc {

@@ -32,7 +32,7 @@ func GetBanks(app *app.App) http.HandlerFunc {
 }
 
 type DeleteBankForm struct {
-	Id string `formam:"id" validate:"uuid4"`
+	Id string `form:"id" validate:"uuid4"`
 }
 
 func DeleteBank(app *app.App) http.HandlerFunc {

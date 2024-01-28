@@ -32,7 +32,7 @@ func GetNotifications(app *app.App) http.HandlerFunc {
 }
 
 type DeleteNotificationForm struct {
-	Id int32 `formam:"id" validate:"numeric"`
+	Id int32 `form:"id" validate:"numeric"`
 }
 
 func PostNotifications(app *app.App) http.HandlerFunc {

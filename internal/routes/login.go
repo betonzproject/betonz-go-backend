@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"crypto/rand"
 	"net/http"
 	"net/url"
 
@@ -11,8 +12,8 @@ import (
 )
 
 type LoginForm struct {
-	Username string `formam:"username" validate:"required,min=3,max=20,username" key:"user.username"`
-	Password string `formam:"password" validate:"required,min=8,max=512"`
+	Username string `form:"username" validate:"required,min=3,max=20,username" key:"user.username"`
+	Password string `form:"password" validate:"required,min=8,max=512"`
 }
 
 func PostLogin(app *app.App) http.HandlerFunc {
@@ -57,6 +58,9 @@ func PostLogin(app *app.App) http.HandlerFunc {
 
 		app.Scs.RenewToken(r.Context())
 		app.Scs.Put(r.Context(), "userId", user.ID.Bytes[:])
+		randomBytes := make([]byte, 16)
+		rand.Read(randomBytes)
+		app.Scs.Put(r.Context(), "sessionId", randomBytes)
 
 		redirectParam := r.URL.Query().Get("redirect")
 		redirectTo, err := url.QueryUnescape(redirectParam)

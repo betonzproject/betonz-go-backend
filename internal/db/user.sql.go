@@ -123,7 +123,7 @@ func (q *Queries) GetPlayerInfoById(ctx context.Context, id pgtype.UUID) (GetPla
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, username, role, email, "displayName", "phoneNumber", "mainWallet", dob, "profileImage", "isEmailVerified" FROM "User" WHERE id = $1
+SELECT id, username, role, email, "displayName", "phoneNumber", "mainWallet", dob, "profileImage", "lastUsedBankId", "isEmailVerified", status FROM "User" WHERE id = $1
 `
 
 type GetUserByIdRow struct {
@@ -136,7 +136,9 @@ type GetUserByIdRow struct {
 	MainWallet      pgtype.Numeric `json:"mainWallet"`
 	Dob             pgtype.Date    `json:"dob"`
 	ProfileImage    pgtype.Text    `json:"profileImage"`
+	LastUsedBankId  pgtype.UUID    `json:"lastUsedBankId"`
 	IsEmailVerified bool           `json:"isEmailVerified"`
+	Status          UserStatus     `json:"status"`
 }
 
 func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (GetUserByIdRow, error) {
@@ -152,7 +154,9 @@ func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (GetUserByIdR
 		&i.MainWallet,
 		&i.Dob,
 		&i.ProfileImage,
+		&i.LastUsedBankId,
 		&i.IsEmailVerified,
+		&i.Status,
 	)
 	return i, err
 }
@@ -328,6 +332,20 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 		arg.Email,
 		arg.PhoneNumber,
 	)
+	return err
+}
+
+const updateUserLastUsedBank = `-- name: UpdateUserLastUsedBank :exec
+UPDATE "User" SET "lastUsedBankId" = $2, "updatedAt" = now() WHERE id = $1
+`
+
+type UpdateUserLastUsedBankParams struct {
+	ID             pgtype.UUID `json:"id"`
+	LastUsedBankId pgtype.UUID `json:"lastUsedBankId"`
+}
+
+func (q *Queries) UpdateUserLastUsedBank(ctx context.Context, arg UpdateUserLastUsedBankParams) error {
+	_, err := q.db.Exec(ctx, updateUserLastUsedBank, arg.ID, arg.LastUsedBankId)
 	return err
 }
 

@@ -12,7 +12,7 @@ import (
 )
 
 type AvatarForm struct {
-	ProfileImage string `formam:"profileImage" validate:"omitempty,oneof=ant bike cake car deer desert fish forest gentleman hiking lunchbox nature night pet roof surf"`
+	ProfileImage string `form:"profileImage" validate:"omitempty,oneof=ant bike cake car deer desert fish forest gentleman hiking lunchbox nature night pet roof surf"`
 }
 
 func PostAvatar(app *app.App) http.HandlerFunc {

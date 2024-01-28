@@ -10,6 +10,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/doorman2137/betonz-go/internal/db"
 	"github.com/doorman2137/betonz-go/internal/utils"
+	"github.com/go-playground/form/v4"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,6 +22,7 @@ type App struct {
 	Pool     *pgxpool.Pool
 	Redis    *redis.Client
 	Scs      *scs.SessionManager
+	Decoder  *form.Decoder
 	Validate *validator.Validate
 }
 
@@ -61,6 +63,9 @@ func NewApp() *App {
 		sessionManager.Cookie.Secure = true
 	}
 
+	// Form decoder
+	decoder := form.NewDecoder()
+
 	// Validator
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	validate.RegisterValidation("username", utils.ValidateUsername)
@@ -71,6 +76,7 @@ func NewApp() *App {
 		Pool:     pool,
 		Redis:    client,
 		Scs:      sessionManager,
+		Decoder:  decoder,
 		Validate: validate,
 	}
 }

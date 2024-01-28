@@ -54,9 +54,9 @@ func GetPlayers(app *app.App) http.HandlerFunc {
 }
 
 type ManageUserForm struct {
-	Reason string `formam:"reason"`
-	UserId string `formam:"userId" validate:"uuid4"`
-	Status string `formam:"status" validate:"oneof=NORMAL RESTRICTED"`
+	Reason string `form:"reason"`
+	UserId string `form:"userId" validate:"uuid4"`
+	Status string `form:"status" validate:"oneof=NORMAL RESTRICTED"`
 }
 
 func PostPlayers(app *app.App) http.HandlerFunc {

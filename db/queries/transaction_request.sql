@@ -29,3 +29,34 @@ AND
 	tr."createdAt" < sqlc.arg('toDate')
 ORDER BY
 	tr.id DESC;
+
+-- name: HasRecentDepositRequestsByUserId :one
+SELECT EXISTS (
+	SELECT
+		*
+	FROM
+		"TransactionRequest"
+	WHERE
+		"userId" = $1
+	AND type = 'DEPOSIT'::"TransactionType"
+		AND status = 'PENDING'::"TransactionStatus"
+		AND "createdAt" >= now() - INTERVAL '1 minute'
+);
+
+
+
+-- name: CreateDepositRequest :exec
+INSERT INTO "TransactionRequest" (
+	"userId",
+	"bankName",
+	"bankAccountName",
+	"bankAccountNumber",
+	"beneficiaryBankAccountName",
+	"beneficiaryBankAccountNumber",
+	amount,
+	bonus,
+	type,
+	"receiptPath",
+	status,
+	"updatedAt"
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now());

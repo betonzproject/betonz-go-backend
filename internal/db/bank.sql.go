@@ -132,12 +132,65 @@ func (q *Queries) GetBanksByUserId(ctx context.Context, userid pgtype.UUID) ([]B
 	return items, nil
 }
 
+const getSystemBankById = `-- name: GetSystemBankById :one
+SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM'::"Role" AND b.id = $1
+`
+
+func (q *Queries) GetSystemBankById(ctx context.Context, id pgtype.UUID) (Bank, error) {
+	row := q.db.QueryRow(ctx, getSystemBankById, id)
+	var i Bank
+	err := row.Scan(
+		&i.ID,
+		&i.UserId,
+		&i.Name,
+		&i.AccountName,
+		&i.AccountNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Disabled,
+	)
+	return i, err
+}
+
 const getSystemBanks = `-- name: GetSystemBanks :many
-SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.ROLE = 'SYSTEM'::"Role" ORDER BY b."createdAt", b."accountName"
+SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM'::"Role" ORDER BY b."createdAt", b."accountName"
 `
 
 func (q *Queries) GetSystemBanks(ctx context.Context) ([]Bank, error) {
 	rows, err := q.db.Query(ctx, getSystemBanks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Bank
+	for rows.Next() {
+		var i Bank
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserId,
+			&i.Name,
+			&i.AccountName,
+			&i.AccountNumber,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Disabled,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getSystemBanksByBankName = `-- name: GetSystemBanksByBankName :many
+SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM'::"Role" AND b.name = $1
+`
+
+func (q *Queries) GetSystemBanksByBankName(ctx context.Context, name BankName) ([]Bank, error) {
+	rows, err := q.db.Query(ctx, getSystemBanksByBankName, name)
 	if err != nil {
 		return nil, err
 	}

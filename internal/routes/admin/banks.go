@@ -30,13 +30,13 @@ func GetBanks(app *app.App) http.HandlerFunc {
 }
 
 type CreateBankForm struct {
-	BankName      string `formam:"bankName" validate:"oneof=AGD AYA CB KBZ KBZPAY OK_DOLLAR WAVE_PAY YOMA"`
-	AccountName   string `formam:"accountName" validate:"required"`
-	AccountNumber string `formam:"accountNumber" validate:"number"`
+	BankName      string `form:"bankName" validate:"oneof=AGD AYA CB KBZ KBZPAY OK_DOLLAR WAVE_PAY YOMA"`
+	AccountName   string `form:"accountName" validate:"required"`
+	AccountNumber string `form:"accountNumber" validate:"number"`
 }
 
 type DeleteBankForm struct {
-	Id string `formam:"id" validate:"uuid4"`
+	Id string `form:"id" validate:"uuid4"`
 }
 
 func PostBanks(app *app.App) http.HandlerFunc {
@@ -80,10 +80,10 @@ func PostBanks(app *app.App) http.HandlerFunc {
 }
 
 type PatchBankForm struct {
-	Id            string `formam:"id" validate:"uuid4"`
-	AccountName   string `formam:"accountName"`
-	AccountNumber string `formam:"accountNumber"`
-	Enabled       string `formam:"enabled" validate:"omitempty,oneof=on"`
+	Id            string `form:"id" validate:"uuid4"`
+	AccountName   string `form:"accountName"`
+	AccountNumber string `form:"accountNumber"`
+	Enabled       string `form:"enabled" validate:"omitempty,oneof=on"`
 }
 
 func PatchBanks(app *app.App) http.HandlerFunc {

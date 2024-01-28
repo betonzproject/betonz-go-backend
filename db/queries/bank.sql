@@ -4,8 +4,14 @@ SELECT * FROM "Bank" WHERE id = $1;
 -- name: GetBanksByUserId :many
 SELECT * FROM "Bank" WHERE "userId" = $1 ORDER BY "createdAt", "accountName";
 
+-- name: GetSystemBankById :one
+SELECT b.* FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM'::"Role" AND b.id = $1;
+
 -- name: GetSystemBanks :many
-SELECT b.* FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.ROLE = 'SYSTEM'::"Role" ORDER BY b."createdAt", b."accountName";
+SELECT b.* FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM'::"Role" ORDER BY b."createdAt", b."accountName";
+
+-- name: GetSystemBanksByBankName :many
+SELECT b.* FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM'::"Role" AND b.name = $1;
 
 
 
