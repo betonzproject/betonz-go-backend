@@ -20,7 +20,7 @@ AND
 AND
 	e."createdAt" >= sqlc.arg('fromDate')
 AND
-	e."createdAt" < sqlc.arg('toDate')
+	e."createdAt" <= sqlc.arg('toDate')
 AND (
 	sqlc.narg('search')::text IS NULL
 	OR u.username ILIKE '%' || @search || '%' 

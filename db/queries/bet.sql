@@ -30,6 +30,6 @@ FROM
 JOIN
 	"User" u USING ("etgUsername")
 WHERE 
-	u.id = $1 AND b."startTime" >= sqlc.arg('fromDate') AND b."startTime" < sqlc.arg('toDate')
+	u.id = $1 AND b."startTime" >= sqlc.arg('fromDate') AND b."startTime" <= sqlc.arg('toDate')
 GROUP BY
 	b."productCode";

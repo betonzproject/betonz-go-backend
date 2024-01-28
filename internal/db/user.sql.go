@@ -267,7 +267,7 @@ FROM (
 	AND
 		u."createdAt" >= $3
 	AND
-		u."createdAt" < $4
+		u."createdAt" <= $4
 ) q
 ORDER BY
 	"rowNumber" DESC, "createdAt" DESC

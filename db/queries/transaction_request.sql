@@ -26,7 +26,7 @@ AND (
 AND
 	tr."createdAt" >= sqlc.arg('fromDate')
 AND
-	tr."createdAt" < sqlc.arg('toDate')
+	tr."createdAt" <= sqlc.arg('toDate')
 ORDER BY
 	tr.id DESC;
 
@@ -50,7 +50,7 @@ AND
 AND
 	tr."createdAt" >= sqlc.arg('fromDate')
 AND
-	tr."createdAt" < sqlc.arg('toDate')
+	tr."createdAt" <= sqlc.arg('toDate')
 AND
 	tr."userId" = $1
 ORDER BY

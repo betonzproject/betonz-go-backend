@@ -87,7 +87,7 @@ AND (
 AND
 	tr."createdAt" >= $4
 AND
-	tr."createdAt" < $5
+	tr."createdAt" <= $5
 ORDER BY
 	tr.id DESC
 `
@@ -196,7 +196,7 @@ AND
 AND
 	tr."createdAt" >= $4
 AND
-	tr."createdAt" < $5
+	tr."createdAt" <= $5
 AND
 	tr."userId" = $1
 ORDER BY

@@ -21,6 +21,6 @@ WHERE
 AND
 	tr."createdAt" >= sqlc.arg('fromDate')
 AND
-	tr."createdAt" < sqlc.arg('toDate')
+	tr."createdAt" <= sqlc.arg('toDate')
 ORDER BY
 	tr.id DESC;

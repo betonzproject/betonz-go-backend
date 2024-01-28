@@ -78,7 +78,7 @@ FROM
 JOIN
 	"User" u USING ("etgUsername")
 WHERE 
-	u.id = $1 AND b."startTime" >= $2 AND b."startTime" < $3
+	u.id = $1 AND b."startTime" >= $2 AND b."startTime" <= $3
 GROUP BY
 	b."productCode"
 `

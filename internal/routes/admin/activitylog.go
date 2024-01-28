@@ -1,8 +1,8 @@
 package admin
 
 import (
+	"log"
 	"net/http"
-	"time"
 
 	"github.com/doorman2137/betonz-go/internal/acl"
 	"github.com/doorman2137/betonz-go/internal/app"
@@ -25,14 +25,17 @@ func GetActivityLog(app *app.App) http.HandlerFunc {
 		}
 
 		searchParam := r.URL.Query().Get("search")
-		dateRangeParam := r.URL.Query().Get("dateRange")
+		fromParam := r.URL.Query().Get("from")
+		toParam := r.URL.Query().Get("to")
 		roleParam := r.URL.Query().Get("role")
 		eventResultParam := r.URL.Query().Get("eventResult")
 		eventTypeParam := r.URL.Query().Get("eventType")
 
-		var from time.Time
-		var to time.Time
-		from, to, err = timeutils.ParseDateRange(dateRangeParam)
+		from, err := timeutils.ParseDate(fromParam)
+		if err != nil {
+			from = timeutils.StartOfToday()
+		}
+		to, err := timeutils.ParseDate(toParam)
 		if err != nil {
 			to = timeutils.EndOfToday()
 		}
@@ -41,6 +44,7 @@ func GetActivityLog(app *app.App) http.HandlerFunc {
 		if roleParam != "" {
 			roles = []db.Role{db.Role(roleParam)}
 		}
+
 		var excludes []db.Role
 		if !acl.IsAuthorized(user.Role, acl.ViewSuperadminActivityLog) {
 			excludes = []db.Role{db.RoleSUPERADMIN}
@@ -65,6 +69,10 @@ func GetActivityLog(app *app.App) http.HandlerFunc {
 			FromDate:     pgtype.Timestamptz{Time: from, Valid: true},
 			ToDate:       pgtype.Timestamptz{Time: to, Valid: true},
 		})
+		if err != nil {
+			log.Panicln("Can't get events: " + err.Error())
+		}
+
 		jsonutils.Write(w, events, http.StatusOK)
 	}
 }

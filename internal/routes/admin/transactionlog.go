@@ -1,8 +1,8 @@
 package admin
 
 import (
+	"log"
 	"net/http"
-	"time"
 
 	"github.com/doorman2137/betonz-go/internal/acl"
 	"github.com/doorman2137/betonz-go/internal/app"
@@ -25,11 +25,11 @@ func GetTransactionLog(app *app.App) http.HandlerFunc {
 		}
 
 		searchParam := r.URL.Query().Get("search")
-		dateRangeParam := r.URL.Query().Get("dateRange")
+		fromParam := r.URL.Query().Get("from")
+		toParam := r.URL.Query().Get("to")
 
-		var from time.Time
-		var to time.Time
-		from, to, err = timeutils.ParseDateRange(dateRangeParam)
+		from, _ := timeutils.ParseDate(fromParam)
+		to, err := timeutils.ParseDate(toParam)
 		if err != nil {
 			to = timeutils.EndOfToday()
 		}
@@ -39,6 +39,10 @@ func GetTransactionLog(app *app.App) http.HandlerFunc {
 			FromDate: pgtype.Timestamptz{Time: from, Valid: true},
 			ToDate:   pgtype.Timestamptz{Time: to, Valid: true},
 		})
+		if err != nil {
+			log.Panicln("Can't get requests: " + err.Error())
+		}
+
 		jsonutils.Write(w, requests, http.StatusOK)
 	}
 }

@@ -3,7 +3,6 @@ package profile
 import (
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/doorman2137/betonz-go/internal/acl"
 	"github.com/doorman2137/betonz-go/internal/app"
@@ -53,13 +52,16 @@ func GetHistory(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		dateRangeParam := r.URL.Query().Get("dateRange")
+		fromParam := r.URL.Query().Get("from")
+		toParam := r.URL.Query().Get("to")
 		transactionTypeParam := r.URL.Query().Get("transactionType")
 		statusParam := r.URL.Query().Get("status")
 
-		var from time.Time
-		var to time.Time
-		from, to, err = timeutils.ParseDateRange(dateRangeParam)
+		from, err := timeutils.ParseDate(fromParam)
+		if err != nil {
+			from = timeutils.StartOfToday().AddDate(0, 0, -6)
+		}
+		to, err := timeutils.ParseDate(toParam)
 		if err != nil {
 			to = timeutils.EndOfToday()
 		}

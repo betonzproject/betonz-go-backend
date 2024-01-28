@@ -34,7 +34,7 @@ WHERE
 AND
 	tr."createdAt" >= $2
 AND
-	tr."createdAt" < $3
+	tr."createdAt" <= $3
 ORDER BY
 	tr.id DESC
 `

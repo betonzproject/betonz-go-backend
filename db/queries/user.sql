@@ -86,7 +86,7 @@ FROM (
 	AND
 		u."createdAt" >= sqlc.arg('fromDate')
 	AND
-		u."createdAt" < sqlc.arg('toDate')
+		u."createdAt" <= sqlc.arg('toDate')
 ) q
 ORDER BY
 	"rowNumber" DESC, "createdAt" DESC;

@@ -58,7 +58,7 @@ AND
 AND
 	e."createdAt" >= $5
 AND
-	e."createdAt" < $6
+	e."createdAt" <= $6
 AND (
 	$7::text IS NULL
 	OR u.username ILIKE '%' || $7 || '%' 
