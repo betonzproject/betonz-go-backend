@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createDepositRequest = `-- name: CreateDepositRequest :exec
+const createTransactionRequest = `-- name: CreateTransactionRequest :exec
 INSERT INTO "TransactionRequest" (
 	"userId",
 	"bankName",
@@ -28,7 +28,7 @@ INSERT INTO "TransactionRequest" (
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now())
 `
 
-type CreateDepositRequestParams struct {
+type CreateTransactionRequestParams struct {
 	UserId                       pgtype.UUID       `json:"userId"`
 	BankName                     BankName          `json:"bankName"`
 	BankAccountName              string            `json:"bankAccountName"`
@@ -42,8 +42,8 @@ type CreateDepositRequestParams struct {
 	Status                       TransactionStatus `json:"status"`
 }
 
-func (q *Queries) CreateDepositRequest(ctx context.Context, arg CreateDepositRequestParams) error {
-	_, err := q.db.Exec(ctx, createDepositRequest,
+func (q *Queries) CreateTransactionRequest(ctx context.Context, arg CreateTransactionRequestParams) error {
+	_, err := q.db.Exec(ctx, createTransactionRequest,
 		arg.UserId,
 		arg.BankName,
 		arg.BankAccountName,
@@ -188,6 +188,27 @@ SELECT EXISTS (
 
 func (q *Queries) HasRecentDepositRequestsByUserId(ctx context.Context, userid pgtype.UUID) (bool, error) {
 	row := q.db.QueryRow(ctx, hasRecentDepositRequestsByUserId, userid)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const hasRecentWithdrawRequestsByUserId = `-- name: HasRecentWithdrawRequestsByUserId :one
+SELECT EXISTS (
+	SELECT
+		id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees"
+	FROM
+		"TransactionRequest"
+	WHERE
+		"userId" = $1
+	AND type = 'WITHDRAW'::"TransactionType"
+		AND status = 'PENDING'::"TransactionStatus"
+		AND "createdAt" >= now() - INTERVAL '5 minutes'
+)
+`
+
+func (q *Queries) HasRecentWithdrawRequestsByUserId(ctx context.Context, userid pgtype.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, hasRecentWithdrawRequestsByUserId, userid)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err

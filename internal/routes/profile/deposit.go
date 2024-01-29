@@ -150,7 +150,7 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 			log.Panicln("Can't update last used bank: " + err.Error())
 		}
 
-		err = qtx.CreateDepositRequest(r.Context(), db.CreateDepositRequestParams{
+		err = qtx.CreateTransactionRequest(r.Context(), db.CreateTransactionRequestParams{
 			UserId:                       user.ID,
 			BankName:                     depositorBank.Name,
 			BankAccountName:              depositorBank.AccountName,

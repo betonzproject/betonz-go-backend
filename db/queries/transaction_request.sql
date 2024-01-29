@@ -43,9 +43,22 @@ SELECT EXISTS (
 		AND "createdAt" >= now() - INTERVAL '1 minute'
 );
 
+-- name: HasRecentWithdrawRequestsByUserId :one
+SELECT EXISTS (
+	SELECT
+		*
+	FROM
+		"TransactionRequest"
+	WHERE
+		"userId" = $1
+	AND type = 'WITHDRAW'::"TransactionType"
+		AND status = 'PENDING'::"TransactionStatus"
+		AND "createdAt" >= now() - INTERVAL '5 minutes'
+);
 
 
--- name: CreateDepositRequest :exec
+
+-- name: CreateTransactionRequest :exec
 INSERT INTO "TransactionRequest" (
 	"userId",
 	"bankName",

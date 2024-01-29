@@ -14,6 +14,7 @@ type Permission string
 const (
 	UpdateProfile             Permission = "UpdateProfile"
 	DepositToOwnWallet        Permission = "DepositToOwnWallet"
+	WithdrawFromOwnWallet     Permission = "WithdrawFromOwnWallet"
 	ManageOwnBankingDetails   Permission = "ManageOwnBankingDetails"
 	ViewNotifications         Permission = "ViewNotifications"
 	ManageTransactionRequests Permission = "ManageTransactionRequests"
@@ -30,6 +31,7 @@ var Acl = map[db.Role][]Permission{
 	db.RolePLAYER: {
 		UpdateProfile,
 		DepositToOwnWallet,
+		WithdrawFromOwnWallet,
 		ManageOwnBankingDetails,
 		ViewNotifications,
 	},
@@ -43,6 +45,7 @@ var Acl = map[db.Role][]Permission{
 	db.RoleSUPERADMIN: {
 		UpdateProfile,
 		DepositToOwnWallet,
+		WithdrawFromOwnWallet,
 		ManageOwnBankingDetails,
 		ViewNotifications,
 		ManageTransactionRequests,
