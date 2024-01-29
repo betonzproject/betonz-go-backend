@@ -122,6 +122,8 @@ const (
 	EventTypeACTIVE                         EventType = "ACTIVE"
 	EventTypeTRANSFERWALLET                 EventType = "TRANSFER_WALLET"
 	EventTypeRESTOREWALLET                  EventType = "RESTORE_WALLET"
+	EventTypeTRANSACTION                    EventType = "TRANSACTION"
+	EventTypeFLAG                           EventType = "FLAG"
 )
 
 func (e *EventType) Scan(src interface{}) error {
@@ -159,10 +161,97 @@ func (ns NullEventType) Value() (driver.Value, error) {
 	return string(ns.EventType), nil
 }
 
+type FlagStatus string
+
+const (
+	FlagStatusPENDING    FlagStatus = "PENDING"
+	FlagStatusRESOLVED   FlagStatus = "RESOLVED"
+	FlagStatusRESTRICTED FlagStatus = "RESTRICTED"
+)
+
+func (e *FlagStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = FlagStatus(s)
+	case string:
+		*e = FlagStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for FlagStatus: %T", src)
+	}
+	return nil
+}
+
+type NullFlagStatus struct {
+	FlagStatus FlagStatus `json:"FlagStatus"`
+	Valid      bool       `json:"valid"` // Valid is true if FlagStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullFlagStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.FlagStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.FlagStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullFlagStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.FlagStatus), nil
+}
+
+type IdentityVerificationStatus string
+
+const (
+	IdentityVerificationStatusVERIFIED IdentityVerificationStatus = "VERIFIED"
+	IdentityVerificationStatusREJECTED IdentityVerificationStatus = "REJECTED"
+	IdentityVerificationStatusPENDING  IdentityVerificationStatus = "PENDING"
+)
+
+func (e *IdentityVerificationStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = IdentityVerificationStatus(s)
+	case string:
+		*e = IdentityVerificationStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for IdentityVerificationStatus: %T", src)
+	}
+	return nil
+}
+
+type NullIdentityVerificationStatus struct {
+	IdentityVerificationStatus IdentityVerificationStatus `json:"IdentityVerificationStatus"`
+	Valid                      bool                       `json:"valid"` // Valid is true if IdentityVerificationStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullIdentityVerificationStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.IdentityVerificationStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.IdentityVerificationStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullIdentityVerificationStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.IdentityVerificationStatus), nil
+}
+
 type NotificationType string
 
 const (
-	NotificationTypeTRANSACTION NotificationType = "TRANSACTION"
+	NotificationTypeTRANSACTION          NotificationType = "TRANSACTION"
+	NotificationTypeIDENTITYVERIFICATION NotificationType = "IDENTITY_VERIFICATION"
 )
 
 func (e *NotificationType) Scan(src interface{}) error {
@@ -198,6 +287,49 @@ func (ns NullNotificationType) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.NotificationType), nil
+}
+
+type PromotionType string
+
+const (
+	PromotionTypeINACTIVEBONUS             PromotionType = "INACTIVE_BONUS"
+	PromotionTypeFIVEPERCENTUNLIMITEDBONUS PromotionType = "FIVE_PERCENT_UNLIMITED_BONUS"
+	PromotionTypeTENPERCENTUNLIMITEDBONUS  PromotionType = "TEN_PERCENT_UNLIMITED_BONUS"
+)
+
+func (e *PromotionType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PromotionType(s)
+	case string:
+		*e = PromotionType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PromotionType: %T", src)
+	}
+	return nil
+}
+
+type NullPromotionType struct {
+	PromotionType PromotionType `json:"PromotionType"`
+	Valid         bool          `json:"valid"` // Valid is true if PromotionType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPromotionType) Scan(value interface{}) error {
+	if value == nil {
+		ns.PromotionType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PromotionType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPromotionType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PromotionType), nil
 }
 
 type Role string
@@ -389,7 +521,7 @@ type Bet struct {
 	ProviderUsername string             `json:"providerUsername"`
 	ProductCode      int32              `json:"productCode"`
 	ProductType      int32              `json:"productType"`
-	GameId           string             `json:"gameId"`
+	GameId           pgtype.Text        `json:"gameId"`
 	Details          string             `json:"details"`
 	Turnover         pgtype.Numeric     `json:"turnover"`
 	Bet              pgtype.Numeric     `json:"bet"`
@@ -402,6 +534,7 @@ type Bet struct {
 	ProgShare        pgtype.Numeric     `json:"progShare"`
 	ProgWin          pgtype.Numeric     `json:"progWin"`
 	Commission       pgtype.Numeric     `json:"commission"`
+	WinLoss          pgtype.Numeric     `json:"winLoss"`
 }
 
 type Event struct {
@@ -415,6 +548,32 @@ type Event struct {
 	CreatedAt   pgtype.Timestamptz `json:"createdAt"`
 	UpdatedAt   pgtype.Timestamptz `json:"updatedAt"`
 	HttpRequest HttpRequest        `json:"httpRequest"`
+}
+
+type Flag struct {
+	UserId       pgtype.UUID        `json:"userId"`
+	ModifiedById pgtype.UUID        `json:"modifiedById"`
+	Reason       pgtype.Text        `json:"reason"`
+	Remarks      pgtype.Text        `json:"remarks"`
+	Status       FlagStatus         `json:"status"`
+	CreatedAt    pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt    pgtype.Timestamptz `json:"updatedAt"`
+}
+
+type IdentityVerificationRequest struct {
+	ID           int32                      `json:"id"`
+	UserId       pgtype.UUID                `json:"userId"`
+	ModifiedById pgtype.UUID                `json:"modifiedById"`
+	Status       IdentityVerificationStatus `json:"status"`
+	Remarks      pgtype.Text                `json:"remarks"`
+	NricFront    string                     `json:"nricFront"`
+	NricBack     string                     `json:"nricBack"`
+	HolderFace   string                     `json:"holderFace"`
+	NricName     string                     `json:"nricName"`
+	Nric         string                     `json:"nric"`
+	CreatedAt    pgtype.Timestamptz         `json:"createdAt"`
+	UpdatedAt    pgtype.Timestamptz         `json:"updatedAt"`
+	Dob          pgtype.Date                `json:"dob"`
 }
 
 type Notification struct {
@@ -435,18 +594,29 @@ type PasswordResetToken struct {
 	UpdatedAt pgtype.Timestamptz `json:"updatedAt"`
 }
 
+type PrismaMigration struct {
+	ID                string             `json:"id"`
+	Checksum          string             `json:"checksum"`
+	FinishedAt        pgtype.Timestamptz `json:"finished_at"`
+	MigrationName     string             `json:"migration_name"`
+	Logs              pgtype.Text        `json:"logs"`
+	RolledBackAt      pgtype.Timestamptz `json:"rolled_back_at"`
+	StartedAt         pgtype.Timestamptz `json:"started_at"`
+	AppliedStepsCount int32              `json:"applied_steps_count"`
+}
+
 type Report struct {
-	ID                int32              `json:"id"`
-	WinRate           pgtype.Numeric     `json:"winRate"`
-	DepositAmount     pgtype.Numeric     `json:"depositAmount"`
-	WithdrawAmount    pgtype.Numeric     `json:"withdrawAmount"`
-	DepositCount      pgtype.Numeric     `json:"depositCount"`
-	WithdrawCount     pgtype.Numeric     `json:"withdrawCount"`
-	WithdrawBankFees  pgtype.Numeric     `json:"withdrawBankFees"`
-	BonusGiven        pgtype.Numeric     `json:"bonusGiven"`
-	ActiveUserCount   pgtype.Numeric     `json:"activeUserCount"`
-	InactiveUserCount pgtype.Numeric     `json:"inactiveUserCount"`
-	CreatedAt         pgtype.Timestamptz `json:"createdAt"`
+	ID                  int32              `json:"id"`
+	DepositAmount       pgtype.Numeric     `json:"depositAmount"`
+	WithdrawAmount      pgtype.Numeric     `json:"withdrawAmount"`
+	DepositCount        pgtype.Numeric     `json:"depositCount"`
+	WithdrawCount       pgtype.Numeric     `json:"withdrawCount"`
+	WithdrawBankFees    pgtype.Numeric     `json:"withdrawBankFees"`
+	BonusGiven          pgtype.Numeric     `json:"bonusGiven"`
+	CreatedAt           pgtype.Timestamptz `json:"createdAt"`
+	ActivePlayerCount   pgtype.Numeric     `json:"activePlayerCount"`
+	InactivePlayerCount pgtype.Numeric     `json:"inactivePlayerCount"`
+	WinLoss             pgtype.Numeric     `json:"winLoss"`
 }
 
 type SchemaMigration struct {
@@ -495,6 +665,19 @@ type TransactionRequest struct {
 	UpdatedAt                    pgtype.Timestamptz `json:"updatedAt"`
 	Bonus                        pgtype.Numeric     `json:"bonus"`
 	WithdrawBankFees             pgtype.Numeric     `json:"withdrawBankFees"`
+	DepositToWallet              pgtype.Int4        `json:"depositToWallet"`
+	Promotion                    NullPromotionType  `json:"promotion"`
+}
+
+type TurnoverTarget struct {
+	ID                   int32              `json:"id"`
+	UserId               pgtype.UUID        `json:"userId"`
+	ProductCode          int32              `json:"productCode"`
+	Target               pgtype.Numeric     `json:"target"`
+	PromoCode            NullPromotionType  `json:"promoCode"`
+	TransactionRequestId int32              `json:"transactionRequestId"`
+	CreatedAt            pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt            pgtype.Timestamptz `json:"updatedAt"`
 }
 
 type User struct {
@@ -515,11 +698,14 @@ type User struct {
 	LastLoginIp     pgtype.Text        `json:"lastLoginIp"`
 	IsEmailVerified bool               `json:"isEmailVerified"`
 	Dob             pgtype.Date        `json:"dob"`
+	LastLoginAt     pgtype.Timestamp   `json:"lastLoginAt"`
+	PendingEmail    pgtype.Text        `json:"pendingEmail"`
 }
 
 type VerificationToken struct {
-	TokenHash string             `json:"tokenHash"`
-	UserId    pgtype.UUID        `json:"userId"`
-	CreatedAt pgtype.Timestamptz `json:"createdAt"`
-	UpdatedAt pgtype.Timestamptz `json:"updatedAt"`
+	TokenHash    string             `json:"tokenHash"`
+	UserId       pgtype.UUID        `json:"userId"`
+	CreatedAt    pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt    pgtype.Timestamptz `json:"updatedAt"`
+	RegisterInfo []byte             `json:"registerInfo"`
 }

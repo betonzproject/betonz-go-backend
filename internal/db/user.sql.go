@@ -12,7 +12,7 @@ import (
 )
 
 const getExtendedUserByUsername = `-- name: GetExtendedUserByUsername :one
-SELECT id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "lastLoginIp", "isEmailVerified", dob FROM "User" WHERE username = $1 AND ($2::"Role"[] IS NULL OR role = ANY($2))
+SELECT id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "lastLoginIp", "isEmailVerified", dob, "lastLoginAt", "pendingEmail" FROM "User" WHERE username = $1 AND ($2::"Role"[] IS NULL OR role = ANY($2))
 `
 
 type GetExtendedUserByUsernameParams struct {
@@ -41,6 +41,8 @@ func (q *Queries) GetExtendedUserByUsername(ctx context.Context, arg GetExtended
 		&i.LastLoginIp,
 		&i.IsEmailVerified,
 		&i.Dob,
+		&i.LastLoginAt,
+		&i.PendingEmail,
 	)
 	return i, err
 }

@@ -61,7 +61,7 @@ func (q *Queries) CreateTransactionRequest(ctx context.Context, arg CreateTransa
 
 const getTransactionRequests = `-- name: GetTransactionRequests :many
 SELECT
-	tr.id, tr."userId", tr."modifiedById", tr."bankName", tr."bankAccountName", tr."bankAccountNumber", tr."beneficiaryBankAccountName", tr."beneficiaryBankAccountNumber", tr.amount, tr.type, tr."receiptPath", tr.status, tr.remarks, tr."createdAt", tr."updatedAt", tr.bonus, tr."withdrawBankFees",
+	tr.id, tr."userId", tr."modifiedById", tr."bankName", tr."bankAccountName", tr."bankAccountNumber", tr."beneficiaryBankAccountName", tr."beneficiaryBankAccountNumber", tr.amount, tr.type, tr."receiptPath", tr.status, tr.remarks, tr."createdAt", tr."updatedAt", tr.bonus, tr."withdrawBankFees", tr."depositToWallet", tr.promotion,
 	u.username,
 	u.role,
 	u2.username AS "modifiedByUsername",
@@ -118,6 +118,8 @@ type GetTransactionRequestsRow struct {
 	UpdatedAt                    pgtype.Timestamptz `json:"updatedAt"`
 	Bonus                        pgtype.Numeric     `json:"bonus"`
 	WithdrawBankFees             pgtype.Numeric     `json:"withdrawBankFees"`
+	DepositToWallet              pgtype.Int4        `json:"depositToWallet"`
+	Promotion                    NullPromotionType  `json:"promotion"`
 	Username                     string             `json:"username"`
 	Role                         Role               `json:"role"`
 	ModifiedByUsername           pgtype.Text        `json:"modifiedByUsername"`
@@ -157,6 +159,119 @@ func (q *Queries) GetTransactionRequests(ctx context.Context, arg GetTransaction
 			&i.UpdatedAt,
 			&i.Bonus,
 			&i.WithdrawBankFees,
+			&i.DepositToWallet,
+			&i.Promotion,
+			&i.Username,
+			&i.Role,
+			&i.ModifiedByUsername,
+			&i.ModifiedByRole,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTransactionRequestsByUserId = `-- name: GetTransactionRequestsByUserId :many
+SELECT
+	tr.id, tr."userId", tr."modifiedById", tr."bankName", tr."bankAccountName", tr."bankAccountNumber", tr."beneficiaryBankAccountName", tr."beneficiaryBankAccountNumber", tr.amount, tr.type, tr."receiptPath", tr.status, tr.remarks, tr."createdAt", tr."updatedAt", tr.bonus, tr."withdrawBankFees", tr."depositToWallet", tr.promotion,
+	u.username,
+	u.role,
+	u2.username AS "modifiedByUsername",
+	u2.role AS "modifiedByRole"
+FROM
+	"TransactionRequest" tr
+JOIN "User" u ON
+	u.id = tr."userId"
+LEFT JOIN "User" u2 ON
+	u2.id = tr."modifiedById"
+WHERE 
+	($2::"TransactionType"[] IS NULL OR tr."type" = ANY($2))
+AND
+	($3::"TransactionStatus"[] IS NULL OR tr.status = ANY($3))
+AND
+	tr."createdAt" >= $4
+AND
+	tr."createdAt" < $5
+AND
+	tr."userId" = $1
+ORDER BY
+	tr.id DESC
+`
+
+type GetTransactionRequestsByUserIdParams struct {
+	UserId   pgtype.UUID         `json:"userId"`
+	Types    []TransactionType   `json:"types"`
+	Statuses []TransactionStatus `json:"statuses"`
+	FromDate pgtype.Timestamptz  `json:"fromDate"`
+	ToDate   pgtype.Timestamptz  `json:"toDate"`
+}
+
+type GetTransactionRequestsByUserIdRow struct {
+	ID                           int32              `json:"id"`
+	UserId                       pgtype.UUID        `json:"userId"`
+	ModifiedById                 pgtype.UUID        `json:"modifiedById"`
+	BankName                     BankName           `json:"bankName"`
+	BankAccountName              string             `json:"bankAccountName"`
+	BankAccountNumber            string             `json:"bankAccountNumber"`
+	BeneficiaryBankAccountName   pgtype.Text        `json:"beneficiaryBankAccountName"`
+	BeneficiaryBankAccountNumber pgtype.Text        `json:"beneficiaryBankAccountNumber"`
+	Amount                       pgtype.Numeric     `json:"amount"`
+	Type                         TransactionType    `json:"type"`
+	ReceiptPath                  pgtype.Text        `json:"receiptPath"`
+	Status                       TransactionStatus  `json:"status"`
+	Remarks                      pgtype.Text        `json:"remarks"`
+	CreatedAt                    pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt                    pgtype.Timestamptz `json:"updatedAt"`
+	Bonus                        pgtype.Numeric     `json:"bonus"`
+	WithdrawBankFees             pgtype.Numeric     `json:"withdrawBankFees"`
+	DepositToWallet              pgtype.Int4        `json:"depositToWallet"`
+	Promotion                    NullPromotionType  `json:"promotion"`
+	Username                     string             `json:"username"`
+	Role                         Role               `json:"role"`
+	ModifiedByUsername           pgtype.Text        `json:"modifiedByUsername"`
+	ModifiedByRole               NullRole           `json:"modifiedByRole"`
+}
+
+func (q *Queries) GetTransactionRequestsByUserId(ctx context.Context, arg GetTransactionRequestsByUserIdParams) ([]GetTransactionRequestsByUserIdRow, error) {
+	rows, err := q.db.Query(ctx, getTransactionRequestsByUserId,
+		arg.UserId,
+		arg.Types,
+		arg.Statuses,
+		arg.FromDate,
+		arg.ToDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTransactionRequestsByUserIdRow
+	for rows.Next() {
+		var i GetTransactionRequestsByUserIdRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserId,
+			&i.ModifiedById,
+			&i.BankName,
+			&i.BankAccountName,
+			&i.BankAccountNumber,
+			&i.BeneficiaryBankAccountName,
+			&i.BeneficiaryBankAccountNumber,
+			&i.Amount,
+			&i.Type,
+			&i.ReceiptPath,
+			&i.Status,
+			&i.Remarks,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Bonus,
+			&i.WithdrawBankFees,
+			&i.DepositToWallet,
+			&i.Promotion,
 			&i.Username,
 			&i.Role,
 			&i.ModifiedByUsername,
@@ -175,7 +290,7 @@ func (q *Queries) GetTransactionRequests(ctx context.Context, arg GetTransaction
 const hasRecentDepositRequestsByUserId = `-- name: HasRecentDepositRequestsByUserId :one
 SELECT EXISTS (
 	SELECT
-		id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees"
+		id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion
 	FROM
 		"TransactionRequest"
 	WHERE
@@ -196,7 +311,7 @@ func (q *Queries) HasRecentDepositRequestsByUserId(ctx context.Context, userid p
 const hasRecentWithdrawRequestsByUserId = `-- name: HasRecentWithdrawRequestsByUserId :one
 SELECT EXISTS (
 	SELECT
-		id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees"
+		id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion
 	FROM
 		"TransactionRequest"
 	WHERE

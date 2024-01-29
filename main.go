@@ -36,6 +36,7 @@ func main() {
 		r.Post("/deposit", profile.PostDeposit(app))
 		r.Get("/withdraw", profile.GetWithdraw(app))
 		r.Post("/withdraw", profile.PostWithdraw(app))
+		r.Get("/history", profile.GetHistory(app))
 		r.Route("/banking-details", func(r chi.Router) {
 			r.Get("/", bankingdetails.GetBanks(app))
 			r.Post("/", bankingdetails.DeleteBank(app))

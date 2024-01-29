@@ -64,7 +64,31 @@ CREATE TYPE betonz."EventType" AS ENUM (
     'EMAIL_VERIFICATION',
     'ACTIVE',
     'TRANSFER_WALLET',
-    'RESTORE_WALLET'
+    'RESTORE_WALLET',
+    'TRANSACTION',
+    'FLAG'
+);
+
+
+--
+-- Name: FlagStatus; Type: TYPE; Schema: betonz; Owner: -
+--
+
+CREATE TYPE betonz."FlagStatus" AS ENUM (
+    'PENDING',
+    'RESOLVED',
+    'RESTRICTED'
+);
+
+
+--
+-- Name: IdentityVerificationStatus; Type: TYPE; Schema: betonz; Owner: -
+--
+
+CREATE TYPE betonz."IdentityVerificationStatus" AS ENUM (
+    'VERIFIED',
+    'REJECTED',
+    'PENDING'
 );
 
 
@@ -73,7 +97,19 @@ CREATE TYPE betonz."EventType" AS ENUM (
 --
 
 CREATE TYPE betonz."NotificationType" AS ENUM (
-    'TRANSACTION'
+    'TRANSACTION',
+    'IDENTITY_VERIFICATION'
+);
+
+
+--
+-- Name: PromotionType; Type: TYPE; Schema: betonz; Owner: -
+--
+
+CREATE TYPE betonz."PromotionType" AS ENUM (
+    'INACTIVE_BONUS',
+    'FIVE_PERCENT_UNLIMITED_BONUS',
+    'TEN_PERCENT_UNLIMITED_BONUS'
 );
 
 
@@ -151,7 +187,7 @@ CREATE TABLE betonz."Bet" (
     "providerUsername" text NOT NULL,
     "productCode" integer NOT NULL,
     "productType" integer NOT NULL,
-    "gameId" text NOT NULL,
+    "gameId" text,
     details text NOT NULL,
     turnover numeric(32,2) NOT NULL,
     bet numeric(32,2) NOT NULL,
@@ -163,7 +199,8 @@ CREATE TABLE betonz."Bet" (
     "settleTime" timestamp(3) with time zone NOT NULL,
     "progShare" numeric(32,2) NOT NULL,
     "progWin" numeric(32,2) NOT NULL,
-    commission numeric(32,2) NOT NULL
+    commission numeric(32,2) NOT NULL,
+    "winLoss" numeric(32,2) NOT NULL
 );
 
 
@@ -203,6 +240,62 @@ CREATE SEQUENCE betonz."Event_id_seq"
 --
 
 ALTER SEQUENCE betonz."Event_id_seq" OWNED BY betonz."Event".id;
+
+
+--
+-- Name: Flag; Type: TABLE; Schema: betonz; Owner: -
+--
+
+CREATE TABLE betonz."Flag" (
+    "userId" uuid NOT NULL,
+    "modifiedById" uuid,
+    reason text,
+    remarks text,
+    status betonz."FlagStatus" NOT NULL,
+    "createdAt" timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) with time zone NOT NULL
+);
+
+
+--
+-- Name: IdentityVerificationRequests; Type: TABLE; Schema: betonz; Owner: -
+--
+
+CREATE TABLE betonz."IdentityVerificationRequests" (
+    id integer NOT NULL,
+    "userId" uuid NOT NULL,
+    "modifiedById" uuid,
+    status betonz."IdentityVerificationStatus" NOT NULL,
+    remarks text,
+    "nricFront" text NOT NULL,
+    "nricBack" text NOT NULL,
+    "holderFace" text NOT NULL,
+    "nricName" text NOT NULL,
+    nric text NOT NULL,
+    "createdAt" timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) with time zone NOT NULL,
+    dob date
+);
+
+
+--
+-- Name: IdentityVerificationRequests_id_seq; Type: SEQUENCE; Schema: betonz; Owner: -
+--
+
+CREATE SEQUENCE betonz."IdentityVerificationRequests_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: IdentityVerificationRequests_id_seq; Type: SEQUENCE OWNED BY; Schema: betonz; Owner: -
+--
+
+ALTER SEQUENCE betonz."IdentityVerificationRequests_id_seq" OWNED BY betonz."IdentityVerificationRequests".id;
 
 
 --
@@ -259,16 +352,16 @@ CREATE TABLE betonz."PasswordResetToken" (
 
 CREATE TABLE betonz."Report" (
     id integer NOT NULL,
-    "winRate" numeric(65,30) NOT NULL,
     "depositAmount" numeric(65,30) NOT NULL,
     "withdrawAmount" numeric(65,30) NOT NULL,
     "depositCount" numeric(65,30) NOT NULL,
     "withdrawCount" numeric(65,30) NOT NULL,
     "withdrawBankFees" numeric(65,30) NOT NULL,
     "bonusGiven" numeric(65,30) NOT NULL,
-    "activeUserCount" numeric(65,30) NOT NULL,
-    "inactiveUserCount" numeric(65,30) NOT NULL,
-    "createdAt" timestamp(3) with time zone NOT NULL
+    "createdAt" timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "activePlayerCount" numeric(65,30) NOT NULL,
+    "inactivePlayerCount" numeric(65,30) NOT NULL,
+    "winLoss" numeric(65,30) NOT NULL
 );
 
 
@@ -347,7 +440,9 @@ CREATE TABLE betonz."TransactionRequest" (
     "createdAt" timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updatedAt" timestamp(3) with time zone NOT NULL,
     bonus numeric(32,2) DEFAULT 0 NOT NULL,
-    "withdrawBankFees" numeric(32,2) DEFAULT 0 NOT NULL
+    "withdrawBankFees" numeric(32,2) DEFAULT 0 NOT NULL,
+    "depositToWallet" integer,
+    promotion betonz."PromotionType"
 );
 
 
@@ -392,6 +487,42 @@ ALTER SEQUENCE betonz."Transaction_id_seq" OWNED BY betonz."Transaction".id;
 
 
 --
+-- Name: TurnoverTarget; Type: TABLE; Schema: betonz; Owner: -
+--
+
+CREATE TABLE betonz."TurnoverTarget" (
+    id integer NOT NULL,
+    "userId" uuid NOT NULL,
+    "productCode" integer NOT NULL,
+    target numeric(32,2) NOT NULL,
+    "promoCode" betonz."PromotionType",
+    "transactionRequestId" integer NOT NULL,
+    "createdAt" timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) with time zone NOT NULL
+);
+
+
+--
+-- Name: TurnoverTarget_id_seq; Type: SEQUENCE; Schema: betonz; Owner: -
+--
+
+CREATE SEQUENCE betonz."TurnoverTarget_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: TurnoverTarget_id_seq; Type: SEQUENCE OWNED BY; Schema: betonz; Owner: -
+--
+
+ALTER SEQUENCE betonz."TurnoverTarget_id_seq" OWNED BY betonz."TurnoverTarget".id;
+
+
+--
 -- Name: User; Type: TABLE; Schema: betonz; Owner: -
 --
 
@@ -412,7 +543,9 @@ CREATE TABLE betonz."User" (
     status betonz."UserStatus" DEFAULT 'NORMAL'::betonz."UserStatus" NOT NULL,
     "lastLoginIp" text,
     "isEmailVerified" boolean DEFAULT false NOT NULL,
-    dob date
+    dob date,
+    "lastLoginAt" timestamp(3) without time zone,
+    "pendingEmail" text
 );
 
 
@@ -422,9 +555,10 @@ CREATE TABLE betonz."User" (
 
 CREATE TABLE betonz."VerificationToken" (
     "tokenHash" text NOT NULL,
-    "userId" uuid NOT NULL,
+    "userId" uuid,
     "createdAt" timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) with time zone NOT NULL
+    "updatedAt" timestamp(3) with time zone NOT NULL,
+    "registerInfo" jsonb
 );
 
 
@@ -461,6 +595,13 @@ ALTER TABLE ONLY betonz."Event" ALTER COLUMN id SET DEFAULT nextval('betonz."Eve
 
 
 --
+-- Name: IdentityVerificationRequests id; Type: DEFAULT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."IdentityVerificationRequests" ALTER COLUMN id SET DEFAULT nextval('betonz."IdentityVerificationRequests_id_seq"'::regclass);
+
+
+--
 -- Name: Notification id; Type: DEFAULT; Schema: betonz; Owner: -
 --
 
@@ -489,6 +630,13 @@ ALTER TABLE ONLY betonz."TransactionRequest" ALTER COLUMN id SET DEFAULT nextval
 
 
 --
+-- Name: TurnoverTarget id; Type: DEFAULT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."TurnoverTarget" ALTER COLUMN id SET DEFAULT nextval('betonz."TurnoverTarget_id_seq"'::regclass);
+
+
+--
 -- Name: Bank Bank_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
 --
 
@@ -510,6 +658,22 @@ ALTER TABLE ONLY betonz."Bet"
 
 ALTER TABLE ONLY betonz."Event"
     ADD CONSTRAINT "Event_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Flag Flag_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."Flag"
+    ADD CONSTRAINT "Flag_pkey" PRIMARY KEY ("userId");
+
+
+--
+-- Name: IdentityVerificationRequests IdentityVerificationRequests_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."IdentityVerificationRequests"
+    ADD CONSTRAINT "IdentityVerificationRequests_pkey" PRIMARY KEY (id);
 
 
 --
@@ -558,6 +722,14 @@ ALTER TABLE ONLY betonz."TransactionRequest"
 
 ALTER TABLE ONLY betonz."Transaction"
     ADD CONSTRAINT "Transaction_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: TurnoverTarget TurnoverTarget_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."TurnoverTarget"
+    ADD CONSTRAINT "TurnoverTarget_pkey" PRIMARY KEY (id);
 
 
 --
@@ -652,6 +824,38 @@ ALTER TABLE ONLY betonz."Event"
 
 
 --
+-- Name: Flag Flag_modifiedById_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."Flag"
+    ADD CONSTRAINT "Flag_modifiedById_fkey" FOREIGN KEY ("modifiedById") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: Flag Flag_userId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."Flag"
+    ADD CONSTRAINT "Flag_userId_fkey" FOREIGN KEY ("userId") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: IdentityVerificationRequests IdentityVerificationRequests_modifiedById_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."IdentityVerificationRequests"
+    ADD CONSTRAINT "IdentityVerificationRequests_modifiedById_fkey" FOREIGN KEY ("modifiedById") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: IdentityVerificationRequests IdentityVerificationRequests_userId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."IdentityVerificationRequests"
+    ADD CONSTRAINT "IdentityVerificationRequests_userId_fkey" FOREIGN KEY ("userId") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: Notification Notification_userId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
 --
 
@@ -705,6 +909,22 @@ ALTER TABLE ONLY betonz."Transaction"
 
 ALTER TABLE ONLY betonz."Transaction"
     ADD CONSTRAINT "Transaction_initiatorId_fkey" FOREIGN KEY ("initiatorId") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: TurnoverTarget TurnoverTarget_transactionRequestId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."TurnoverTarget"
+    ADD CONSTRAINT "TurnoverTarget_transactionRequestId_fkey" FOREIGN KEY ("transactionRequestId") REFERENCES betonz."TransactionRequest"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: TurnoverTarget TurnoverTarget_userId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."TurnoverTarget"
+    ADD CONSTRAINT "TurnoverTarget_userId_fkey" FOREIGN KEY ("userId") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
 
 --

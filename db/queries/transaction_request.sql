@@ -30,6 +30,32 @@ AND
 ORDER BY
 	tr.id DESC;
 
+-- name: GetTransactionRequestsByUserId :many
+SELECT
+	tr.*,
+	u.username,
+	u.role,
+	u2.username AS "modifiedByUsername",
+	u2.role AS "modifiedByRole"
+FROM
+	"TransactionRequest" tr
+JOIN "User" u ON
+	u.id = tr."userId"
+LEFT JOIN "User" u2 ON
+	u2.id = tr."modifiedById"
+WHERE 
+	(@types::"TransactionType"[] IS NULL OR tr."type" = ANY(@types))
+AND
+	(@statuses::"TransactionStatus"[] IS NULL OR tr.status = ANY(@statuses))
+AND
+	tr."createdAt" >= sqlc.arg('fromDate')
+AND
+	tr."createdAt" < sqlc.arg('toDate')
+AND
+	tr."userId" = $1
+ORDER BY
+	tr.id DESC;
+
 -- name: HasRecentDepositRequestsByUserId :one
 SELECT EXISTS (
 	SELECT
