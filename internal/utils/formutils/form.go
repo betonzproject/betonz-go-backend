@@ -26,7 +26,7 @@ import (
 // this function returns an error and a HTTP response with the appropriate headers will be sent automatically.
 //
 // In case of validation errors, the error message for each field will be returned as a JSON object in the HTTP response.
-func ParseDecodeValidate[T interface{}](app *app.App, w http.ResponseWriter, r *http.Request, dst *T) error {
+func ParseDecodeValidate[T any](app *app.App, w http.ResponseWriter, r *http.Request, dst *T) error {
 	err := r.ParseForm()
 	if err != nil {
 		http.Error(w, "Can't parse form", http.StatusBadRequest)
@@ -59,7 +59,7 @@ func ParseDecodeValidate[T interface{}](app *app.App, w http.ResponseWriter, r *
 	return nil
 }
 
-func ParseDecodeValidateMultipart[T interface{}](app *app.App, w http.ResponseWriter, r *http.Request, dst *T) error {
+func ParseDecodeValidateMultipart[T any](app *app.App, w http.ResponseWriter, r *http.Request, dst *T) error {
 	multipart, err := r.MultipartReader()
 	if err != nil {
 		http.Error(w, "Can't parse multipart", http.StatusBadRequest)
@@ -152,7 +152,7 @@ func ParseDecodeValidateMultipart[T interface{}](app *app.App, w http.ResponseWr
 	return nil
 }
 
-func errorTagFunc[T interface{}](obj *T, fieldname, actualTag string) error {
+func errorTagFunc[T any](obj *T, fieldname, actualTag string) error {
 	t := reflect.TypeOf(*obj)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()

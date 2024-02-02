@@ -31,6 +31,9 @@ WHERE
 ORDER BY
 	tr.id DESC;
 
+-- name: GetTransactionRequestById :one
+SELECT * FROM "TransactionRequest" WHERE id = $1;
+
 -- name: GetTransactionRequestsByUserId :many
 SELECT
 	tr.*,
@@ -150,3 +153,14 @@ INSERT INTO
 	)
 VALUES
 	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now());
+
+-- name: UpdateTransactionRequest :exec
+UPDATE "TransactionRequest"
+SET
+	"modifiedById" = $2,
+	"receiptPath" = COALESCE($3, "receiptPath"),
+	status = $4,
+	"withdrawBankFees" = COALESCE($5, 0),
+	remarks = $6,
+	"updatedAt" = now()
+WHERE id = $1;

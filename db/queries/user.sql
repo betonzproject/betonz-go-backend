@@ -161,6 +161,9 @@ UPDATE "User" SET "displayName" = $2, email = $3, "phoneNumber" = $4, "updatedAt
 -- name: UpdateUserProfileImage :exec
 UPDATE "User" SET "profileImage" = $2, "updatedAt" = now() WHERE id = $1;
 
+-- name: UpdateUserMainWallet :exec
+UPDATE "User" SET "mainWallet" = $2, "updatedAt" = now() WHERE id = $1;
+
 -- name: UpdateUserLastUsedBank :exec
 UPDATE "User" SET "lastUsedBankId" = $2, "updatedAt" = now() WHERE id = $1;
 

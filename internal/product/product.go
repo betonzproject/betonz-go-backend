@@ -4,15 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
 	"github.com/doorman2137/betonz-go/internal/app"
+	"github.com/doorman2137/betonz-go/internal/etg"
 	"github.com/doorman2137/betonz-go/internal/utils/sliceutils"
 )
 
@@ -261,8 +259,6 @@ func HasGameList(productType ProductType, product Product) bool {
 	return false
 }
 
-const Success int = 1
-
 type LaunchGameListRequest struct {
 	Op   string      `json:"op"`
 	Prod Product     `json:"prod"`
@@ -285,8 +281,6 @@ func LaunchGameList(etgUsername string, productType ProductType, product Product
 		log.Panicf("Can't get balance of %s (%d) for %s: %s\n", product, product, etgUsername, err)
 	}
 
-	endpoint := os.Getenv("ETG_API_ENDPOINT") + "/game"
-
 	payload := LaunchGameListRequest{
 		Op:   os.Getenv("ETG_OPERATOR_CODE"),
 		Prod: product,
@@ -294,37 +288,14 @@ func LaunchGameList(etgUsername string, productType ProductType, product Product
 		Mem:  etgUsername,
 		Pass: "00000000",
 	}
-	marshalled, _ := json.Marshal(payload)
-
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(marshalled))
-	if err != nil {
-		log.Panicf("Can't create request: %s\nEndpoint: %s\nPayload: %+v\n", err, endpoint, payload)
-	}
-	req.Header = http.Header{
-		"Content-Type":  {"application/json"},
-		"Authorization": {"Bearer " + os.Getenv("AUTHORIZATION_TOKEN")},
-		"Proxy-Url":     {os.Getenv("PROXY_URL")},
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Panicf("Can't launch %s (%d) game list for %s: %s\nEndpoint: %s\nPayload: %+v\n", product, product, etgUsername, err, endpoint, payload)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Panicf("Can't read response body: %s\nEndpoint: %s\nPayload: %+v\n", err, endpoint, payload)
-	}
-
 	var launchGameListResponse LaunchGameListResponse
-	err = json.Unmarshal(body, &launchGameListResponse)
+	err = etg.Post("/game", payload, &launchGameListResponse)
 	if err != nil {
-		log.Panicf("Can't unmarshal response body: %s\nEndpoint: %s\nPayload: %+v\n", err, endpoint, payload)
+		log.Panicf("Can't launch %s (%d) game list for %s: %s\nEndpoint: %s\nPayload: %+v\n", product, product, etgUsername, err, "/game", payload)
 	}
 
-	if launchGameListResponse.Err != Success {
-		return "", fmt.Errorf("%d: %s\nEndpoint: %s\nPayload: %s", launchGameListResponse.Err, launchGameListResponse.Desc, endpoint, payload)
+	if launchGameListResponse.Err != etg.Success {
+		return "", fmt.Errorf("%d: %s\nEndpoint: %s\nPayload: %s", launchGameListResponse.Err, launchGameListResponse.Desc, "/game", payload)
 	}
 
 	return launchGameListResponse.Url, nil
@@ -368,44 +339,19 @@ func GetGameList(app *app.App, ctx context.Context, productType ProductType, pro
 		}
 	}
 
-	endpoint := os.Getenv("ETG_API_ENDPOINT") + "/getgamelist"
-
 	payload := GameListRequest{
 		Op:   os.Getenv("ETG_OPERATOR_CODE"),
 		Prod: product,
 		Type: productType,
 	}
-	marshalled, _ := json.Marshal(payload)
-
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(marshalled))
-	if err != nil {
-		log.Panicf("Can't create request: %s\nEndpoint: %s\nPayload: %+v\n", err, endpoint, payload)
-	}
-	req.Header = http.Header{
-		"Content-Type":  {"application/json"},
-		"Authorization": {"Bearer " + os.Getenv("AUTHORIZATION_TOKEN")},
-		"Proxy-Url":     {os.Getenv("PROXY_URL")},
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Panicf("Can't get %s (%d) game list: %s\nEndpoint: %s\nPayload: %+v\n", product, product, err, endpoint, payload)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Panicf("Can't read response body: %s\nEndpoint: %s\nPayload: %+v\n", err, endpoint, payload)
-	}
-
 	var gameListResponse GameListResponse
-	err = json.Unmarshal(body, &gameListResponse)
+	err = etg.Post("/getgamelist", payload, &gameListResponse)
 	if err != nil {
-		log.Panicf("Can't unmarshal response body: %s\nEndpoint: %s\nPayload: %+v\n", err, endpoint, payload)
+		log.Panicf("Can't get %s (%d) game list: %s\nEndpoint: %s\nPayload: %+v\n", product, product, err, "/getgamelist", payload)
 	}
 
-	if gameListResponse.Err != Success {
-		return nil, fmt.Errorf("%d: %s\nEndpoint: %s\nPayload: %+v", gameListResponse.Err, gameListResponse.Desc, endpoint, payload)
+	if gameListResponse.Err != etg.Success {
+		return nil, fmt.Errorf("%d: %s\nEndpoint: %s\nPayload: %+v", gameListResponse.Err, gameListResponse.Desc, "/getgamelist", payload)
 	}
 
 	games := sliceutils.Map(gameListResponse.Data, func(data DataItem) GameInfo {
@@ -442,8 +388,6 @@ type GameResponse struct {
 }
 
 func LaunchGame(etgUsername string, productType ProductType, product Product, gameId string) (string, error) {
-	endpoint := os.Getenv("ETG_API_ENDPOINT") + "/game"
-
 	payload := GameRequest{
 		Op:     os.Getenv("ETG_OPERATOR_CODE"),
 		Prod:   product,
@@ -453,34 +397,13 @@ func LaunchGame(etgUsername string, productType ProductType, product Product, ga
 		Mem:    etgUsername,
 		Pass:   "00000000",
 	}
-
-	marshalled, _ := json.Marshal(payload)
-
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(marshalled))
-	if err != nil {
-		log.Panicln("Can't create request to " + endpoint + ": " + err.Error())
-	}
-
-	req.Header = http.Header{
-		"Content-Type":  {"application/json"},
-		"Authorization": {"Bearer " + os.Getenv("AUTHORIZATION_TOKEN")},
-		"Proxy-Url":     {os.Getenv("PROXY_URL")},
-	}
-	resp, err := http.DefaultClient.Do(req)
+	var gameResponse GameResponse
+	err := etg.Post("/game", payload, &gameResponse)
 	if err != nil {
 		log.Panicln("Can't launch game: " + err.Error())
 	}
-	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-
-	var gameResponse GameResponse
-	err = json.Unmarshal(body, &gameResponse)
-	if err != nil {
-		log.Panicln("Can't unmarshal game response: " + err.Error())
-	}
-
-	if gameResponse.Err != Success {
+	if gameResponse.Err != etg.Success {
 		return "", fmt.Errorf("%d: %s", gameResponse.Err, gameResponse.Desc)
 	}
 

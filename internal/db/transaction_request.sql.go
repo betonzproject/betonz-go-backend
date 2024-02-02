@@ -156,6 +156,37 @@ func (q *Queries) GetTotalTransactionAmountAndCount(ctx context.Context, arg Get
 	return i, err
 }
 
+const getTransactionRequestById = `-- name: GetTransactionRequestById :one
+SELECT id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion FROM "TransactionRequest" WHERE id = $1
+`
+
+func (q *Queries) GetTransactionRequestById(ctx context.Context, id int32) (TransactionRequest, error) {
+	row := q.db.QueryRow(ctx, getTransactionRequestById, id)
+	var i TransactionRequest
+	err := row.Scan(
+		&i.ID,
+		&i.UserId,
+		&i.ModifiedById,
+		&i.BankName,
+		&i.BankAccountName,
+		&i.BankAccountNumber,
+		&i.BeneficiaryBankAccountName,
+		&i.BeneficiaryBankAccountNumber,
+		&i.Amount,
+		&i.Type,
+		&i.ReceiptPath,
+		&i.Status,
+		&i.Remarks,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Bonus,
+		&i.WithdrawBankFees,
+		&i.DepositToWallet,
+		&i.Promotion,
+	)
+	return i, err
+}
+
 const getTransactionRequests = `-- name: GetTransactionRequests :many
 SELECT
 	tr.id, tr."userId", tr."modifiedById", tr."bankName", tr."bankAccountName", tr."bankAccountNumber", tr."beneficiaryBankAccountName", tr."beneficiaryBankAccountNumber", tr.amount, tr.type, tr."receiptPath", tr.status, tr.remarks, tr."createdAt", tr."updatedAt", tr.bonus, tr."withdrawBankFees", tr."depositToWallet", tr.promotion,
@@ -426,4 +457,37 @@ func (q *Queries) HasRecentWithdrawRequestsByUserId(ctx context.Context, userid 
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const updateTransactionRequest = `-- name: UpdateTransactionRequest :exec
+UPDATE "TransactionRequest"
+SET
+	"modifiedById" = $2,
+	"receiptPath" = COALESCE($3, "receiptPath"),
+	status = $4,
+	"withdrawBankFees" = COALESCE($5, 0),
+	remarks = $6,
+	"updatedAt" = now()
+WHERE id = $1
+`
+
+type UpdateTransactionRequestParams struct {
+	ID               int32             `json:"id"`
+	ModifiedById     pgtype.UUID       `json:"modifiedById"`
+	ReceiptPath      pgtype.Text       `json:"receiptPath"`
+	Status           TransactionStatus `json:"status"`
+	WithdrawBankFees pgtype.Numeric    `json:"withdrawBankFees"`
+	Remarks          pgtype.Text       `json:"remarks"`
+}
+
+func (q *Queries) UpdateTransactionRequest(ctx context.Context, arg UpdateTransactionRequestParams) error {
+	_, err := q.db.Exec(ctx, updateTransactionRequest,
+		arg.ID,
+		arg.ModifiedById,
+		arg.ReceiptPath,
+		arg.Status,
+		arg.WithdrawBankFees,
+		arg.Remarks,
+	)
+	return err
 }

@@ -11,6 +11,27 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createNotification = `-- name: CreateNotification :exec
+INSERT INTO "Notification" ("userId", type, message, variables, "updatedAt") VALUES ($1, $2, $3, $4, now())
+`
+
+type CreateNotificationParams struct {
+	UserId    pgtype.UUID      `json:"userId"`
+	Type      NotificationType `json:"type"`
+	Message   pgtype.Text      `json:"message"`
+	Variables map[string]any   `json:"variables"`
+}
+
+func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotificationParams) error {
+	_, err := q.db.Exec(ctx, createNotification,
+		arg.UserId,
+		arg.Type,
+		arg.Message,
+		arg.Variables,
+	)
+	return err
+}
+
 const deleteNotificationById = `-- name: DeleteNotificationById :exec
 DELETE FROM "Notification" WHERE id = $1
 `

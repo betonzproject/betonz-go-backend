@@ -57,6 +57,7 @@ func main() {
 
 	r.Route("/admin", func(r chi.Router) {
 		r.Get("/transaction-request", admin.GetTransactionRequest(app))
+		r.Post("/transaction-request", admin.PostTransactionRequest(app))
 		r.Get("/transaction-log", admin.GetTransactionLog(app))
 		r.Get("/report", report.GetReport(app))
 		r.Get("/report/overview", report.GetOverview(app))

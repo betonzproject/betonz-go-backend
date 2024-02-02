@@ -427,6 +427,20 @@ func (q *Queries) UpdateUserLastUsedBank(ctx context.Context, arg UpdateUserLast
 	return err
 }
 
+const updateUserMainWallet = `-- name: UpdateUserMainWallet :exec
+UPDATE "User" SET "mainWallet" = $2, "updatedAt" = now() WHERE id = $1
+`
+
+type UpdateUserMainWalletParams struct {
+	ID         pgtype.UUID    `json:"id"`
+	MainWallet pgtype.Numeric `json:"mainWallet"`
+}
+
+func (q *Queries) UpdateUserMainWallet(ctx context.Context, arg UpdateUserMainWalletParams) error {
+	_, err := q.db.Exec(ctx, updateUserMainWallet, arg.ID, arg.MainWallet)
+	return err
+}
+
 const updateUserProfileImage = `-- name: UpdateUserProfileImage :exec
 UPDATE "User" SET "profileImage" = $2, "updatedAt" = now() WHERE id = $1
 `
