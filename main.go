@@ -8,6 +8,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/routes"
 	"github.com/doorman2137/betonz-go/internal/routes/admin"
 	"github.com/doorman2137/betonz-go/internal/routes/admin/players"
+	"github.com/doorman2137/betonz-go/internal/routes/producttype"
 	"github.com/doorman2137/betonz-go/internal/routes/profile"
 	"github.com/doorman2137/betonz-go/internal/routes/profile/bankingdetails"
 	"github.com/go-chi/chi/v5"
@@ -29,6 +30,11 @@ func main() {
 	r.Post("/login", routes.PostLogin(app))
 	r.Post("/logout", routes.PostLogout(app))
 	r.Get("/leaderboard/{productType}", routes.GetLeaderboard(app))
+	r.Route("/{productType}", func(r chi.Router) {
+		r.Get("/", producttype.GetProducts)
+		r.Get("/{product}", producttype.GetProduct(app))
+		r.Post("/{product}", producttype.PostProduct(app))
+	})
 	r.Route("/profile", func(r chi.Router) {
 		r.Post("/", profile.PostProfile(app))
 		r.Post("/avatar", profile.PostAvatar(app))

@@ -162,25 +162,27 @@ func errorTagFunc[T interface{}](obj *T, fieldname, actualTag string) error {
 	if found {
 		errorKey := field.Tag.Get("key")
 		var message string
-		if actualTag == "required" {
+
+		switch actualTag {
+		case "required":
 			message = "required.message"
-		} else if actualTag == "min" {
+		case "min":
 			if field.Type.Kind() == reflect.Int64 {
 				message = "tooLow.message"
 			} else {
 				message = "tooShort.message"
 			}
-		} else if actualTag == "max" {
+		case "max":
 			if field.Type.Kind() == reflect.Int64 {
 				message = "tooHigh.message"
 			} else {
 				message = "tooLong.message"
 			}
-		} else if actualTag == "username" {
+		case "username":
 			message = "invalidCharacters.message"
-		} else if actualTag == "number" {
+		case "number":
 			message = "numbersOnly.message"
-		} else {
+		default:
 			message = "invalid.message"
 		}
 

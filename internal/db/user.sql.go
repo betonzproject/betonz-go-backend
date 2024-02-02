@@ -11,6 +11,37 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getExtendedUserById = `-- name: GetExtendedUserById :one
+SELECT id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "lastLoginIp", "isEmailVerified", dob, "lastLoginAt", "pendingEmail" FROM "User" WHERE id = $1
+`
+
+func (q *Queries) GetExtendedUserById(ctx context.Context, id pgtype.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, getExtendedUserById, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.DisplayName,
+		&i.PhoneNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.EtgUsername,
+		&i.Role,
+		&i.MainWallet,
+		&i.LastUsedBankId,
+		&i.ProfileImage,
+		&i.Status,
+		&i.LastLoginIp,
+		&i.IsEmailVerified,
+		&i.Dob,
+		&i.LastLoginAt,
+		&i.PendingEmail,
+	)
+	return i, err
+}
+
 const getExtendedUserByUsername = `-- name: GetExtendedUserByUsername :one
 SELECT id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "lastLoginIp", "isEmailVerified", dob, "lastLoginAt", "pendingEmail" FROM "User" WHERE username = $1 AND ($2::"Role"[] IS NULL OR role = ANY($2))
 `
@@ -125,22 +156,19 @@ func (q *Queries) GetPlayerInfoById(ctx context.Context, id pgtype.UUID) (GetPla
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, username, role, email, "displayName", "phoneNumber", "mainWallet", dob, "profileImage", "lastUsedBankId", "isEmailVerified", status FROM "User" WHERE id = $1
+SELECT id, username, role, email, "displayName", "phoneNumber", "mainWallet", dob, "profileImage" FROM "User" WHERE id = $1
 `
 
 type GetUserByIdRow struct {
-	ID              pgtype.UUID    `json:"id"`
-	Username        string         `json:"username"`
-	Role            Role           `json:"role"`
-	Email           string         `json:"email"`
-	DisplayName     pgtype.Text    `json:"displayName"`
-	PhoneNumber     pgtype.Text    `json:"phoneNumber"`
-	MainWallet      pgtype.Numeric `json:"mainWallet"`
-	Dob             pgtype.Date    `json:"dob"`
-	ProfileImage    pgtype.Text    `json:"profileImage"`
-	LastUsedBankId  pgtype.UUID    `json:"lastUsedBankId"`
-	IsEmailVerified bool           `json:"isEmailVerified"`
-	Status          UserStatus     `json:"status"`
+	ID           pgtype.UUID    `json:"id"`
+	Username     string         `json:"username"`
+	Role         Role           `json:"role"`
+	Email        string         `json:"email"`
+	DisplayName  pgtype.Text    `json:"displayName"`
+	PhoneNumber  pgtype.Text    `json:"phoneNumber"`
+	MainWallet   pgtype.Numeric `json:"mainWallet"`
+	Dob          pgtype.Date    `json:"dob"`
+	ProfileImage pgtype.Text    `json:"profileImage"`
 }
 
 func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (GetUserByIdRow, error) {
@@ -156,9 +184,6 @@ func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (GetUserByIdR
 		&i.MainWallet,
 		&i.Dob,
 		&i.ProfileImage,
-		&i.LastUsedBankId,
-		&i.IsEmailVerified,
-		&i.Status,
 	)
 	return i, err
 }

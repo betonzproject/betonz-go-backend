@@ -1,5 +1,8 @@
 -- name: GetUserById :one
-SELECT id, username, role, email, "displayName", "phoneNumber", "mainWallet", dob, "profileImage", "lastUsedBankId", "isEmailVerified", status FROM "User" WHERE id = $1;
+SELECT id, username, role, email, "displayName", "phoneNumber", "mainWallet", dob, "profileImage" FROM "User" WHERE id = $1;
+
+-- name: GetExtendedUserById :one
+SELECT * FROM "User" WHERE id = $1;
 
 -- name: GetExtendedUserByUsername :one
 SELECT * FROM "User" WHERE username = $1 AND (@roles::"Role"[] IS NULL OR role = ANY(@roles));

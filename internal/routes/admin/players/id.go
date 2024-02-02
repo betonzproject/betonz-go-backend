@@ -9,6 +9,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/auth"
 	"github.com/doorman2137/betonz-go/internal/db"
+	"github.com/doorman2137/betonz-go/internal/product"
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/doorman2137/betonz-go/internal/utils/timeutils"
@@ -20,10 +21,10 @@ type Response struct {
 	Player            db.GetPlayerInfoByIdRow              `json:"player"`
 	RestrictionEvents []db.GetRestrictionEventsByUserIdRow `json:"restrictionEvents"`
 	Banks             []db.Bank                            `json:"banks"`
-	DailyTurnover     map[int32]int64                      `json:"dailyTurnover"`
-	WeeklyTurnover    map[int32]int64                      `json:"weeklyTurnover"`
-	MonthlyTurnover   map[int32]int64                      `json:"monthlyTurnover"`
-	AlltimeTurnover   map[int32]int64                      `json:"alltimeTurnover"`
+	DailyTurnover     map[string]int64                     `json:"dailyTurnover"`
+	WeeklyTurnover    map[string]int64                     `json:"weeklyTurnover"`
+	MonthlyTurnover   map[string]int64                     `json:"monthlyTurnover"`
+	AlltimeTurnover   map[string]int64                     `json:"alltimeTurnover"`
 }
 
 func GetPlayersById(app *app.App) http.HandlerFunc {
@@ -113,10 +114,13 @@ func GetPlayersById(app *app.App) http.HandlerFunc {
 	}
 }
 
-func toMap(tos []db.GetTurnoverByUserIdRow) map[int32]int64 {
-	turnoverMap := make(map[int32]int64)
+func toMap(tos []db.GetTurnoverByUserIdRow) map[string]int64 {
+	turnoverMap := make(map[string]int64)
+	for _, p := range product.AllProducts {
+		turnoverMap[p.String()] = 0
+	}
 	for _, turnover := range tos {
-		turnoverMap[turnover.ProductCode] = turnover.Turnover
+		turnoverMap[product.Product(int(turnover.ProductCode)).String()] = turnover.Turnover
 	}
 	return turnoverMap
 }

@@ -2,15 +2,15 @@ package routes
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/doorman2137/betonz-go/internal/app"
+	"github.com/doorman2137/betonz-go/internal/product"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type ranking struct {
+type Ranking struct {
 	Id           int32          `json:"id"`
 	Name         string         `json:"name"`
 	ProfileImage pgtype.Text    `json:"profileImage"`
@@ -20,11 +20,11 @@ type ranking struct {
 func GetLeaderboard(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		productTypeParam := chi.URLParam(r, "productType")
-		productType, _ := strconv.Atoi(productTypeParam)
+		productType := product.UriComponentToProductType(productTypeParam)
 
 		payout, _ := app.DB.GetTopPayout(r.Context(), int32(productType))
 
-		rankings := make([]ranking, 0)
+		rankings := make([]Ranking, 0)
 		for _, p := range payout {
 			name := p.DisplayName.String
 			if name == "" {
@@ -38,7 +38,7 @@ func GetLeaderboard(app *app.App) http.HandlerFunc {
 				nameToShow = "*****" + name[:len(name)-1]
 			}
 
-			ranking := ranking{
+			ranking := Ranking{
 				Id:           p.ID,
 				Name:         nameToShow,
 				ProfileImage: p.ProfileImage,

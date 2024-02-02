@@ -13,7 +13,7 @@ import (
 
 // Checks that the user is authenticated and returns the user. Otherwise, redirect the user to
 // the login page and an error is returned
-func Authenticate(app *app.App, w http.ResponseWriter, r *http.Request) (db.GetUserByIdRow, error) {
+func Authenticate(app *app.App, w http.ResponseWriter, r *http.Request) (db.User, error) {
 	userId := app.Scs.GetBytes(r.Context(), "userId")
 	redirectTo := url.QueryEscape(r.URL.Path)
 
@@ -24,10 +24,10 @@ func Authenticate(app *app.App, w http.ResponseWriter, r *http.Request) (db.GetU
 
 	if len(userId) < 16 {
 		http.Redirect(w, r, "/login?redirect="+url.QueryEscape(redirectTo), http.StatusFound)
-		return db.GetUserByIdRow{}, errors.New("Unauthenticated")
+		return db.User{}, errors.New("Unauthenticated")
 	}
 
-	user, err := app.DB.GetUserById(r.Context(), pgtype.UUID{Bytes: [16]byte(userId), Valid: true})
+	user, err := app.DB.GetExtendedUserById(r.Context(), pgtype.UUID{Bytes: [16]byte(userId), Valid: true})
 	if err != nil {
 		http.Redirect(w, r, "/login?redirect="+url.QueryEscape(redirectTo), http.StatusFound)
 		return user, err
