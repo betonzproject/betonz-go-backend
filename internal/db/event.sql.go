@@ -16,12 +16,12 @@ INSERT INTO "Event" ("sourceIp", "userId", type, result, reason, data, "updatedA
 `
 
 type CreateEventParams struct {
-	SourceIp pgtype.Text       `json:"sourceIp"`
-	UserId   pgtype.UUID       `json:"userId"`
-	Type     EventType         `json:"type"`
-	Result   EventResult       `json:"result"`
-	Reason   pgtype.Text       `json:"reason"`
-	Data     map[string]string `json:"data"`
+	SourceIp pgtype.Text    `json:"sourceIp"`
+	UserId   pgtype.UUID    `json:"userId"`
+	Type     EventType      `json:"type"`
+	Result   EventResult    `json:"result"`
+	Reason   pgtype.Text    `json:"reason"`
+	Data     map[string]any `json:"data"`
 }
 
 func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) error {
@@ -87,7 +87,7 @@ type GetEventsRow struct {
 	Type        EventType          `json:"type"`
 	Result      EventResult        `json:"result"`
 	Reason      pgtype.Text        `json:"reason"`
-	Data        map[string]string  `json:"data"`
+	Data        map[string]any     `json:"data"`
 	CreatedAt   pgtype.Timestamptz `json:"createdAt"`
 	UpdatedAt   pgtype.Timestamptz `json:"updatedAt"`
 	HttpRequest HttpRequest        `json:"httpRequest"`
@@ -161,7 +161,7 @@ type GetRestrictionEventsByUserIdRow struct {
 	UserId    pgtype.UUID        `json:"userId"`
 	Username  string             `json:"username"`
 	Role      Role               `json:"role"`
-	Data      map[string]string  `json:"data"`
+	Data      map[string]any     `json:"data"`
 	CreatedAt pgtype.Timestamptz `json:"createdAt"`
 }
 

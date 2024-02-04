@@ -544,7 +544,7 @@ type Event struct {
 	Type        EventType          `json:"type"`
 	Result      EventResult        `json:"result"`
 	Reason      pgtype.Text        `json:"reason"`
-	Data        map[string]string  `json:"data"`
+	Data        map[string]any     `json:"data"`
 	CreatedAt   pgtype.Timestamptz `json:"createdAt"`
 	UpdatedAt   pgtype.Timestamptz `json:"updatedAt"`
 	HttpRequest HttpRequest        `json:"httpRequest"`

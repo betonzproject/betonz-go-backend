@@ -69,7 +69,7 @@ func DeleteBank(app *app.App) http.HandlerFunc {
 			UserId:   user.ID,
 			Type:     db.EventTypeBANKDELETE,
 			Result:   db.EventResultSUCCESS,
-			Data: map[string]string{
+			Data: map[string]any{
 				"bankId": utils.EncodeUUID(bankId.Bytes),
 			},
 		})

@@ -102,7 +102,7 @@ func PostPlayers(app *app.App) http.HandlerFunc {
 			UserId: user.ID,
 			Type:   db.EventTypeCHANGEUSERSTATUS,
 			Result: db.EventResultSUCCESS,
-			Data: map[string]string{
+			Data: map[string]any{
 				"userId": manageUserForm.UserId,
 				"status": manageUserForm.Status,
 				"reason": manageUserForm.Reason,

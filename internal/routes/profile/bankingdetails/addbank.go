@@ -61,7 +61,7 @@ func AddBank(app *app.App) http.HandlerFunc {
 			UserId:   user.ID,
 			Type:     db.EventTypeBANKADD,
 			Result:   db.EventResultSUCCESS,
-			Data: map[string]string{
+			Data: map[string]any{
 				"bankId": utils.EncodeUUID(bank.ID.Bytes),
 				"bank":   string(bank.Name) + " " + string(bank.AccountName) + " " + string(bank.AccountNumber),
 			},

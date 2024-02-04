@@ -98,7 +98,7 @@ func PatchBankById(app *app.App) http.HandlerFunc {
 			UserId:   user.ID,
 			Type:     db.EventTypeBANKUPDATE,
 			Result:   db.EventResultSUCCESS,
-			Data: map[string]string{
+			Data: map[string]any{
 				"bankId": bankIdParam,
 				"old":    string(bank.Name) + " " + string(bank.AccountName) + " " + string(bank.AccountNumber),
 				"new":    string(patchBankForm.BankName) + " " + string(patchBankForm.AccountName) + " " + string(patchBankForm.AccountNumber),

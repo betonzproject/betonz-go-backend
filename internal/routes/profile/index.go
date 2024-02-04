@@ -39,7 +39,7 @@ func PostProfile(app *app.App) http.HandlerFunc {
 			phone = "+" + updateForm.CountryCode + updateForm.PhoneNumber
 		}
 
-		updateEvent := make(map[string]string)
+		updateEvent := make(map[string]any)
 		if updateForm.DisplayName != user.DisplayName.String {
 			updateEvent["displayName"] = updateForm.DisplayName
 		}
