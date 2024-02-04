@@ -21,10 +21,7 @@ type Response struct {
 	Player            db.GetPlayerInfoByIdRow              `json:"player"`
 	RestrictionEvents []db.GetRestrictionEventsByUserIdRow `json:"restrictionEvents"`
 	Banks             []db.Bank                            `json:"banks"`
-	DailyTurnover     map[string]int64                     `json:"dailyTurnover"`
-	WeeklyTurnover    map[string]int64                     `json:"weeklyTurnover"`
-	MonthlyTurnover   map[string]int64                     `json:"monthlyTurnover"`
-	AlltimeTurnover   map[string]int64                     `json:"alltimeTurnover"`
+	Turnover          map[string]int64                     `json:"turnover"`
 }
 
 func GetPlayersById(app *app.App) http.HandlerFunc {
@@ -63,53 +60,58 @@ func GetPlayersById(app *app.App) http.HandlerFunc {
 
 		location, _ := time.LoadLocation("Asia/Yangon")
 		now := time.Now().In(location)
+		turnoverParam := r.URL.Query().Get("turnover")
+		var turnover []db.GetTurnoverByUserIdRow
 
-		dailyTurnover, err := app.DB.GetTurnoverByUserId(r.Context(), db.GetTurnoverByUserIdParams{
-			ID:       id,
-			FromDate: pgtype.Timestamptz{Time: timeutils.StartOfToday(), Valid: true},
-			ToDate:   pgtype.Timestamptz{Time: time.Now(), Valid: true},
-		})
-		if err != nil {
-			log.Panicln("Error getting daily turnover: " + err.Error())
-		}
+		switch turnoverParam {
+		case "weekly":
+			startOfLastWeek := time.Date(now.Year(), now.Month(), now.Day()-7, 0, 0, 0, 0, location)
+			turnover, err = app.DB.GetTurnoverByUserId(r.Context(), db.GetTurnoverByUserIdParams{
+				ID:       id,
+				FromDate: pgtype.Timestamptz{Time: startOfLastWeek, Valid: true},
+				ToDate:   pgtype.Timestamptz{Time: time.Now(), Valid: true},
+			})
+			if err != nil {
+				log.Panicln("Error getting weekly turnover: " + err.Error())
+			}
 
-		startOfLastWeek := time.Date(now.Year(), now.Month(), now.Day()-7, 0, 0, 0, 0, location)
-		weeklyTurnover, err := app.DB.GetTurnoverByUserId(r.Context(), db.GetTurnoverByUserIdParams{
-			ID:       id,
-			FromDate: pgtype.Timestamptz{Time: startOfLastWeek, Valid: true},
-			ToDate:   pgtype.Timestamptz{Time: time.Now(), Valid: true},
-		})
-		if err != nil {
-			log.Panicln("Error getting weekly turnover: " + err.Error())
-		}
+		case "monthly":
+			startOfLastMonth := time.Date(now.Year(), now.Month()-1, now.Day(), 0, 0, 0, 0, location)
+			turnover, err = app.DB.GetTurnoverByUserId(r.Context(), db.GetTurnoverByUserIdParams{
+				ID:       id,
+				FromDate: pgtype.Timestamptz{Time: startOfLastMonth, Valid: true},
+				ToDate:   pgtype.Timestamptz{Time: time.Now(), Valid: true},
+			})
+			if err != nil {
+				log.Panicln("Error getting monthly turnover: " + err.Error())
+			}
 
-		startOfLastMonth := time.Date(now.Year(), now.Month()-1, now.Day(), 0, 0, 0, 0, location)
-		monthlyTurnover, err := app.DB.GetTurnoverByUserId(r.Context(), db.GetTurnoverByUserIdParams{
-			ID:       id,
-			FromDate: pgtype.Timestamptz{Time: startOfLastMonth, Valid: true},
-			ToDate:   pgtype.Timestamptz{Time: time.Now(), Valid: true},
-		})
-		if err != nil {
-			log.Panicln("Error getting monthly turnover: " + err.Error())
-		}
+		case "all-time":
+			turnover, err = app.DB.GetTurnoverByUserId(r.Context(), db.GetTurnoverByUserIdParams{
+				ID:       id,
+				FromDate: pgtype.Timestamptz{Valid: true},
+				ToDate:   pgtype.Timestamptz{Time: time.Now(), Valid: true},
+			})
+			if err != nil {
+				log.Panicln("Error getting alltime turnover: " + err.Error())
+			}
 
-		alltimeTurnover, err := app.DB.GetTurnoverByUserId(r.Context(), db.GetTurnoverByUserIdParams{
-			ID:       id,
-			FromDate: pgtype.Timestamptz{Valid: true},
-			ToDate:   pgtype.Timestamptz{Time: time.Now(), Valid: true},
-		})
-		if err != nil {
-			log.Panicln("Error getting alltime turnover: " + err.Error())
+		default:
+			turnover, err = app.DB.GetTurnoverByUserId(r.Context(), db.GetTurnoverByUserIdParams{
+				ID:       id,
+				FromDate: pgtype.Timestamptz{Time: timeutils.StartOfToday(), Valid: true},
+				ToDate:   pgtype.Timestamptz{Time: time.Now(), Valid: true},
+			})
+			if err != nil {
+				log.Panicln("Error getting daily turnover: " + err.Error())
+			}
 		}
 
 		jsonutils.Write(w, Response{
 			Player:            player,
 			RestrictionEvents: restrictionEvents,
 			Banks:             banks,
-			DailyTurnover:     toMap(dailyTurnover),
-			WeeklyTurnover:    toMap(weeklyTurnover),
-			MonthlyTurnover:   toMap(monthlyTurnover),
-			AlltimeTurnover:   toMap(alltimeTurnover),
+			Turnover:          toMap(turnover),
 		}, http.StatusOK)
 	}
 }
