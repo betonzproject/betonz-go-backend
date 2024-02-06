@@ -15,6 +15,7 @@ import (
 // the login page and an error is returned
 func Authenticate(app *app.App, w http.ResponseWriter, r *http.Request) (db.User, error) {
 	userId := app.Scs.GetBytes(r.Context(), "userId")
+
 	redirectTo := url.QueryEscape(r.URL.Path)
 
 	// Strip /admin route prefix for admin routes

@@ -416,6 +416,20 @@ func (q *Queries) UpdateUserMainWallet(ctx context.Context, arg UpdateUserMainWa
 	return err
 }
 
+const updateUserPasswordHash = `-- name: UpdateUserPasswordHash :exec
+UPDATE "User" SET "passwordHash" = $2, "updatedAt" = now() WHERE id = $1
+`
+
+type UpdateUserPasswordHashParams struct {
+	ID           pgtype.UUID `json:"id"`
+	PasswordHash string      `json:"passwordHash"`
+}
+
+func (q *Queries) UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error {
+	_, err := q.db.Exec(ctx, updateUserPasswordHash, arg.ID, arg.PasswordHash)
+	return err
+}
+
 const updateUserProfileImage = `-- name: UpdateUserProfileImage :exec
 UPDATE "User" SET "profileImage" = $2, "updatedAt" = now() WHERE id = $1
 `

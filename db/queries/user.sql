@@ -146,6 +146,9 @@ SELECT COUNT(*) FROM "User" u WHERE u.role = 'PLAYER' AND u."createdAt" >= sqlc.
 -- name: UpdateUser :exec
 UPDATE "User" SET "displayName" = $2, email = $3, "phoneNumber" = $4, "updatedAt" = now() WHERE id = $1;
 
+-- name: UpdateUserPasswordHash :exec
+UPDATE "User" SET "passwordHash" = $2, "updatedAt" = now() WHERE id = $1;
+
 -- name: UpdateUserProfileImage :exec
 UPDATE "User" SET "profileImage" = $2, "updatedAt" = now() WHERE id = $1;
 
