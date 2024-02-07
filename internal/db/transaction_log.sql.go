@@ -20,21 +20,17 @@ SELECT
 	u2.role AS "beneficiaryRole"
 FROM
 	"Transaction" tr
-JOIN "User" u ON
-	u.id = tr."initiatorId"
-JOIN "User" u2 ON
-	u2.id = tr."beneficiaryId"
-WHERE 
-(
-	$1::text IS NULL
-	OR u.username ILIKE '%' || $1 || '%' 
-	OR u2.username ILIKE '%' || $1 || '%'
-	OR tr.remarks ILIKE '%' || $1 || '%'
-)
-AND
-	tr."createdAt" >= $2
-AND
-	tr."createdAt" <= $3
+	JOIN "User" u ON u.id = tr."initiatorId"
+	JOIN "User" u2 ON u2.id = tr."beneficiaryId"
+WHERE
+	(
+		$1::TEXT IS NULL
+		OR u.username ILIKE '%' || $1 || '%'
+		OR u2.username ILIKE '%' || $1 || '%'
+		OR tr.remarks ILIKE '%' || $1 || '%'
+	)
+	AND tr."createdAt" >= $2
+	AND tr."createdAt" <= $3
 ORDER BY
 	tr.id DESC
 `

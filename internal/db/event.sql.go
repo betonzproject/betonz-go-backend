@@ -12,7 +12,10 @@ import (
 )
 
 const createEvent = `-- name: CreateEvent :exec
-INSERT INTO "Event" ("sourceIp", "userId", type, result, reason, data, "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, now())
+INSERT INTO
+	"Event" ("sourceIp", "userId", type, result, reason, data, "updatedAt")
+VALUES
+	($1, $2, $3, $4, $5, $6, now())
 `
 
 type CreateEventParams struct {
@@ -43,29 +46,35 @@ SELECT
 	u.role
 FROM
 	"Event" e
-LEFT JOIN "User" u ON
-	e."userId" = u.id
+	LEFT JOIN "User" u ON e."userId" = u.id
 WHERE
-	($1::"Role"[] IS NULL OR u.role = ANY($1))
-AND
-	(u.role IS NULL OR $2::"Role"[] IS NULL OR u.role <> ANY($2))
-AND
-	e."type" NOT IN ('AUTHENTICATION'::"EventType", 'AUTHORIZATION'::"EventType", 'ACTIVE'::"EventType")
-AND
-	($3::"EventType"[] IS NULL OR e."type" = ANY($3))
-AND
-	($4::"EventResult"[] IS NULL OR e.result = ANY($4))
-AND
-	e."createdAt" >= $5
-AND
-	e."createdAt" <= $6
-AND (
-	$7::text IS NULL
-	OR u.username ILIKE '%' || $7 || '%' 
-	OR e."sourceIp" ILIKE '%' || $7 || '%'
-	OR e.reason ILIKE '%' || $7 || '%'
-	OR e.data::text ILIKE '%' || $7 || '%'
-)
+	(
+		$1::"Role"[] IS NULL
+		OR u.role = ANY ($1)
+	)
+	AND (
+		u.role IS NULL
+		OR $2::"Role"[] IS NULL
+		OR u.role <> ANY ($2)
+	)
+	AND e."type" NOT IN ('AUTHENTICATION', 'AUTHORIZATION', 'ACTIVE')
+	AND (
+		$3::"EventType"[] IS NULL
+		OR e."type" = ANY ($3)
+	)
+	AND (
+		$4::"EventResult"[] IS NULL
+		OR e.result = ANY ($4)
+	)
+	AND e."createdAt" >= $5
+	AND e."createdAt" <= $6
+	AND (
+		$7::TEXT IS NULL
+		OR u.username ILIKE '%' || $7 || '%'
+		OR e."sourceIp" ILIKE '%' || $7 || '%'
+		OR e.reason ILIKE '%' || $7 || '%'
+		OR e.data::TEXT ILIKE '%' || $7 || '%'
+	)
 ORDER BY
 	e.id DESC
 `
@@ -146,12 +155,10 @@ SELECT
 	e."createdAt"
 FROM
 	"Event" e
-JOIN
-	"User" u
-ON
-	e."userId" = u.id
+	JOIN "User" u ON e."userId" = u.id
 WHERE
-	type = 'CHANGE_USER_STATUS'::"EventType" AND data->>'userId' = $1::uuid::text
+	type = 'CHANGE_USER_STATUS'
+	AND data ->> 'userId' = $1::UUID::TEXT
 ORDER BY
 	e."createdAt" DESC
 `

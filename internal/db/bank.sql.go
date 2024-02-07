@@ -12,9 +12,12 @@ import (
 )
 
 const createBank = `-- name: CreateBank :one
-INSERT INTO "Bank" (id, "userId", name, "accountName", "accountNumber", "updatedAt") 
-VALUES (gen_random_uuid(), $1, $2, $3, $4, now())
-RETURNING id, "userId", name, "accountName", "accountNumber", "createdAt", "updatedAt", disabled
+INSERT INTO
+	"Bank" (id, "userId", name, "accountName", "accountNumber", "updatedAt")
+VALUES
+	(gen_random_uuid(), $1, $2, $3, $4, now())
+RETURNING
+	id, "userId", name, "accountName", "accountNumber", "createdAt", "updatedAt", disabled
 `
 
 type CreateBankParams struct {
@@ -46,8 +49,21 @@ func (q *Queries) CreateBank(ctx context.Context, arg CreateBankParams) (Bank, e
 }
 
 const createSystemBank = `-- name: CreateSystemBank :exec
-INSERT INTO "Bank" (id, "userId", name, "accountName", "accountNumber", "updatedAt")
-SELECT gen_random_uuid(), id, $1, $2, $3, now() FROM "User" WHERE role = 'SYSTEM'::"Role" LIMIT 1
+INSERT INTO
+	"Bank" (id, "userId", name, "accountName", "accountNumber", "updatedAt")
+SELECT
+	gen_random_uuid(),
+	id,
+	$1,
+	$2,
+	$3,
+	now()
+FROM
+	"User"
+WHERE
+	role = 'SYSTEM'
+LIMIT
+	1
 `
 
 type CreateSystemBankParams struct {
@@ -62,7 +78,7 @@ func (q *Queries) CreateSystemBank(ctx context.Context, arg CreateSystemBankPara
 }
 
 const deleteBankById = `-- name: DeleteBankById :exec
-DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id	AND b.id = $1
+DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1
 `
 
 func (q *Queries) DeleteBankById(ctx context.Context, id pgtype.UUID) error {
@@ -71,7 +87,7 @@ func (q *Queries) DeleteBankById(ctx context.Context, id pgtype.UUID) error {
 }
 
 const deleteSystemBankById = `-- name: DeleteSystemBankById :exec
-DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1 AND u.role = 'SYSTEM'::"Role"
+DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1 AND u.role = 'SYSTEM'
 `
 
 func (q *Queries) DeleteSystemBankById(ctx context.Context, id pgtype.UUID) error {
@@ -133,7 +149,7 @@ func (q *Queries) GetBanksByUserId(ctx context.Context, userid pgtype.UUID) ([]B
 }
 
 const getSystemBankById = `-- name: GetSystemBankById :one
-SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM'::"Role" AND b.id = $1
+SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM' AND b.id = $1
 `
 
 func (q *Queries) GetSystemBankById(ctx context.Context, id pgtype.UUID) (Bank, error) {
@@ -153,7 +169,7 @@ func (q *Queries) GetSystemBankById(ctx context.Context, id pgtype.UUID) (Bank, 
 }
 
 const getSystemBanks = `-- name: GetSystemBanks :many
-SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM'::"Role" ORDER BY b."createdAt", b."accountName"
+SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM' ORDER BY b."createdAt", b."accountName"
 `
 
 func (q *Queries) GetSystemBanks(ctx context.Context) ([]Bank, error) {
@@ -186,7 +202,7 @@ func (q *Queries) GetSystemBanks(ctx context.Context) ([]Bank, error) {
 }
 
 const getSystemBanksByBankName = `-- name: GetSystemBanksByBankName :many
-SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM'::"Role" AND b.name = $1
+SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM' AND b.name = $1
 `
 
 func (q *Queries) GetSystemBanksByBankName(ctx context.Context, name BankName) ([]Bank, error) {
@@ -219,8 +235,7 @@ func (q *Queries) GetSystemBanksByBankName(ctx context.Context, name BankName) (
 }
 
 const updateBank = `-- name: UpdateBank :exec
-UPDATE
-	"Bank"
+UPDATE "Bank"
 SET
 	name = $2,
 	"accountName" = COALESCE($3, "accountName"),
@@ -248,8 +263,7 @@ func (q *Queries) UpdateBank(ctx context.Context, arg UpdateBankParams) error {
 }
 
 const updateSystemBank = `-- name: UpdateSystemBank :exec
-UPDATE
-	"Bank"
+UPDATE "Bank"
 SET
 	"accountName" = COALESCE($2, "accountName"),
 	"accountNumber" = COALESCE($3, "accountNumber"),

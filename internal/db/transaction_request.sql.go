@@ -12,20 +12,23 @@ import (
 )
 
 const createTransactionRequest = `-- name: CreateTransactionRequest :exec
-INSERT INTO "TransactionRequest" (
-	"userId",
-	"bankName",
-	"bankAccountName",
-	"bankAccountNumber",
-	"beneficiaryBankAccountName",
-	"beneficiaryBankAccountNumber",
-	amount,
-	bonus,
-	type,
-	"receiptPath",
-	status,
-	"updatedAt"
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now())
+INSERT INTO
+	"TransactionRequest" (
+		"userId",
+		"bankName",
+		"bankAccountName",
+		"bankAccountNumber",
+		"beneficiaryBankAccountName",
+		"beneficiaryBankAccountNumber",
+		amount,
+		bonus,
+		type,
+		"receiptPath",
+		status,
+		"updatedAt"
+	)
+VALUES
+	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now())
 `
 
 type CreateTransactionRequestParams struct {
@@ -68,26 +71,27 @@ SELECT
 	u2.role AS "modifiedByRole"
 FROM
 	"TransactionRequest" tr
-JOIN "User" u ON
-	u.id = tr."userId"
-LEFT JOIN "User" u2 ON
-	u2.id = tr."modifiedById"
-WHERE 
-	($1::"TransactionType"[] IS NULL OR tr."type" = ANY($1))
-AND
-	($2::"TransactionStatus"[] IS NULL OR tr.status = ANY($2))
-AND (
-	$3::text IS NULL
-	OR u.username ILIKE '%' || $3 || '%' 
-	OR u2.username ILIKE '%' || $3 || '%'
-	OR tr."bankAccountName" ILIKE '%' || $3 || '%'
-	OR tr."beneficiaryBankAccountName" ILIKE '%' || $3 || '%'
-	OR tr.remarks ILIKE '%' || $3 || '%'
-)
-AND
-	tr."createdAt" >= $4
-AND
-	tr."createdAt" <= $5
+	JOIN "User" u ON u.id = tr."userId"
+	LEFT JOIN "User" u2 ON u2.id = tr."modifiedById"
+WHERE
+	(
+		$1::"TransactionType"[] IS NULL
+		OR tr."type" = ANY ($1)
+	)
+	AND (
+		$2::"TransactionStatus"[] IS NULL
+		OR tr.status = ANY ($2)
+	)
+	AND (
+		$3::TEXT IS NULL
+		OR u.username ILIKE '%' || $3 || '%'
+		OR u2.username ILIKE '%' || $3 || '%'
+		OR tr."bankAccountName" ILIKE '%' || $3 || '%'
+		OR tr."beneficiaryBankAccountName" ILIKE '%' || $3 || '%'
+		OR tr.remarks ILIKE '%' || $3 || '%'
+	)
+	AND tr."createdAt" >= $4
+	AND tr."createdAt" <= $5
 ORDER BY
 	tr.id DESC
 `
@@ -185,20 +189,20 @@ SELECT
 	u2.role AS "modifiedByRole"
 FROM
 	"TransactionRequest" tr
-JOIN "User" u ON
-	u.id = tr."userId"
-LEFT JOIN "User" u2 ON
-	u2.id = tr."modifiedById"
-WHERE 
-	($2::"TransactionType"[] IS NULL OR tr."type" = ANY($2))
-AND
-	($3::"TransactionStatus"[] IS NULL OR tr.status = ANY($3))
-AND
-	tr."createdAt" >= $4
-AND
-	tr."createdAt" <= $5
-AND
-	tr."userId" = $1
+	JOIN "User" u ON u.id = tr."userId"
+	LEFT JOIN "User" u2 ON u2.id = tr."modifiedById"
+WHERE
+	(
+		$2::"TransactionType"[] IS NULL
+		OR tr."type" = ANY ($2)
+	)
+	AND (
+		$3::"TransactionStatus"[] IS NULL
+		OR tr.status = ANY ($3)
+	)
+	AND tr."createdAt" >= $4
+	AND tr."createdAt" <= $5
+	AND tr."userId" = $1
 ORDER BY
 	tr.id DESC
 `
@@ -288,17 +292,18 @@ func (q *Queries) GetTransactionRequestsByUserId(ctx context.Context, arg GetTra
 }
 
 const hasRecentDepositRequestsByUserId = `-- name: HasRecentDepositRequestsByUserId :one
-SELECT EXISTS (
-	SELECT
-		id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion
-	FROM
-		"TransactionRequest"
-	WHERE
-		"userId" = $1
-	AND type = 'DEPOSIT'::"TransactionType"
-		AND status = 'PENDING'::"TransactionStatus"
-		AND "createdAt" >= now() - INTERVAL '1 minute'
-)
+SELECT
+	EXISTS (
+		SELECT
+			id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'DEPOSIT'
+			AND status = 'PENDING'
+			AND "createdAt" >= now() - INTERVAL '1 minute'
+	)
 `
 
 func (q *Queries) HasRecentDepositRequestsByUserId(ctx context.Context, userid pgtype.UUID) (bool, error) {
@@ -316,8 +321,8 @@ SELECT EXISTS (
 		"TransactionRequest"
 	WHERE
 		"userId" = $1
-	AND type = 'WITHDRAW'::"TransactionType"
-		AND status = 'PENDING'::"TransactionStatus"
+		AND type = 'WITHDRAW'
+		AND status = 'PENDING'
 		AND "createdAt" >= now() - INTERVAL '5 minutes'
 )
 `

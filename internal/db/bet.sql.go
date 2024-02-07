@@ -14,26 +14,31 @@ import (
 const getTopPayout = `-- name: GetTopPayout :many
 SELECT
 	b1.id,
-    u.username,
-    u."displayName",
-    u."profileImage",
-    b1.payout
+	u.username,
+	u."displayName",
+	u."profileImage",
+	b1.payout
 FROM
-	"Bet" b1 
-INNER JOIN (
-	SELECT b."etgUsername", MAX(b.payout) AS payout	FROM "Bet" b GROUP BY b."etgUsername" HAVING MAX(b.payout) > 0
-) b2
-ON
-	b1."etgUsername" = b2."etgUsername" AND b1.payout = b2.payout
-INNER JOIN
-	"User" u ON b1."etgUsername" = u."etgUsername"
-WHERE (
-	$1::int IS NULL
-	OR b1."productType" = $1
-	OR $1 = 0
-)
-AND
-	u.status = 'NORMAL'
+	"Bet" b1
+	INNER JOIN (
+		SELECT
+			b."etgUsername",
+			MAX(b.payout) AS payout
+		FROM
+			"Bet" b
+		GROUP BY
+			b."etgUsername"
+		HAVING
+			MAX(b.payout) > 0
+	) b2 ON b1."etgUsername" = b2."etgUsername" AND b1.payout = b2.payout
+	INNER JOIN "User" u ON b1."etgUsername" = u."etgUsername"
+WHERE
+	(
+		$1::int IS NULL
+		OR b1."productType" = $1
+		OR $1 = 0
+	)
+	AND u.status = 'NORMAL'
 `
 
 type GetTopPayoutRow struct {
@@ -72,13 +77,15 @@ func (q *Queries) GetTopPayout(ctx context.Context, producttype int32) ([]GetTop
 
 const getTurnoverByUserId = `-- name: GetTurnoverByUserId :many
 SELECT
-	b."productCode", sum(b.turnover) AS turnover
+	b."productCode",
+	sum(b.turnover) AS turnover
 FROM
 	"Bet" b
-JOIN
-	"User" u USING ("etgUsername")
-WHERE 
-	u.id = $1 AND b."startTime" >= $2 AND b."startTime" <= $3
+	JOIN "User" u USING ("etgUsername")
+WHERE
+	u.id = $1
+	AND b."startTime" >= $2
+	AND b."startTime" <= $3
 GROUP BY
 	b."productCode"
 `
