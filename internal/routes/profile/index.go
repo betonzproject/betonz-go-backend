@@ -8,6 +8,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/auth"
 	"github.com/doorman2137/betonz-go/internal/db"
+	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -67,13 +68,7 @@ func PostProfile(app *app.App) http.HandlerFunc {
 			log.Panicln("Can't update user: " + err.Error())
 		}
 
-		err = qtx.CreateEvent(r.Context(), db.CreateEventParams{
-			SourceIp: pgtype.Text{String: r.RemoteAddr, Valid: true},
-			UserId:   user.ID,
-			Type:     db.EventTypePROFILEUPDATE,
-			Result:   db.EventResultSUCCESS,
-			Data:     updateEvent,
-		})
+		err = utils.LogEvent(qtx, r, user.ID, db.EventTypePROFILEUPDATE, db.EventResultSUCCESS, "", updateEvent)
 		if err != nil {
 			log.Panicln("Can't create event: " + err.Error())
 		}

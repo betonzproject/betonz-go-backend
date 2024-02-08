@@ -56,6 +56,6 @@ ORDER BY
 
 -- name: CreateEvent :exec
 INSERT INTO
-	"Event" ("sourceIp", "userId", type, result, reason, data, "updatedAt")
+	"Event" ("sourceIp", "userId", type, result, reason, data, "httpRequest", "updatedAt")
 VALUES
-	($1, $2, $3, $4, $5, $6, now());
+	($1, $2, $3, $4, $5, $6, $7, now());

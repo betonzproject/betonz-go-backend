@@ -93,16 +93,10 @@ func PatchBankById(app *app.App) http.HandlerFunc {
 			log.Panicln("Can't update bank: " + err.Error())
 		}
 
-		err = qtx.CreateEvent(r.Context(), db.CreateEventParams{
-			SourceIp: pgtype.Text{String: r.RemoteAddr, Valid: true},
-			UserId:   user.ID,
-			Type:     db.EventTypeBANKUPDATE,
-			Result:   db.EventResultSUCCESS,
-			Data: map[string]any{
-				"bankId": bankIdParam,
-				"old":    string(bank.Name) + " " + string(bank.AccountName) + " " + string(bank.AccountNumber),
-				"new":    string(patchBankForm.BankName) + " " + string(patchBankForm.AccountName) + " " + string(patchBankForm.AccountNumber),
-			},
+		err = utils.LogEvent(qtx, r, user.ID, db.EventTypeBANKUPDATE, db.EventResultSUCCESS, "", map[string]any{
+			"bankId": bankIdParam,
+			"old":    string(bank.Name) + " " + string(bank.AccountName) + " " + string(bank.AccountNumber),
+			"new":    string(patchBankForm.BankName) + " " + string(patchBankForm.AccountName) + " " + string(patchBankForm.AccountNumber),
 		})
 		if err != nil {
 			log.Panicln("Can't create event: " + err.Error())

@@ -11,7 +11,6 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func GetBanks(app *app.App) http.HandlerFunc {
@@ -64,14 +63,8 @@ func DeleteBank(app *app.App) http.HandlerFunc {
 			log.Panicln("Can't delete bank: " + err.Error())
 		}
 
-		err = qtx.CreateEvent(r.Context(), db.CreateEventParams{
-			SourceIp: pgtype.Text{String: r.RemoteAddr, Valid: true},
-			UserId:   user.ID,
-			Type:     db.EventTypeBANKDELETE,
-			Result:   db.EventResultSUCCESS,
-			Data: map[string]any{
-				"bankId": utils.EncodeUUID(bankId.Bytes),
-			},
+		err = utils.LogEvent(qtx, r, user.ID, db.EventTypeBANKDELETE, db.EventResultSUCCESS, "", map[string]any{
+			"bankId": utils.EncodeUUID(bankId.Bytes),
 		})
 		if err != nil {
 			log.Panicln("Can't create event: " + err.Error())

@@ -101,15 +101,10 @@ func PostPlayers(app *app.App) http.HandlerFunc {
 			log.Panicln("Can't update user status: " + err.Error())
 		}
 
-		err = qtx.CreateEvent(r.Context(), db.CreateEventParams{
-			UserId: user.ID,
-			Type:   db.EventTypeCHANGEUSERSTATUS,
-			Result: db.EventResultSUCCESS,
-			Data: map[string]any{
-				"userId": manageUserForm.UserId,
-				"status": manageUserForm.Status,
-				"reason": manageUserForm.Reason,
-			},
+		err = utils.LogEvent(qtx, r, user.ID, db.EventTypeCHANGEUSERSTATUS, db.EventResultSUCCESS, "", map[string]any{
+			"userId": manageUserForm.UserId,
+			"status": manageUserForm.Status,
+			"reason": manageUserForm.Reason,
 		})
 		if err != nil {
 			log.Panicln("Can't create event: " + err.Error())

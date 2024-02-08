@@ -13,18 +13,19 @@ import (
 
 const createEvent = `-- name: CreateEvent :exec
 INSERT INTO
-	"Event" ("sourceIp", "userId", type, result, reason, data, "updatedAt")
+	"Event" ("sourceIp", "userId", type, result, reason, data, "httpRequest", "updatedAt")
 VALUES
-	($1, $2, $3, $4, $5, $6, now())
+	($1, $2, $3, $4, $5, $6, $7, now())
 `
 
 type CreateEventParams struct {
-	SourceIp pgtype.Text    `json:"sourceIp"`
-	UserId   pgtype.UUID    `json:"userId"`
-	Type     EventType      `json:"type"`
-	Result   EventResult    `json:"result"`
-	Reason   pgtype.Text    `json:"reason"`
-	Data     map[string]any `json:"data"`
+	SourceIp    pgtype.Text    `json:"sourceIp"`
+	UserId      pgtype.UUID    `json:"userId"`
+	Type        EventType      `json:"type"`
+	Result      EventResult    `json:"result"`
+	Reason      pgtype.Text    `json:"reason"`
+	Data        map[string]any `json:"data"`
+	HttpRequest HttpRequest    `json:"httpRequest"`
 }
 
 func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) error {
@@ -35,6 +36,7 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) error 
 		arg.Result,
 		arg.Reason,
 		arg.Data,
+		arg.HttpRequest,
 	)
 	return err
 }
