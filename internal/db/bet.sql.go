@@ -75,6 +75,30 @@ func (q *Queries) GetTopPayout(ctx context.Context, producttype int32) ([]GetTop
 	return items, nil
 }
 
+const getTotalWinLoss = `-- name: GetTotalWinLoss :one
+SELECT
+	COALESCE(sum("winLoss"), 0)::bigint
+FROM
+	"Bet" b
+	JOIN "User" u USING ("etgUsername")
+WHERE
+	u."role" = 'PLAYER'
+	AND b."startTime" >= $1
+	AND b."startTime" <= $2
+`
+
+type GetTotalWinLossParams struct {
+	FromDate pgtype.Timestamptz `json:"fromDate"`
+	ToDate   pgtype.Timestamptz `json:"toDate"`
+}
+
+func (q *Queries) GetTotalWinLoss(ctx context.Context, arg GetTotalWinLossParams) (int64, error) {
+	row := q.db.QueryRow(ctx, getTotalWinLoss, arg.FromDate, arg.ToDate)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const getTurnoverByUserId = `-- name: GetTurnoverByUserId :many
 SELECT
 	b."productCode",

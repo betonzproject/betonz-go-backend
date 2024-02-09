@@ -11,6 +11,31 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getActivePlayerCount = `-- name: GetActivePlayerCount :one
+SELECT
+	COUNT(*)
+FROM
+	"User" u
+	JOIN "Event" e ON u.id = e."userId"
+WHERE
+	u.role = 'PLAYER'
+	AND e.type = 'ACTIVE'
+	AND e."createdAt" >= $1
+	AND e."createdAt" <= $2
+`
+
+type GetActivePlayerCountParams struct {
+	FromDate pgtype.Timestamptz `json:"fromDate"`
+	ToDate   pgtype.Timestamptz `json:"toDate"`
+}
+
+func (q *Queries) GetActivePlayerCount(ctx context.Context, arg GetActivePlayerCountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, getActivePlayerCount, arg.FromDate, arg.ToDate)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getExtendedUserById = `-- name: GetExtendedUserById :one
 SELECT id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "lastLoginIp", "isEmailVerified", dob, "lastLoginAt", "pendingEmail" FROM "User" WHERE id = $1
 `
@@ -76,6 +101,22 @@ func (q *Queries) GetExtendedUserByUsername(ctx context.Context, arg GetExtended
 		&i.PendingEmail,
 	)
 	return i, err
+}
+
+const getNewPlayerCount = `-- name: GetNewPlayerCount :one
+SELECT COUNT(*) FROM "User" u WHERE u.role = 'PLAYER' AND u."createdAt" >= $1 AND u."createdAt" <= $2
+`
+
+type GetNewPlayerCountParams struct {
+	FromDate pgtype.Timestamptz `json:"fromDate"`
+	ToDate   pgtype.Timestamptz `json:"toDate"`
+}
+
+func (q *Queries) GetNewPlayerCount(ctx context.Context, arg GetNewPlayerCountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, getNewPlayerCount, arg.FromDate, arg.ToDate)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const getPlayerInfoById = `-- name: GetPlayerInfoById :one

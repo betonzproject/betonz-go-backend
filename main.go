@@ -8,6 +8,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/routes"
 	"github.com/doorman2137/betonz-go/internal/routes/admin"
 	"github.com/doorman2137/betonz-go/internal/routes/admin/players"
+	"github.com/doorman2137/betonz-go/internal/routes/admin/report"
 	"github.com/doorman2137/betonz-go/internal/routes/producttype"
 	"github.com/doorman2137/betonz-go/internal/routes/profile"
 	"github.com/doorman2137/betonz-go/internal/routes/profile/bankingdetails"
@@ -57,6 +58,8 @@ func main() {
 	r.Route("/admin", func(r chi.Router) {
 		r.Get("/transaction-request", admin.GetTransactionRequest(app))
 		r.Get("/transaction-log", admin.GetTransactionLog(app))
+		r.Get("/report", report.GetReport(app))
+		r.Get("/report/overview", report.GetOverview(app))
 		r.Get("/players", players.GetPlayers(app))
 		r.Get("/players/{id}", players.GetPlayersById(app))
 		r.Post("/players", players.PostPlayers(app))

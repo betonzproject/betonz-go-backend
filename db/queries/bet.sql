@@ -40,3 +40,14 @@ WHERE
 	AND b."startTime" <= sqlc.arg('toDate')
 GROUP BY
 	b."productCode";
+
+-- name: GetTotalWinLoss :one
+SELECT
+	COALESCE(sum("winLoss"), 0)::bigint
+FROM
+	"Bet" b
+	JOIN "User" u USING ("etgUsername")
+WHERE
+	u."role" = 'PLAYER'
+	AND b."startTime" >= sqlc.arg('fromDate')
+	AND b."startTime" <= sqlc.arg('toDate');

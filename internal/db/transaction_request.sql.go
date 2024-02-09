@@ -62,6 +62,100 @@ func (q *Queries) CreateTransactionRequest(ctx context.Context, arg CreateTransa
 	return err
 }
 
+const getNewPlayerWithTransactionsCount = `-- name: GetNewPlayerWithTransactionsCount :one
+SELECT
+	count(*)
+FROM
+	(
+		SELECT
+			DISTINCT "userId"
+		FROM
+			"TransactionRequest" tr
+			JOIN "User" u ON tr."userId" = u.id
+		WHERE
+			tr.status = 'APPROVED'
+			AND tr."updatedAt" >= $1
+			AND tr."updatedAt" <= $2
+			AND u."createdAt" >= $1
+			AND u."createdAd" <= $2
+	) q
+`
+
+type GetNewPlayerWithTransactionsCountParams struct {
+	FromDate pgtype.Timestamptz `json:"fromDate"`
+	ToDate   pgtype.Timestamptz `json:"toDate"`
+}
+
+func (q *Queries) GetNewPlayerWithTransactionsCount(ctx context.Context, arg GetNewPlayerWithTransactionsCountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, getNewPlayerWithTransactionsCount, arg.FromDate, arg.ToDate)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getPlayerWithTransactionsCount = `-- name: GetPlayerWithTransactionsCount :one
+SELECT
+	count(*)
+FROM
+	(
+		SELECT
+			DISTINCT "userId"
+		FROM
+			"TransactionRequest"
+		WHERE
+			status = 'APPROVED'
+			AND "updatedAt" >= $1
+			AND "updatedAt" <= $2
+	) q
+`
+
+type GetPlayerWithTransactionsCountParams struct {
+	FromDate pgtype.Timestamptz `json:"fromDate"`
+	ToDate   pgtype.Timestamptz `json:"toDate"`
+}
+
+func (q *Queries) GetPlayerWithTransactionsCount(ctx context.Context, arg GetPlayerWithTransactionsCountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, getPlayerWithTransactionsCount, arg.FromDate, arg.ToDate)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getTotalTransactionAmountAndCount = `-- name: GetTotalTransactionAmountAndCount :one
+SELECT
+	COALESCE(sum(tr.amount), 0)::bigint AS total,
+	COALESCE(count(*), 0)::bigint AS count,
+	COALESCE(sum(tr.bonus), 0)::bigint AS "bonusTotal"
+FROM
+	"TransactionRequest" tr
+	JOIN "User" u ON tr."userId" = u.id
+WHERE
+	u."role" = 'PLAYER'
+	AND tr."type" = $1
+	AND tr.status = 'APPROVED'
+	AND tr."updatedAt" >= $2
+	AND tr."updatedAt" <= $3
+`
+
+type GetTotalTransactionAmountAndCountParams struct {
+	Type     TransactionType    `json:"type"`
+	FromDate pgtype.Timestamptz `json:"fromDate"`
+	ToDate   pgtype.Timestamptz `json:"toDate"`
+}
+
+type GetTotalTransactionAmountAndCountRow struct {
+	Total      int64 `json:"total"`
+	Count      int64 `json:"count"`
+	BonusTotal int64 `json:"bonusTotal"`
+}
+
+func (q *Queries) GetTotalTransactionAmountAndCount(ctx context.Context, arg GetTotalTransactionAmountAndCountParams) (GetTotalTransactionAmountAndCountRow, error) {
+	row := q.db.QueryRow(ctx, getTotalTransactionAmountAndCount, arg.Type, arg.FromDate, arg.ToDate)
+	var i GetTotalTransactionAmountAndCountRow
+	err := row.Scan(&i.Total, &i.Count, &i.BonusTotal)
+	return i, err
+}
+
 const getTransactionRequests = `-- name: GetTransactionRequests :many
 SELECT
 	tr.id, tr."userId", tr."modifiedById", tr."bankName", tr."bankAccountName", tr."bankAccountNumber", tr."beneficiaryBankAccountName", tr."beneficiaryBankAccountNumber", tr.amount, tr.type, tr."receiptPath", tr.status, tr.remarks, tr."createdAt", tr."updatedAt", tr.bonus, tr."withdrawBankFees", tr."depositToWallet", tr.promotion,

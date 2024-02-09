@@ -19,6 +19,34 @@ func EndOfToday() time.Time {
 	return time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, -1, location)
 }
 
+// Returns a `time.Time` object representing the start of this month in Asia/Yangon timezone.
+func StartOfThisMonth() time.Time {
+	location, _ := time.LoadLocation("Asia/Yangon")
+	now := time.Now().In(location)
+	return time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, location)
+}
+
+// Returns a `time.Time` object representing the end of this month in Asia/Yangon timezone.
+func EndOfThisMonth() time.Time {
+	location, _ := time.LoadLocation("Asia/Yangon")
+	now := time.Now().In(location)
+	return time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, -1, location)
+}
+
+// Returns a `time.Time` object representing the start of this year in Asia/Yangon timezone.
+func StartOfThisYear() time.Time {
+	location, _ := time.LoadLocation("Asia/Yangon")
+	now := time.Now().In(location)
+	return time.Date(now.Year(), time.January, 1, 0, 0, 0, 0, location)
+}
+
+// Returns a `time.Time` object representing the end of this year in Asia/Yangon timezone.
+func EndOfThisYear() time.Time {
+	location, _ := time.LoadLocation("Asia/Yangon")
+	now := time.Now().In(location)
+	return time.Date(now.Year()+1, time.January, 1, 0, 0, 0, -1, location)
+}
+
 // Parses a string in the format "YYYY/MM/DD hh:mm:ss" (24-hour format) or "YYYY/MM/DD h:mm:ss AA" (12-hour format)
 // representing a date into a `time.Time` struct.
 //

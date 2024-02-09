@@ -20,6 +20,7 @@ const (
 	ViewNotifications         Permission = "ViewNotifications"
 	ManageTransactionRequests Permission = "ManageTransactionRequests"
 	ViewTransactionLogs       Permission = "ViewTransactionLogs"
+	ViewReports               Permission = "ViewReports"
 	ManagePlayers             Permission = "ManagePlayers"
 	ManageAdmins              Permission = "ManageAdmins"
 	ToggleSystemBanks         Permission = "ToggleSystemBanks"
@@ -40,6 +41,7 @@ var Acl = map[db.Role][]Permission{
 	db.RoleADMIN: {
 		ManageTransactionRequests,
 		ViewTransactionLogs,
+		ViewReports,
 		ManagePlayers,
 		ToggleSystemBanks,
 		ViewActivityLog,
@@ -53,6 +55,7 @@ var Acl = map[db.Role][]Permission{
 		ViewNotifications,
 		ManageTransactionRequests,
 		ViewTransactionLogs,
+		ViewReports,
 		ManagePlayers,
 		ManageAdmins,
 		ToggleSystemBanks,

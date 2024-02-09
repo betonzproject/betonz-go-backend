@@ -84,6 +84,54 @@ SELECT EXISTS (
 		AND "createdAt" >= now() - INTERVAL '5 minutes'
 );
 
+-- name: GetTotalTransactionAmountAndCount :one
+SELECT
+	COALESCE(sum(tr.amount), 0)::bigint AS total,
+	COALESCE(count(*), 0)::bigint AS count,
+	COALESCE(sum(tr.bonus), 0)::bigint AS "bonusTotal"
+FROM
+	"TransactionRequest" tr
+	JOIN "User" u ON tr."userId" = u.id
+WHERE
+	u."role" = 'PLAYER'
+	AND tr."type" = $1
+	AND tr.status = 'APPROVED'
+	AND tr."updatedAt" >= sqlc.arg('fromDate')
+	AND tr."updatedAt" <= sqlc.arg('toDate');
+
+-- name: GetPlayerWithTransactionsCount :one
+SELECT
+	count(*)
+FROM
+	(
+		SELECT
+			DISTINCT "userId"
+		FROM
+			"TransactionRequest"
+		WHERE
+			status = 'APPROVED'
+			AND "updatedAt" >= sqlc.arg('fromDate')
+			AND "updatedAt" <= sqlc.arg('toDate')
+	) q;
+
+-- name: GetNewPlayerWithTransactionsCount :one
+SELECT
+	count(*)
+FROM
+	(
+		SELECT
+			DISTINCT "userId"
+		FROM
+			"TransactionRequest" tr
+			JOIN "User" u ON tr."userId" = u.id
+		WHERE
+			tr.status = 'APPROVED'
+			AND tr."updatedAt" >= sqlc.arg('fromDate')
+			AND tr."updatedAt" <= sqlc.arg('toDate')
+			AND u."createdAt" >= sqlc.arg('fromDate')
+			AND u."createdAd" <= sqlc.arg('toDate')
+	) q;
+
 -- name: CreateTransactionRequest :exec
 INSERT INTO
 	"TransactionRequest" (

@@ -140,6 +140,21 @@ FROM
 WHERE
 	u.id = $1;
 
+-- name: GetNewPlayerCount :one
+SELECT COUNT(*) FROM "User" u WHERE u.role = 'PLAYER' AND u."createdAt" >= sqlc.arg('fromDate') AND u."createdAt" <= sqlc.arg('toDate');
+
+-- name: GetActivePlayerCount :one
+SELECT
+	COUNT(*)
+FROM
+	"User" u
+	JOIN "Event" e ON u.id = e."userId"
+WHERE
+	u.role = 'PLAYER'
+	AND e.type = 'ACTIVE'
+	AND e."createdAt" >= sqlc.arg('fromDate')
+	AND e."createdAt" <= sqlc.arg('toDate');
+
 -- name: UpdateUser :exec
 UPDATE "User" SET "displayName" = $2, email = $3, "phoneNumber" = $4, "updatedAt" = now() WHERE id = $1;
 
