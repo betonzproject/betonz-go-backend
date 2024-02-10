@@ -157,7 +157,7 @@ func createPlayer() (string, error) {
 		var createPlayerResponse CreatePlayerResponse
 		err := etg.Post("/createplayer", payload, &createPlayerResponse)
 		if err != nil {
-			log.Panicf("Can't create player: %s\nEndpoint: %s\nPayload: %+v\n", err, endpoint, payload)
+			log.Panicln("Can't create player: " + err.Error())
 		}
 
 		if createPlayerResponse.Err != etg.Success {

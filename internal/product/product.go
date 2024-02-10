@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
-	"log"
 	"os"
 	"slices"
 	"time"
@@ -287,7 +286,7 @@ func LaunchGameList(etgUsername string, productType ProductType, product Product
 	// created in ETG
 	_, err := GetUserBalance(etgUsername, product)
 	if err != nil {
-		log.Panicf("Can't get balance of %s (%d) for %s: %s\n", product, product, etgUsername, err)
+		return "", fmt.Errorf("Can't get balance of %s (%d) for %s: %s", product, product, etgUsername, err)
 	}
 
 	payload := LaunchGameListRequest{
@@ -300,7 +299,7 @@ func LaunchGameList(etgUsername string, productType ProductType, product Product
 	var launchGameListResponse LaunchGameListResponse
 	err = etg.Post("/game", payload, &launchGameListResponse)
 	if err != nil {
-		log.Panicf("Can't launch %s (%d) game list for %s: %s\nEndpoint: %s\nPayload: %+v\n", product, product, etgUsername, err, "/game", payload)
+		return "", err
 	}
 
 	if launchGameListResponse.Err != etg.Success {
@@ -356,7 +355,7 @@ func GetGameList(redis *redis.Client, ctx context.Context, productType ProductTy
 	var gameListResponse GameListResponse
 	err = etg.Post("/getgamelist", payload, &gameListResponse)
 	if err != nil {
-		log.Panicf("Can't get %s (%d) game list: %s\nEndpoint: %s\nPayload: %+v\n", product, product, err, "/getgamelist", payload)
+		return nil, err
 	}
 
 	if gameListResponse.Err != etg.Success {
@@ -409,7 +408,7 @@ func LaunchGame(etgUsername string, productType ProductType, product Product, ga
 	var gameResponse GameResponse
 	err := etg.Post("/game", payload, &gameResponse)
 	if err != nil {
-		log.Panicln("Can't launch game: " + err.Error())
+		return "", err
 	}
 
 	if gameResponse.Err != etg.Success {

@@ -144,3 +144,100 @@ func (q *Queries) GetTurnoverByUserId(ctx context.Context, arg GetTurnoverByUser
 	}
 	return items, nil
 }
+
+const upsertBet = `-- name: UpsertBet :exec
+INSERT INTO
+	"Bet" (
+		id,
+		"refId",
+		"etgUsername",
+		"providerUsername",
+		"productCode",
+		"productType",
+		"gameId",
+		details,
+		turnover,
+		bet,
+		payout,
+		status,
+		"startTime",
+		"matchTime",
+		"endTime",
+		"settleTime",
+		"progShare",
+		"progWin",
+		commission,
+		"winLoss"
+	)
+VALUES
+	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+ON CONFLICT (id) DO UPDATE SET
+    "refId" = EXCLUDED."refId",
+    "etgUsername" = EXCLUDED."etgUsername",
+    "providerUsername" = EXCLUDED."providerUsername",
+    "productCode" = EXCLUDED."productCode",
+    "productType" = EXCLUDED."productType",
+    "gameId" = EXCLUDED."gameId",
+    details = EXCLUDED.details,
+    turnover = EXCLUDED.turnover,
+    bet = EXCLUDED.bet,
+    payout = EXCLUDED.payout,
+    status = EXCLUDED.status,
+    "startTime" = EXCLUDED."startTime",
+    "matchTime" = EXCLUDED."matchTime",
+    "endTime" = EXCLUDED."endTime",
+    "settleTime" = EXCLUDED."settleTime",
+    "progShare" = EXCLUDED."progShare",
+    "progWin" = EXCLUDED."progWin",
+    commission = EXCLUDED.commission,
+    "winLoss" = EXCLUDED."winLoss"
+`
+
+type UpsertBetParams struct {
+	ID               int32              `json:"id"`
+	RefId            string             `json:"refId"`
+	EtgUsername      string             `json:"etgUsername"`
+	ProviderUsername string             `json:"providerUsername"`
+	ProductCode      int32              `json:"productCode"`
+	ProductType      int32              `json:"productType"`
+	GameId           pgtype.Text        `json:"gameId"`
+	Details          string             `json:"details"`
+	Turnover         pgtype.Numeric     `json:"turnover"`
+	Bet              pgtype.Numeric     `json:"bet"`
+	Payout           pgtype.Numeric     `json:"payout"`
+	Status           int32              `json:"status"`
+	StartTime        pgtype.Timestamptz `json:"startTime"`
+	MatchTime        pgtype.Timestamptz `json:"matchTime"`
+	EndTime          pgtype.Timestamptz `json:"endTime"`
+	SettleTime       pgtype.Timestamptz `json:"settleTime"`
+	ProgShare        pgtype.Numeric     `json:"progShare"`
+	ProgWin          pgtype.Numeric     `json:"progWin"`
+	Commission       pgtype.Numeric     `json:"commission"`
+	WinLoss          pgtype.Numeric     `json:"winLoss"`
+}
+
+func (q *Queries) UpsertBet(ctx context.Context, arg UpsertBetParams) error {
+	_, err := q.db.Exec(ctx, upsertBet,
+		arg.ID,
+		arg.RefId,
+		arg.EtgUsername,
+		arg.ProviderUsername,
+		arg.ProductCode,
+		arg.ProductType,
+		arg.GameId,
+		arg.Details,
+		arg.Turnover,
+		arg.Bet,
+		arg.Payout,
+		arg.Status,
+		arg.StartTime,
+		arg.MatchTime,
+		arg.EndTime,
+		arg.SettleTime,
+		arg.ProgShare,
+		arg.ProgWin,
+		arg.Commission,
+		arg.WinLoss,
+	)
+	return err
+}

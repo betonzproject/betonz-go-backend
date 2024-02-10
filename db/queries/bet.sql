@@ -51,3 +51,50 @@ WHERE
 	u."role" = 'PLAYER'
 	AND b."startTime" >= sqlc.arg('fromDate')
 	AND b."startTime" <= sqlc.arg('toDate');
+
+-- name: UpsertBet :exec
+INSERT INTO
+	"Bet" (
+		id,
+		"refId",
+		"etgUsername",
+		"providerUsername",
+		"productCode",
+		"productType",
+		"gameId",
+		details,
+		turnover,
+		bet,
+		payout,
+		status,
+		"startTime",
+		"matchTime",
+		"endTime",
+		"settleTime",
+		"progShare",
+		"progWin",
+		commission,
+		"winLoss"
+	)
+VALUES
+	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+ON CONFLICT (id) DO UPDATE SET
+    "refId" = EXCLUDED."refId",
+    "etgUsername" = EXCLUDED."etgUsername",
+    "providerUsername" = EXCLUDED."providerUsername",
+    "productCode" = EXCLUDED."productCode",
+    "productType" = EXCLUDED."productType",
+    "gameId" = EXCLUDED."gameId",
+    details = EXCLUDED.details,
+    turnover = EXCLUDED.turnover,
+    bet = EXCLUDED.bet,
+    payout = EXCLUDED.payout,
+    status = EXCLUDED.status,
+    "startTime" = EXCLUDED."startTime",
+    "matchTime" = EXCLUDED."matchTime",
+    "endTime" = EXCLUDED."endTime",
+    "settleTime" = EXCLUDED."settleTime",
+    "progShare" = EXCLUDED."progShare",
+    "progWin" = EXCLUDED."progWin",
+    commission = EXCLUDED.commission,
+    "winLoss" = EXCLUDED."winLoss";

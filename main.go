@@ -3,8 +3,12 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/doorman2137/betonz-go/internal/app"
+	"github.com/doorman2137/betonz-go/internal/jobs"
 	"github.com/doorman2137/betonz-go/internal/routes"
 	"github.com/doorman2137/betonz-go/internal/routes/admin"
 	"github.com/doorman2137/betonz-go/internal/routes/admin/players"
@@ -29,6 +33,23 @@ func main() {
 
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
+
+	m, _ := strconv.Atoi(os.Getenv("FETCH_BETS_INTERVAL_MINUTES"))
+	if m > 0 {
+		log.Printf("Starting bet fetch ticker every %d minutes", m)
+		ticker := time.NewTicker(time.Duration(m) * time.Minute)
+		defer ticker.Stop()
+
+		go func() {
+			jobs.FetchBets(app, 0)
+			for {
+				select {
+				case <-ticker.C:
+					jobs.FetchBets(app, 0)
+				}
+			}
+		}()
+	}
 
 	r.Get("/", routes.GetIndex(app))
 	r.Get("/login", routes.GetLogin(app))

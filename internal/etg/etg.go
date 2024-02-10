@@ -3,8 +3,8 @@ package etg
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 )
@@ -18,7 +18,7 @@ func Post[T any](route string, payload any, dst *T) error {
 
 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(marshalled))
 	if err != nil {
-		log.Panicf("Can't create request: %s\nEndpoint: %s\nPayload: %+v\n", err, endpoint, payload)
+		return fmt.Errorf("Can't create request: %s\nEndpoint: %s\nPayload: %+v", err, endpoint, payload)
 	}
 	req.Header = http.Header{
 		"Content-Type":  {"application/json"},
@@ -34,12 +34,12 @@ func Post[T any](route string, payload any, dst *T) error {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Panicf("Can't read response body: %s\nEndpoint: %s\nPayload: %+v\n", err, endpoint, payload)
+		return fmt.Errorf("Can't read response body: %s\nEndpoint: %s\nPayload: %+v", err, endpoint, payload)
 	}
 
 	err = json.Unmarshal(body, dst)
 	if err != nil {
-		log.Panicf("Can't unmarshal response body: %s\nEndpoint: %s\nPayload: %+v\n", err, endpoint, payload)
+		return fmt.Errorf("Can't unmarshal response body: %s\nEndpoint: %s\nPayload: %+v", err, endpoint, payload)
 	}
 
 	return nil
