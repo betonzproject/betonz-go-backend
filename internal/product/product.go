@@ -69,31 +69,30 @@ func UriComponentToProductType(uri string) ProductType {
 type Product int
 
 const (
-	_1GPoker        Product = 146
-	_3Win8          Product = 110
-	Allbet          Product = 7
-	AsiaGaming      Product = 1002
-	CreativeGaming  Product = 127
-	EvolutionGaming Product = 1006
-	GamingSoft      Product = 2
-	IBCbet          Product = 86
-	Jdb             Product = 41
-	Jili            Product = 59
-	Joker           Product = 22
-	M8Bet           Product = 17
-	MPoker          Product = 162
-	PGSoft          Product = 102
-	PlayNGo         Product = 204
-	PragmaticPlay   Product = 6
-	RedTiger        Product = 116
-	SAGaming        Product = 1001
-	SBObet          Product = 80
-	SexyBaccarat    Product = 3
-	Spadegaming     Product = 12
-	SV388           Product = 32
-	TFGaming        Product = 138
-	WMCasino        Product = 70
-	WSGaming        Product = 147
+	_1GPoker       Product = 146
+	_3Win8         Product = 110
+	Allbet         Product = 7
+	AsiaGaming     Product = 1002
+	CreativeGaming Product = 127
+	GamingSoft     Product = 2
+	IBCbet         Product = 86
+	Jdb            Product = 41
+	Jili           Product = 59
+	Joker          Product = 22
+	M8Bet          Product = 17
+	MPoker         Product = 162
+	PGSoft         Product = 102
+	PlayNGo        Product = 204
+	PragmaticPlay  Product = 6
+	RedTiger       Product = 116
+	SAGaming       Product = 1001
+	SBObet         Product = 80
+	SexyBaccarat   Product = 3
+	Spadegaming    Product = 12
+	SV388          Product = 32
+	TFGaming       Product = 138
+	WMCasino       Product = 70
+	WSGaming       Product = 147
 )
 
 func (p Product) String() string {
@@ -108,8 +107,6 @@ func (p Product) String() string {
 		return "Asia Gaming"
 	case CreativeGaming:
 		return "Creative Gaming"
-	case EvolutionGaming:
-		return "Evolution Gaming"
 	case GamingSoft:
 		return "Gaming Soft"
 	case IBCbet:
@@ -154,31 +151,30 @@ func (p Product) String() string {
 }
 
 var productToUriComponentMap = map[Product]string{
-	_1GPoker:        "1g-poker",
-	_3Win8:          "3win8",
-	Allbet:          "allbet",
-	AsiaGaming:      "asia-gaming",
-	CreativeGaming:  "creative-gaming",
-	EvolutionGaming: "evolution-gaming",
-	GamingSoft:      "gaming-soft",
-	IBCbet:          "ibcbet",
-	Jdb:             "jdb",
-	Jili:            "jili",
-	Joker:           "joker",
-	M8Bet:           "m8bet",
-	MPoker:          "m-poker",
-	PGSoft:          "pgsoft",
-	PlayNGo:         "playngo",
-	PragmaticPlay:   "pragmatic-play",
-	RedTiger:        "red-tiger",
-	SAGaming:        "sa-gaming",
-	SBObet:          "sbobet",
-	SexyBaccarat:    "sexy-baccarat",
-	Spadegaming:     "spadegaming",
-	SV388:           "sv388",
-	TFGaming:        "tf-gaming",
-	WMCasino:        "wm-casino",
-	WSGaming:        "ws-gaming",
+	_1GPoker:       "1g-poker",
+	_3Win8:         "3win8",
+	Allbet:         "allbet",
+	AsiaGaming:     "asia-gaming",
+	CreativeGaming: "creative-gaming",
+	GamingSoft:     "gaming-soft",
+	IBCbet:         "ibcbet",
+	Jdb:            "jdb",
+	Jili:           "jili",
+	Joker:          "joker",
+	M8Bet:          "m8bet",
+	MPoker:         "m-poker",
+	PGSoft:         "pgsoft",
+	PlayNGo:        "playngo",
+	PragmaticPlay:  "pragmatic-play",
+	RedTiger:       "red-tiger",
+	SAGaming:       "sa-gaming",
+	SBObet:         "sbobet",
+	SexyBaccarat:   "sexy-baccarat",
+	Spadegaming:    "spadegaming",
+	SV388:          "sv388",
+	TFGaming:       "tf-gaming",
+	WMCasino:       "wm-casino",
+	WSGaming:       "ws-gaming",
 }
 
 func (p Product) UriComponent() string {
@@ -200,7 +196,6 @@ var AllProducts = []Product{
 	Allbet,
 	AsiaGaming,
 	CreativeGaming,
-	EvolutionGaming,
 	GamingSoft,
 	IBCbet,
 	Jdb,
@@ -222,7 +217,6 @@ var AllProducts = []Product{
 	WSGaming,
 }
 var LiveCasinoProducts = []Product{
-	EvolutionGaming,
 	PragmaticPlay,
 	SexyBaccarat,
 	PlayNGo,
