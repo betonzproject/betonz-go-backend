@@ -40,3 +40,8 @@ func CloseAndDelete(file *os.File) {
 	file.Close()
 	os.Remove(file.Name())
 }
+
+func FileExists(filePath string) bool {
+	_, err := os.Stat(filePath)
+	return !os.IsNotExist(err)
+}

@@ -67,6 +67,7 @@ func main() {
 		r.Post("/banks", admin.PostBanks(app))
 		r.Patch("/banks", admin.PatchBanks(app))
 		r.Get("/activity-log", admin.GetActivityLog(app))
+		r.Get("/file/{filename}", admin.GetFile(app))
 	})
 
 	log.Println("🥖 Server started at port 8080!")

@@ -27,6 +27,7 @@ const (
 	ManageSystemBanks         Permission = "ManageSystemBanks"
 	ViewActivityLog           Permission = "ViewActivityLog"
 	ViewSuperadminActivityLog Permission = "ViewSuperadminActivityLog"
+	ViewFiles                 Permission = "ViewFiles"
 )
 
 var Acl = map[db.Role][]Permission{
@@ -45,6 +46,7 @@ var Acl = map[db.Role][]Permission{
 		ManagePlayers,
 		ToggleSystemBanks,
 		ViewActivityLog,
+		ViewFiles,
 	},
 	db.RoleSUPERADMIN: {
 		UpdateProfile,
@@ -62,6 +64,7 @@ var Acl = map[db.Role][]Permission{
 		ManageSystemBanks,
 		ViewActivityLog,
 		ViewSuperadminActivityLog,
+		ViewFiles,
 	},
 }
 
