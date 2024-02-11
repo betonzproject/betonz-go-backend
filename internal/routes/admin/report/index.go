@@ -2,7 +2,6 @@ package report
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -40,9 +39,9 @@ type MonthlyReportRow struct {
 }
 
 type ReportResponse struct {
-	RetentionReport RetentionReport    `json:"retentionReport"`
-	MonthlyReport   []MonthlyReportRow `json:"monthlyReport"`
-	DailyReport     []db.Report        `json:"dailyReport"`
+	RetentionReport RetentionReport             `json:"retentionReport"`
+	MonthlyReport   []MonthlyReportRow          `json:"monthlyReport"`
+	DailyReport     []db.GetDailyPerformanceRow `json:"dailyReport"`
 }
 
 func GetReport(app *app.App) http.HandlerFunc {
@@ -75,7 +74,6 @@ func GetReport(app *app.App) http.HandlerFunc {
 		if err != nil {
 			monthlyReportDate = time.Now()
 		}
-		fmt.Printf("monthlyReportDateParam: %v\n", monthlyReportDateParam)
 
 		monthlyReport := getMonthlyReport(app, r.Context(), monthlyReportDate)
 
@@ -91,12 +89,12 @@ func GetReport(app *app.App) http.HandlerFunc {
 			dailyReportTo = timeutils.EndOfThisMonth()
 		}
 
-		dailyReport, err := app.DB.GetDailyReport(r.Context(), db.GetDailyReportParams{
+		dailyReport, err := app.DB.GetDailyPerformance(r.Context(), db.GetDailyPerformanceParams{
 			FromDate: pgtype.Timestamptz{Time: dailyReportFrom, Valid: true},
 			ToDate:   pgtype.Timestamptz{Time: dailyReportTo, Valid: true},
 		})
 		if err != nil {
-			log.Panicln("Can't daily report: " + err.Error())
+			log.Panicln("Can't get daily performance data: ", err)
 		}
 
 		jsonutils.Write(w, ReportResponse{
