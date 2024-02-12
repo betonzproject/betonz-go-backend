@@ -15,6 +15,7 @@ const (
 	UpdateProfile             Permission = "UpdateProfile"
 	DepositToOwnWallet        Permission = "DepositToOwnWallet"
 	WithdrawFromOwnWallet     Permission = "WithdrawFromOwnWallet"
+	TransferBetweenWallets    Permission = "TransferBetweenWallets"
 	ViewOwnTransactionHistory Permission = "ViewOwnTransactionHistory"
 	ManageOwnBankingDetails   Permission = "ManageOwnBankingDetails"
 	ViewNotifications         Permission = "ViewNotifications"
@@ -35,6 +36,7 @@ var Acl = map[db.Role][]Permission{
 		UpdateProfile,
 		DepositToOwnWallet,
 		WithdrawFromOwnWallet,
+		TransferBetweenWallets,
 		ViewOwnTransactionHistory,
 		ManageOwnBankingDetails,
 		ViewNotifications,
@@ -52,6 +54,7 @@ var Acl = map[db.Role][]Permission{
 		UpdateProfile,
 		DepositToOwnWallet,
 		WithdrawFromOwnWallet,
+		TransferBetweenWallets,
 		ViewOwnTransactionHistory,
 		ManageOwnBankingDetails,
 		ViewNotifications,

@@ -12,6 +12,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/routes/producttype"
 	"github.com/doorman2137/betonz-go/internal/routes/profile"
 	"github.com/doorman2137/betonz-go/internal/routes/profile/bankingdetails"
+	"github.com/doorman2137/betonz-go/internal/routes/profile/transfer"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
@@ -43,6 +44,11 @@ func main() {
 		r.Post("/deposit", profile.PostDeposit(app))
 		r.Get("/withdraw", profile.GetWithdraw(app))
 		r.Post("/withdraw", profile.PostWithdraw(app))
+		r.Route("/transfer", func(r chi.Router) {
+			r.Get("/", transfer.GetTransfer(app))
+			r.Post("/", transfer.PostTransfer(app))
+			r.Get("/products", transfer.GetProducts)
+		})
 		r.Get("/history", profile.GetHistory(app))
 		r.Route("/banking-details", func(r chi.Router) {
 			r.Get("/", bankingdetails.GetBanks(app))

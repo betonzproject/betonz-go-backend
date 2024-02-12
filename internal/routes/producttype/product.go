@@ -15,7 +15,7 @@ import (
 
 type GetProductResponse struct {
 	ProductName string             `json:"productName"`
-	Balance     float64            `json:"balance"`
+	Balance     pgtype.Numeric     `json:"balance"`
 	Games       []product.GameInfo `json:"games"`
 }
 
@@ -41,7 +41,7 @@ func GetProduct(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		var balance float64
+		var balance pgtype.Numeric
 		userId := app.Scs.GetBytes(r.Context(), "userId")
 		if len(userId) == 16 {
 			user, err := app.DB.GetExtendedUserById(r.Context(), pgtype.UUID{Bytes: [16]byte(userId), Valid: true})

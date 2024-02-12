@@ -69,6 +69,7 @@ func UriComponentToProductType(uri string) ProductType {
 type Product int
 
 const (
+	MainWallet     Product = -1
 	_1GPoker       Product = 146
 	_3Win8         Product = 110
 	Allbet         Product = 7
@@ -97,6 +98,8 @@ const (
 
 func (p Product) String() string {
 	switch p {
+	case MainWallet:
+		return "Main Wallet"
 	case _1GPoker:
 		return "1G Poker"
 	case _3Win8:
@@ -243,6 +246,9 @@ var SportsProducts = []Product{SBObet, IBCbet, M8Bet, TFGaming, WSGaming}
 var CardAndBoardProducts = []Product{_1GPoker, MPoker}
 var FishingProducts = []Product{Jdb, Jili}
 var CockfightingProducts = []Product{SV388}
+
+var WalletGroup1 = []Product{AsiaGaming, SAGaming}
+var WalletGroup2 = []Product{Jdb, Jili, SexyBaccarat, SV388}
 
 func HasGameList(productType ProductType, product Product) bool {
 	if productType == Slots {
