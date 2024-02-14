@@ -10,6 +10,6 @@ func PostLogout(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		app.Scs.RenewToken(r.Context())
 		app.Scs.Destroy(r.Context())
-		w.WriteHeader(http.StatusOK)
+		http.Redirect(w, r, "/", http.StatusFound)
 	}
 }
