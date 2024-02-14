@@ -26,6 +26,11 @@ func GetProduct(app *app.App) http.HandlerFunc {
 		productParam := chi.URLParam(r, "product")
 		p := product.UriComponentToProduct(productParam)
 
+		if productType == 0 {
+			http.Error(w, "404 page not found", http.StatusNotFound)
+			return
+		}
+
 		if !product.HasGameList(productType, p) {
 			user, err := auth.Authenticate(app, w, r)
 			if err != nil {
