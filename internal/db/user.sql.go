@@ -11,6 +11,54 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createUser = `-- name: CreateUser :one
+INSERT INTO
+	"User" (id, username, email, "passwordHash", "etgUsername", "isEmailVerified", "updatedAt")
+VALUES
+	(gen_random_uuid (), $1, $2, $3, $4, true, now())
+RETURNING
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "lastLoginIp", "isEmailVerified", dob, "lastLoginAt", "pendingEmail"
+`
+
+type CreateUserParams struct {
+	Username     string `json:"username"`
+	Email        string `json:"email"`
+	PasswordHash string `json:"passwordHash"`
+	EtgUsername  string `json:"etgUsername"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createUser,
+		arg.Username,
+		arg.Email,
+		arg.PasswordHash,
+		arg.EtgUsername,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.DisplayName,
+		&i.PhoneNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.EtgUsername,
+		&i.Role,
+		&i.MainWallet,
+		&i.LastUsedBankId,
+		&i.ProfileImage,
+		&i.Status,
+		&i.LastLoginIp,
+		&i.IsEmailVerified,
+		&i.Dob,
+		&i.LastLoginAt,
+		&i.PendingEmail,
+	)
+	return i, err
+}
+
 const getExtendedUserById = `-- name: GetExtendedUserById :one
 SELECT id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "lastLoginIp", "isEmailVerified", dob, "lastLoginAt", "pendingEmail" FROM "User" WHERE id = $1
 `
@@ -43,7 +91,16 @@ func (q *Queries) GetExtendedUserById(ctx context.Context, id pgtype.UUID) (User
 }
 
 const getExtendedUserByUsername = `-- name: GetExtendedUserByUsername :one
-SELECT id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "lastLoginIp", "isEmailVerified", dob, "lastLoginAt", "pendingEmail" FROM "User" WHERE username = $1 AND ($2::"Role"[] IS NULL OR role = ANY ($2))
+SELECT
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "lastLoginIp", "isEmailVerified", dob, "lastLoginAt", "pendingEmail"
+FROM
+	"User"
+WHERE
+	username = $1
+	AND (
+		$2::"Role"[] IS NULL
+		OR ROLE = ANY ($2)
+	)
 `
 
 type GetExtendedUserByUsernameParams struct {
@@ -79,7 +136,14 @@ func (q *Queries) GetExtendedUserByUsername(ctx context.Context, arg GetExtended
 }
 
 const getNewPlayerCount = `-- name: GetNewPlayerCount :one
-SELECT COUNT(*) FROM "User" u WHERE u.role = 'PLAYER' AND u."createdAt" >= $1 AND u."createdAt" <= $2
+SELECT
+	COUNT(*)
+FROM
+	"User" u
+WHERE
+	u.role = 'PLAYER'
+	AND u."createdAt" >= $1
+	AND u."createdAt" <= $2
 `
 
 type GetNewPlayerCountParams struct {

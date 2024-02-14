@@ -5,7 +5,16 @@ SELECT id, username, role, email, "displayName", "phoneNumber", "mainWallet", do
 SELECT * FROM "User" WHERE id = $1;
 
 -- name: GetExtendedUserByUsername :one
-SELECT * FROM "User" WHERE username = $1 AND (@roles::"Role"[] IS NULL OR role = ANY (@roles));
+SELECT
+	*
+FROM
+	"User"
+WHERE
+	username = $1
+	AND (
+		@roles::"Role"[] IS NULL
+		OR ROLE = ANY (@roles)
+	);
 
 -- name: GetUsers :many
 SELECT
@@ -141,7 +150,22 @@ WHERE
 	u.id = $1;
 
 -- name: GetNewPlayerCount :one
-SELECT COUNT(*) FROM "User" u WHERE u.role = 'PLAYER' AND u."createdAt" >= sqlc.arg('fromDate') AND u."createdAt" <= sqlc.arg('toDate');
+SELECT
+	COUNT(*)
+FROM
+	"User" u
+WHERE
+	u.role = 'PLAYER'
+	AND u."createdAt" >= sqlc.arg('fromDate')
+	AND u."createdAt" <= sqlc.arg('toDate');
+
+-- name: CreateUser :one
+INSERT INTO
+	"User" (id, username, email, "passwordHash", "etgUsername", "isEmailVerified", "updatedAt")
+VALUES
+	(gen_random_uuid (), $1, $2, $3, $4, true, now())
+RETURNING
+	*;
 
 -- name: UpdateUser :exec
 UPDATE "User" SET "displayName" = $2, email = $3, "phoneNumber" = $4, "updatedAt" = now() WHERE id = $1;

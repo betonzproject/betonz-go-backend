@@ -20,7 +20,7 @@ type ResetPasswordRequestForm struct {
 	Email    string `form:"email" validate:"required,email" key:"user.email"`
 }
 
-func PostResetPassword(app *app.App) http.HandlerFunc {
+func PostPasswordReset(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var resetPasswordRequestForm ResetPasswordRequestForm
 		if formutils.ParseDecodeValidate(app, w, r, &resetPasswordRequestForm) != nil {

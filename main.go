@@ -14,6 +14,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/routes/profile/bankingdetails"
 	"github.com/doorman2137/betonz-go/internal/routes/profile/transfer"
 	"github.com/doorman2137/betonz-go/internal/routes/resetpassword"
+	"github.com/doorman2137/betonz-go/internal/routes/verifyemail"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
@@ -32,11 +33,13 @@ func main() {
 	r.Get("/", routes.GetIndex(app))
 	r.Post("/login", routes.PostLogin(app))
 	r.Post("/logout", routes.PostLogout(app))
+	r.Post("/register", routes.PostRegister(app))
 	r.Route("/reset-password", func(r chi.Router) {
-		r.Post("/", resetpassword.PostResetPassword(app))
-		r.Get("/{token}", resetpassword.GetVerifyToken(app))
-		r.Post("/{token}", resetpassword.PostVerifyToken(app))
+		r.Post("/", resetpassword.PostPasswordReset(app))
+		r.Get("/{token}", resetpassword.GetPasswordResetToken(app))
+		r.Post("/{token}", resetpassword.PostPasswordResetToken(app))
 	})
+	r.Get("/verify-email/{token}", verifyemail.GetVerifyEmailToken(app))
 	r.Get("/leaderboard/{productType}", routes.GetLeaderboard(app))
 	r.Route("/{productType}", func(r chi.Router) {
 		r.Get("/", producttype.GetProducts)

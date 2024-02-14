@@ -5,3 +5,9 @@ type HttpRequest struct {
 	Method  string            `json:"method"`
 	Headers map[string]string `json:"headers"`
 }
+
+type RegisterInfo struct {
+	Username     string `json:"username"`
+	Email        string `json:"email"`
+	PasswordHash string `json:"passwordHash"`
+}

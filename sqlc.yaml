@@ -11,6 +11,9 @@ sql:
         sql_package: "pgx/v5"
         emit_json_tags: true
         overrides:
+          - column: "VerificationToken.registerInfo"
+            go_type:
+              type: "*RegisterInfo"
           - column: "Notification.variables"
             go_type:
               type: "map[string]any"

@@ -668,5 +668,5 @@ type VerificationToken struct {
 	UserId       pgtype.UUID        `json:"userId"`
 	CreatedAt    pgtype.Timestamptz `json:"createdAt"`
 	UpdatedAt    pgtype.Timestamptz `json:"updatedAt"`
-	RegisterInfo []byte             `json:"registerInfo"`
+	RegisterInfo *RegisterInfo      `json:"registerInfo"`
 }

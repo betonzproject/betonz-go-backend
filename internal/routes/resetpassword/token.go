@@ -23,7 +23,7 @@ type VerifyTokenResponse struct {
 	Username     string `json:"username"`
 }
 
-func GetVerifyToken(app *app.App) http.HandlerFunc {
+func GetPasswordResetToken(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token := chi.URLParam(r, "token")
 
@@ -31,28 +31,8 @@ func GetVerifyToken(app *app.App) http.HandlerFunc {
 		hash.Write([]byte(token))
 		tokenHash := base64.RawURLEncoding.EncodeToString(hash.Sum(nil))
 
-		passwordResetToken, err := app.DB.GetPasswordResetTokenByHash(r.Context(), tokenHash)
+		passwordResetToken, err := checkPasswordResetToken(app, r, tokenHash)
 		if err != nil {
-			err = utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypePASSWORDRESETTOKENVERIFICATION, db.EventResultFAIL, "Password reset link invalid", map[string]any{
-				"tokenHash": tokenHash,
-			})
-			if err != nil {
-				log.Panicln("Can't log event: " + err.Error())
-			}
-
-			jsonutils.Write(w, VerifyTokenResponse{IsTokenValid: false}, http.StatusBadRequest)
-			return
-		}
-
-		expired := !time.Now().Before(passwordResetToken.CreatedAt.Time.Add(1 * time.Hour))
-		if expired || passwordResetToken.TokenHash != tokenHash {
-			err = utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypePASSWORDRESETTOKENVERIFICATION, db.EventResultFAIL, "Password reset link expired", map[string]any{
-				"tokenHash": tokenHash,
-			})
-			if err != nil {
-				log.Panicln("Can't log event: " + err.Error())
-			}
-
 			jsonutils.Write(w, VerifyTokenResponse{IsTokenValid: false}, http.StatusBadRequest)
 			return
 		}
@@ -65,7 +45,7 @@ type ResetPasswordForm struct {
 	Password string `form:"password" validate:"required,min=8,max=512"`
 }
 
-func PostVerifyToken(app *app.App) http.HandlerFunc {
+func PostPasswordResetToken(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var resetPasswordForm ResetPasswordForm
 		if formutils.ParseDecodeValidate(app, w, r, &resetPasswordForm) != nil {
@@ -78,39 +58,9 @@ func PostVerifyToken(app *app.App) http.HandlerFunc {
 		hash.Write([]byte(token))
 		tokenHash := base64.RawURLEncoding.EncodeToString(hash.Sum(nil))
 
-		passwordResetToken, err := app.DB.GetPasswordResetTokenByHash(r.Context(), tokenHash)
+		passwordResetToken, err := checkPasswordResetToken(app, r, tokenHash)
 		if err != nil {
-			err = utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypePASSWORDRESETTOKENVERIFICATION, db.EventResultFAIL, "Password reset link invalid", map[string]any{
-				"tokenHash": tokenHash,
-			})
-			if err != nil {
-				log.Panicln("Can't log event: " + err.Error())
-			}
-			http.Error(w, "Invalid token", http.StatusForbidden)
-			return
-		}
-
-		expired := !time.Now().Before(passwordResetToken.CreatedAt.Time.Add(1 * time.Hour))
-
-		if passwordResetToken.TokenHash != tokenHash {
-			err = utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypePASSWORDRESETTOKENVERIFICATION, db.EventResultFAIL, "Password reset link invalid", map[string]any{
-				"tokenHash": tokenHash,
-			})
-			if err != nil {
-				log.Panicln("Can't log event: " + err.Error())
-			}
-			http.Error(w, "Invalid token", http.StatusForbidden)
-			return
-		}
-
-		if expired {
-			err = utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypePASSWORDRESETTOKENVERIFICATION, db.EventResultFAIL, "Password reset link expired", map[string]any{
-				"tokenHash": tokenHash,
-			})
-			if err != nil {
-				log.Panicln("Can't log event: " + err.Error())
-			}
-			http.Error(w, "Invalid token", http.StatusForbidden)
+			http.Error(w, "Invalid token", http.StatusBadRequest)
 			return
 		}
 
@@ -139,11 +89,9 @@ func PostVerifyToken(app *app.App) http.HandlerFunc {
 		// Invalidate all of the user's sessions
 		err = app.Scs.Iterate(r.Context(), func(ctx context.Context) error {
 			userID := app.Scs.GetBytes(ctx, "userId")
-
 			if string(userID) == string(passwordResetToken.UserId.Bytes[:]) {
 				return app.Scs.Destroy(ctx)
 			}
-
 			return nil
 		})
 		if err != nil {
@@ -211,4 +159,30 @@ func PostVerifyToken(app *app.App) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusOK)
 	}
+}
+
+func checkPasswordResetToken(app *app.App, r *http.Request, tokenHash string) (db.GetPasswordResetTokenByHashRow, error) {
+	passwordResetToken, err := app.DB.GetPasswordResetTokenByHash(r.Context(), tokenHash)
+	if err != nil || passwordResetToken.TokenHash != tokenHash {
+		err2 := utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypePASSWORDRESETTOKENVERIFICATION, db.EventResultFAIL, "Password reset link invalid", map[string]any{
+			"tokenHash": tokenHash,
+		})
+		if err2 != nil {
+			log.Panicln("Can't log event: " + err2.Error())
+		}
+		return db.GetPasswordResetTokenByHashRow{}, err
+	}
+
+	expired := !time.Now().Before(passwordResetToken.CreatedAt.Time.Add(1 * time.Hour))
+	if expired {
+		err2 := utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypePASSWORDRESETTOKENVERIFICATION, db.EventResultFAIL, "Password reset link expired", map[string]any{
+			"tokenHash": tokenHash,
+		})
+		if err2 != nil {
+			log.Panicln("Can't log event: " + err2.Error())
+		}
+		return db.GetPasswordResetTokenByHashRow{}, err
+	}
+
+	return passwordResetToken, nil
 }
