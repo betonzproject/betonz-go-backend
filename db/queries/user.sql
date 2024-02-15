@@ -145,7 +145,7 @@ SELECT COUNT(*) FROM "User" u WHERE u.role = 'PLAYER' AND u."createdAt" >= sqlc.
 
 -- name: GetActivePlayerCount :one
 SELECT
-	COUNT(*)
+	COUNT(DISTINCT e."userId")
 FROM
 	"User" u
 	JOIN "Event" e ON u.id = e."userId"

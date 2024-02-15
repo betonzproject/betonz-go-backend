@@ -13,7 +13,7 @@ import (
 
 const getActivePlayerCount = `-- name: GetActivePlayerCount :one
 SELECT
-	COUNT(*)
+	COUNT(DISTINCT e."userId")
 FROM
 	"User" u
 	JOIN "Event" e ON u.id = e."userId"

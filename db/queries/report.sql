@@ -39,7 +39,7 @@ WITH
 		-- Get daily active player count
 		SELECT
 			COALESCE(DATE_TRUNC('day', e."createdAt" AT TIME ZONE 'Asia/Yangon')) AS "date",
-			COUNT(*) AS "activePlayerCount"
+			COUNT(DISTINCT e."userId") AS "activePlayerCount"
 		FROM
 			"User" u
 			JOIN "Event" e ON u.id = e."userId"
