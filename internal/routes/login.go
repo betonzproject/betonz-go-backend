@@ -25,8 +25,15 @@ func PostLogin(app *app.App) http.HandlerFunc {
 
 		adminMode := r.URL.Query().Get("role") == string(db.RoleADMIN)
 
+		redirectParam := r.URL.Query().Get("redirect")
+		redirectTo, err := url.QueryUnescape(redirectParam)
+		if err != nil || redirectTo == "" {
+			redirectTo = "/"
+		} else {
+			redirectTo = "/" + redirectTo[1:]
+		}
+
 		var user db.User
-		var err error
 		if adminMode {
 			user, err = app.DB.GetExtendedUserByUsername(r.Context(), db.GetExtendedUserByUsernameParams{
 				Username: loginForm.Username,
@@ -46,12 +53,22 @@ func PostLogin(app *app.App) http.HandlerFunc {
 		if err != nil {
 			// Dummy hash to prevent timing attack
 			utils.Argon2IDVerify(loginForm.Password, "$argon2id$v=19$m=65536,t=3,p=4$YGmXRJpAsWMPAU8eMrFFIw$P5NwS7fKyuGaU+siAOFeNBmfbucV3Rrj7rEUMSB4vc8")
+			utils.LogEvent(app.DB, r, user.ID, db.EventTypeLOGIN, db.EventResultFAIL, "User does not exist", map[string]any{
+				"username":   loginForm.Username,
+				"redirectTo": redirectTo,
+				"adminMode":  adminMode,
+			})
 			http.Error(w, "login.usernameOrPasswordIncorrect.message", http.StatusUnauthorized)
 			return
 		}
 
 		passwordMatches, _ := utils.Argon2IDVerify(loginForm.Password, user.PasswordHash)
 		if !passwordMatches {
+			utils.LogEvent(app.DB, r, user.ID, db.EventTypeLOGIN, db.EventResultFAIL, "Password does not match", map[string]any{
+				"username":   loginForm.Username,
+				"redirectTo": redirectTo,
+				"adminMode":  adminMode,
+			})
 			http.Error(w, "login.usernameOrPasswordIncorrect.message", http.StatusUnauthorized)
 			return
 		}
@@ -62,13 +79,10 @@ func PostLogin(app *app.App) http.HandlerFunc {
 		rand.Read(randomBytes)
 		app.Scs.Put(r.Context(), "sessionId", randomBytes)
 
-		redirectParam := r.URL.Query().Get("redirect")
-		redirectTo, err := url.QueryUnescape(redirectParam)
-		if err != nil || redirectTo == "" {
-			redirectTo = "/"
-		} else {
-			redirectTo = "/" + redirectTo[1:]
-		}
+		utils.LogEvent(app.DB, r, user.ID, db.EventTypeLOGIN, db.EventResultSUCCESS, "", map[string]any{
+			"redirectTo": redirectTo,
+			"adminMode":  adminMode,
+		})
 
 		http.Redirect(w, r, redirectTo, http.StatusFound)
 	}

@@ -107,7 +107,7 @@ func PostPlayers(app *app.App) http.HandlerFunc {
 			"reason": manageUserForm.Reason,
 		})
 		if err != nil {
-			log.Panicln("Can't create event: " + err.Error())
+			log.Panicln("Can't log event: " + err.Error())
 		}
 
 		tx.Commit(r.Context())

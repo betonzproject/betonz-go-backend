@@ -67,7 +67,7 @@ func DeleteBank(app *app.App) http.HandlerFunc {
 			"bankId": utils.EncodeUUID(bankId.Bytes),
 		})
 		if err != nil {
-			log.Panicln("Can't create event: " + err.Error())
+			log.Panicln("Can't log event: " + err.Error())
 		}
 
 		tx.Commit(r.Context())

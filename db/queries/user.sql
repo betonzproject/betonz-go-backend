@@ -107,7 +107,7 @@ SELECT
 	u.status,
 	u."createdAt",
 	e."sourceIp" AS "lastLoginIp",
-	e2."createdAt"::timestamptz AS "lastActiveAt"
+	e2."updatedAt"::timestamptz AS "lastActiveAt"
 FROM
 	"User" u
 	LEFT JOIN (
@@ -128,32 +128,20 @@ FROM
 		-- Get last active time
 		SELECT DISTINCT
 			ON ("userId") "userId",
-			"createdAt"
+			"updatedAt"
 		FROM
 			"Event"
 		WHERE
 			type = 'ACTIVE'
 		ORDER BY
 			"userId",
-			"createdAt" DESC
+			"updatedAt" DESC
 	) e2 ON u.id = e2."userId"
 WHERE
 	u.id = $1;
 
 -- name: GetNewPlayerCount :one
 SELECT COUNT(*) FROM "User" u WHERE u.role = 'PLAYER' AND u."createdAt" >= sqlc.arg('fromDate') AND u."createdAt" <= sqlc.arg('toDate');
-
--- name: GetActivePlayerCount :one
-SELECT
-	COUNT(DISTINCT e."userId")
-FROM
-	"User" u
-	JOIN "Event" e ON u.id = e."userId"
-WHERE
-	u.role = 'PLAYER'
-	AND e.type = 'ACTIVE'
-	AND e."createdAt" >= sqlc.arg('fromDate')
-	AND e."createdAt" <= sqlc.arg('toDate');
 
 -- name: UpdateUser :exec
 UPDATE "User" SET "displayName" = $2, email = $3, "phoneNumber" = $4, "updatedAt" = now() WHERE id = $1;

@@ -105,7 +105,7 @@ func PostTransfer(app *app.App) http.HandlerFunc {
 			if err != nil {
 				err = utils.LogEvent(app.DB, r, user.ID, db.EventTypeTRANSFERWALLET, db.EventResultFAIL, err.Error(), data)
 				if err != nil {
-					log.Panicln("Can't create event: " + err.Error())
+					log.Panicln("Can't log event: " + err.Error())
 				}
 
 				log.Printf("Can't get balance of %s (%d) for %s: %s\n", transferForm.FromWallet, transferForm.FromWallet, user.EtgUsername, err)
@@ -119,7 +119,7 @@ func PostTransfer(app *app.App) http.HandlerFunc {
 		if numericutils.Cmp(fromWalletBalance, amount) < 0 {
 			err = utils.LogEvent(app.DB, r, user.ID, db.EventTypeTRANSFERWALLET, db.EventResultFAIL, "Insufficient balance", data)
 			if err != nil {
-				log.Panicln("Can't create event: " + err.Error())
+				log.Panicln("Can't log event: " + err.Error())
 			}
 
 			http.Error(w, "transfer.insufficientBalance.message", http.StatusForbidden)
@@ -140,13 +140,13 @@ func PostTransfer(app *app.App) http.HandlerFunc {
 				// so we need to commit changes done in `product.Transfer()`
 				err := utils.LogEvent(qtx, r, user.ID, db.EventTypeTRANSFERWALLET, db.EventResultFAIL, err.Error(), data)
 				if err != nil {
-					log.Panicln("Can't create event: " + err.Error())
+					log.Panicln("Can't log event: " + err.Error())
 				}
 				tx.Commit(r.Context())
 			} else {
 				err := utils.LogEvent(app.DB, r, user.ID, db.EventTypeTRANSFERWALLET, db.EventResultFAIL, err.Error(), data)
 				if err != nil {
-					log.Panicln("Can't create event: " + err.Error())
+					log.Panicln("Can't log event: " + err.Error())
 				}
 			}
 
@@ -157,7 +157,7 @@ func PostTransfer(app *app.App) http.HandlerFunc {
 
 		err = utils.LogEvent(qtx, r, user.ID, db.EventTypeTRANSFERWALLET, db.EventResultSUCCESS, "", data)
 		if err != nil {
-			log.Panicln("Can't create event: " + err.Error())
+			log.Panicln("Can't log event: " + err.Error())
 		}
 
 		tx.Commit(r.Context())

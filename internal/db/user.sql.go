@@ -11,31 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const getActivePlayerCount = `-- name: GetActivePlayerCount :one
-SELECT
-	COUNT(DISTINCT e."userId")
-FROM
-	"User" u
-	JOIN "Event" e ON u.id = e."userId"
-WHERE
-	u.role = 'PLAYER'
-	AND e.type = 'ACTIVE'
-	AND e."createdAt" >= $1
-	AND e."createdAt" <= $2
-`
-
-type GetActivePlayerCountParams struct {
-	FromDate pgtype.Timestamptz `json:"fromDate"`
-	ToDate   pgtype.Timestamptz `json:"toDate"`
-}
-
-func (q *Queries) GetActivePlayerCount(ctx context.Context, arg GetActivePlayerCountParams) (int64, error) {
-	row := q.db.QueryRow(ctx, getActivePlayerCount, arg.FromDate, arg.ToDate)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const getExtendedUserById = `-- name: GetExtendedUserById :one
 SELECT id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "lastLoginIp", "isEmailVerified", dob, "lastLoginAt", "pendingEmail" FROM "User" WHERE id = $1
 `
@@ -133,7 +108,7 @@ SELECT
 	u.status,
 	u."createdAt",
 	e."sourceIp" AS "lastLoginIp",
-	e2."createdAt"::timestamptz AS "lastActiveAt"
+	e2."updatedAt"::timestamptz AS "lastActiveAt"
 FROM
 	"User" u
 	LEFT JOIN (
@@ -154,14 +129,14 @@ FROM
 		-- Get last active time
 		SELECT DISTINCT
 			ON ("userId") "userId",
-			"createdAt"
+			"updatedAt"
 		FROM
 			"Event"
 		WHERE
 			type = 'ACTIVE'
 		ORDER BY
 			"userId",
-			"createdAt" DESC
+			"updatedAt" DESC
 	) e2 ON u.id = e2."userId"
 WHERE
 	u.id = $1

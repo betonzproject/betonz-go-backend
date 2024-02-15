@@ -41,6 +41,62 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) error 
 	return err
 }
 
+const getActiveEventTodayByUserId = `-- name: GetActiveEventTodayByUserId :one
+SELECT
+	id, "sourceIp", "userId", type, result, reason, data, "createdAt", "updatedAt", "httpRequest"
+FROM
+	"Event" e
+WHERE
+	"type" = 'ACTIVE'
+	AND e."userId" = $1
+	AND date_trunc('day', "createdAt" AT TIME ZONE 'Asia/Yangon') = date_trunc('day', now() AT TIME ZONE 'Asia/Yangon')
+LIMIT
+	1
+`
+
+func (q *Queries) GetActiveEventTodayByUserId(ctx context.Context, userid pgtype.UUID) (Event, error) {
+	row := q.db.QueryRow(ctx, getActiveEventTodayByUserId, userid)
+	var i Event
+	err := row.Scan(
+		&i.ID,
+		&i.SourceIp,
+		&i.UserId,
+		&i.Type,
+		&i.Result,
+		&i.Reason,
+		&i.Data,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.HttpRequest,
+	)
+	return i, err
+}
+
+const getActivePlayerCount = `-- name: GetActivePlayerCount :one
+SELECT
+	COUNT(DISTINCT e."userId")
+FROM
+	"User" u
+	JOIN "Event" e ON u.id = e."userId"
+WHERE
+	u.role = 'PLAYER'
+	AND e.type = 'ACTIVE'
+	AND e."updatedAt" >= $1
+	AND e."updatedAt" <= $2
+`
+
+type GetActivePlayerCountParams struct {
+	FromDate pgtype.Timestamptz `json:"fromDate"`
+	ToDate   pgtype.Timestamptz `json:"toDate"`
+}
+
+func (q *Queries) GetActivePlayerCount(ctx context.Context, arg GetActivePlayerCountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, getActivePlayerCount, arg.FromDate, arg.ToDate)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getEvents = `-- name: GetEvents :many
 SELECT
 	e.id, e."sourceIp", e."userId", e.type, e.result, e.reason, e.data, e."createdAt", e."updatedAt", e."httpRequest",
@@ -199,4 +255,13 @@ func (q *Queries) GetRestrictionEventsByUserId(ctx context.Context, userid pgtyp
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateEvent = `-- name: UpdateEvent :exec
+UPDATE "Event" SET "updatedAt" = now() WHERE id = $1
+`
+
+func (q *Queries) UpdateEvent(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, updateEvent, id)
+	return err
 }

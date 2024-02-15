@@ -51,7 +51,7 @@ WITH
 	ActivePlayerCount AS (
 		-- Get daily active player count
 		SELECT
-			COALESCE(DATE_TRUNC('day', e."createdAt" AT TIME ZONE 'Asia/Yangon')) AS "date",
+			COALESCE(DATE_TRUNC('day', e."updatedAt" AT TIME ZONE 'Asia/Yangon')) AS "date",
 			COUNT(DISTINCT e."userId") AS "activePlayerCount"
 		FROM
 			"User" u
@@ -59,10 +59,10 @@ WITH
 			AND e.type = 'ACTIVE'
 		WHERE
 			u.role = 'PLAYER'
-			AND e."createdAt" >= $1
-			AND e."createdAt" <= $2
+			AND e."updatedAt" >= $1
+			AND e."updatedAt" <= $2
 		GROUP BY
-			COALESCE(DATE_TRUNC('day', e."createdAt" AT TIME ZONE 'Asia/Yangon'))
+			COALESCE(DATE_TRUNC('day', e."updatedAt" AT TIME ZONE 'Asia/Yangon'))
 	)
 SELECT
 	COALESCE(bs."date", ts."date", apc."date") AS "createdAt",

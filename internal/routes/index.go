@@ -1,11 +1,13 @@
 package routes
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/doorman2137/betonz-go/internal/acl"
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/db"
+	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -33,6 +35,19 @@ func GetIndex(app *app.App) http.HandlerFunc {
 		var unreadNotificationCount int64
 		if acl.IsAuthorized(user.Role, acl.ViewNotifications) {
 			unreadNotificationCount, err = app.DB.GetUnreadNotificationCountByUserId(r.Context(), user.ID)
+		}
+
+		event, err := app.DB.GetActiveEventTodayByUserId(r.Context(), user.ID)
+		if err != nil {
+			err = utils.LogEvent(app.DB, r, user.ID, db.EventTypeACTIVE, db.EventResultSUCCESS, "", nil)
+			if err != nil {
+				log.Panicln("Can't log event: " + err.Error())
+			}
+		} else {
+			err = app.DB.UpdateEvent(r.Context(), event.ID)
+			if err != nil {
+				log.Panicln("Can't update event: " + err.Error())
+			}
 		}
 
 		jsonutils.Write(w, Response{User: &user, UnreadNotificationCount: unreadNotificationCount, Permissons: acl.Acl[user.Role]}, http.StatusOK)

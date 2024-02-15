@@ -70,7 +70,7 @@ func PostProfile(app *app.App) http.HandlerFunc {
 
 		err = utils.LogEvent(qtx, r, user.ID, db.EventTypePROFILEUPDATE, db.EventResultSUCCESS, "", updateEvent)
 		if err != nil {
-			log.Panicln("Can't create event: " + err.Error())
+			log.Panicln("Can't log event: " + err.Error())
 		}
 
 		tx.Commit(r.Context())

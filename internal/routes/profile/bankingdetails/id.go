@@ -99,7 +99,7 @@ func PatchBankById(app *app.App) http.HandlerFunc {
 			"new":    string(patchBankForm.BankName) + " " + string(patchBankForm.AccountName) + " " + string(patchBankForm.AccountNumber),
 		})
 		if err != nil {
-			log.Panicln("Can't create event: " + err.Error())
+			log.Panicln("Can't log event: " + err.Error())
 		}
 
 		tx.Commit(r.Context())

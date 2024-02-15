@@ -60,7 +60,7 @@ func AddBank(app *app.App) http.HandlerFunc {
 			"bank":   string(bank.Name) + " " + string(bank.AccountName) + " " + string(bank.AccountNumber),
 		})
 		if err != nil {
-			log.Panicln("Can't create event: " + err.Error())
+			log.Panicln("Can't log event: " + err.Error())
 		}
 
 		tx.Commit(r.Context())

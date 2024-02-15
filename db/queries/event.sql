@@ -37,6 +37,30 @@ WHERE
 ORDER BY
 	e.id DESC;
 
+-- name: GetActivePlayerCount :one
+SELECT
+	COUNT(DISTINCT e."userId")
+FROM
+	"User" u
+	JOIN "Event" e ON u.id = e."userId"
+WHERE
+	u.role = 'PLAYER'
+	AND e.type = 'ACTIVE'
+	AND e."updatedAt" >= sqlc.arg('fromDate')
+	AND e."updatedAt" <= sqlc.arg('toDate');
+
+-- name: GetActiveEventTodayByUserId :one
+SELECT
+	*
+FROM
+	"Event" e
+WHERE
+	"type" = 'ACTIVE'
+	AND e."userId" = $1
+	AND date_trunc('day', "createdAt" AT TIME ZONE 'Asia/Yangon') = date_trunc('day', now() AT TIME ZONE 'Asia/Yangon')
+LIMIT
+	1;
+
 -- name: GetRestrictionEventsByUserId :many
 SELECT
 	e.id,
@@ -59,3 +83,6 @@ INSERT INTO
 	"Event" ("sourceIp", "userId", type, result, reason, data, "httpRequest", "updatedAt")
 VALUES
 	($1, $2, $3, $4, $5, $6, $7, now());
+
+-- name: UpdateEvent :exec
+UPDATE "Event" SET "updatedAt" = now() WHERE id = $1;
