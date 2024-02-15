@@ -77,13 +77,24 @@ func (q *Queries) CreateSystemBank(ctx context.Context, arg CreateSystemBankPara
 	return err
 }
 
-const deleteBankById = `-- name: DeleteBankById :exec
-DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1
+const deleteBankById = `-- name: DeleteBankById :one
+DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1 RETURNING b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled
 `
 
-func (q *Queries) DeleteBankById(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteBankById, id)
-	return err
+func (q *Queries) DeleteBankById(ctx context.Context, id pgtype.UUID) (Bank, error) {
+	row := q.db.QueryRow(ctx, deleteBankById, id)
+	var i Bank
+	err := row.Scan(
+		&i.ID,
+		&i.UserId,
+		&i.Name,
+		&i.AccountName,
+		&i.AccountNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Disabled,
+	)
+	return i, err
 }
 
 const deleteSystemBankById = `-- name: DeleteSystemBankById :exec

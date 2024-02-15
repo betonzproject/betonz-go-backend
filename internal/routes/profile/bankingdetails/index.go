@@ -58,13 +58,14 @@ func DeleteBank(app *app.App) http.HandlerFunc {
 		defer tx.Rollback(r.Context())
 		qtx := app.DB.WithTx(tx)
 
-		err = qtx.DeleteBankById(r.Context(), bankId)
+		bank, err := qtx.DeleteBankById(r.Context(), bankId)
 		if err != nil {
 			log.Panicln("Can't delete bank: " + err.Error())
 		}
 
 		err = utils.LogEvent(qtx, r, user.ID, db.EventTypeBANKDELETE, db.EventResultSUCCESS, "", map[string]any{
 			"bankId": utils.EncodeUUID(bankId.Bytes),
+			"bank":    string(bank.Name) + " " + string(bank.AccountName) + " " + string(bank.AccountNumber),
 		})
 		if err != nil {
 			log.Panicln("Can't log event: " + err.Error())

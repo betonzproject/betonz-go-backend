@@ -3,11 +3,13 @@ package admin
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/doorman2137/betonz-go/internal/acl"
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/auth"
 	"github.com/doorman2137/betonz-go/internal/db"
+	"github.com/doorman2137/betonz-go/internal/product"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/doorman2137/betonz-go/internal/utils/timeutils"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -71,6 +73,20 @@ func GetActivityLog(app *app.App) http.HandlerFunc {
 		})
 		if err != nil {
 			log.Panicln("Can't get events: " + err.Error())
+		}
+
+		// Preprocess event data
+		for i, event := range events {
+			if event.Type == db.EventTypeTRANSFERWALLET {
+				from, _ := event.Data["fromWallet"].(float64)
+				to, _ := event.Data["toWallet"].(float64)
+				reason := strings.Split(event.Reason.String, "\n")
+				events[i].Data["fromWallet"] = product.Product(from).String()
+				events[i].Data["toWallet"] = product.Product(to).String()
+				if len(reason) > 0 {
+					events[i].Reason.String = reason[0]
+				}
+			}
 		}
 
 		jsonutils.Write(w, events, http.StatusOK)

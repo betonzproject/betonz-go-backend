@@ -58,8 +58,8 @@ SET
 WHERE
 	id = $1;
 
--- name: DeleteBankById :exec
-DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1;
+-- name: DeleteBankById :one
+DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1 RETURNING b.*;
 
 -- name: DeleteSystemBankById :exec
 DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1 AND u.role = 'SYSTEM';

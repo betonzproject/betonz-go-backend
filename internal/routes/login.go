@@ -64,7 +64,7 @@ func PostLogin(app *app.App) http.HandlerFunc {
 
 		passwordMatches, _ := utils.Argon2IDVerify(loginForm.Password, user.PasswordHash)
 		if !passwordMatches {
-			utils.LogEvent(app.DB, r, user.ID, db.EventTypeLOGIN, db.EventResultFAIL, "Password does not match", map[string]any{
+			utils.LogEvent(app.DB, r, user.ID, db.EventTypeLOGIN, db.EventResultFAIL, "Password incorrect", map[string]any{
 				"username":   loginForm.Username,
 				"redirectTo": redirectTo,
 				"adminMode":  adminMode,
