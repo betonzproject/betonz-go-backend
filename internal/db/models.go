@@ -605,48 +605,6 @@ type PrismaMigration struct {
 	AppliedStepsCount int32              `json:"applied_steps_count"`
 }
 
-type Report struct {
-	ID                  int32              `json:"id"`
-	DepositAmount       pgtype.Numeric     `json:"depositAmount"`
-	WithdrawAmount      pgtype.Numeric     `json:"withdrawAmount"`
-	DepositCount        pgtype.Numeric     `json:"depositCount"`
-	WithdrawCount       pgtype.Numeric     `json:"withdrawCount"`
-	WithdrawBankFees    pgtype.Numeric     `json:"withdrawBankFees"`
-	BonusGiven          pgtype.Numeric     `json:"bonusGiven"`
-	CreatedAt           pgtype.Timestamptz `json:"createdAt"`
-	ActivePlayerCount   pgtype.Numeric     `json:"activePlayerCount"`
-	InactivePlayerCount pgtype.Numeric     `json:"inactivePlayerCount"`
-	WinLoss             pgtype.Numeric     `json:"winLoss"`
-}
-
-type SchemaMigration struct {
-	Version string `json:"version"`
-}
-
-type SessionToken struct {
-	TokenHash string             `json:"tokenHash"`
-	UserId    pgtype.UUID        `json:"userId"`
-	CreatedAt pgtype.Timestamptz `json:"createdAt"`
-	UpdatedAt pgtype.Timestamptz `json:"updatedAt"`
-	ExpiresAt pgtype.Timestamptz `json:"expiresAt"`
-}
-
-type Transaction struct {
-	InitiatorId   pgtype.UUID        `json:"initiatorId"`
-	BeneficiaryId pgtype.UUID        `json:"beneficiaryId"`
-	Product       string             `json:"product"`
-	BalanceBefore pgtype.Numeric     `json:"balanceBefore"`
-	BalanceAfter  pgtype.Numeric     `json:"balanceAfter"`
-	Amount        pgtype.Numeric     `json:"amount"`
-	Type          TransactionType    `json:"type"`
-	Remarks       pgtype.Text        `json:"remarks"`
-	CreatedAt     pgtype.Timestamptz `json:"createdAt"`
-	UpdatedAt     pgtype.Timestamptz `json:"updatedAt"`
-	ID            int32              `json:"id"`
-	ReceiptPath   pgtype.Text        `json:"receiptPath"`
-	Bonus         pgtype.Numeric     `json:"bonus"`
-}
-
 type TransactionRequest struct {
 	ID                           int32              `json:"id"`
 	UserId                       pgtype.UUID        `json:"userId"`

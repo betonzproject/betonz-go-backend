@@ -20,7 +20,6 @@ const (
 	ManageOwnBankingDetails   Permission = "ManageOwnBankingDetails"
 	ViewNotifications         Permission = "ViewNotifications"
 	ManageTransactionRequests Permission = "ManageTransactionRequests"
-	ViewTransactionLogs       Permission = "ViewTransactionLogs"
 	ViewReports               Permission = "ViewReports"
 	ManagePlayers             Permission = "ManagePlayers"
 	ManageAdmins              Permission = "ManageAdmins"
@@ -43,7 +42,6 @@ var Acl = map[db.Role][]Permission{
 	},
 	db.RoleADMIN: {
 		ManageTransactionRequests,
-		ViewTransactionLogs,
 		ViewReports,
 		ManagePlayers,
 		ToggleSystemBanks,
@@ -59,7 +57,6 @@ var Acl = map[db.Role][]Permission{
 		ManageOwnBankingDetails,
 		ViewNotifications,
 		ManageTransactionRequests,
-		ViewTransactionLogs,
 		ViewReports,
 		ManagePlayers,
 		ManageAdmins,

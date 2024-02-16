@@ -347,79 +347,6 @@ CREATE TABLE betonz."PasswordResetToken" (
 
 
 --
--- Name: Report; Type: TABLE; Schema: betonz; Owner: -
---
-
-CREATE TABLE betonz."Report" (
-    id integer NOT NULL,
-    "depositAmount" numeric(65,30) NOT NULL,
-    "withdrawAmount" numeric(65,30) NOT NULL,
-    "depositCount" numeric(65,30) NOT NULL,
-    "withdrawCount" numeric(65,30) NOT NULL,
-    "withdrawBankFees" numeric(65,30) NOT NULL,
-    "bonusGiven" numeric(65,30) NOT NULL,
-    "createdAt" timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "activePlayerCount" numeric(65,30) NOT NULL,
-    "inactivePlayerCount" numeric(65,30) NOT NULL,
-    "winLoss" numeric(65,30) NOT NULL
-);
-
-
---
--- Name: Report_id_seq; Type: SEQUENCE; Schema: betonz; Owner: -
---
-
-CREATE SEQUENCE betonz."Report_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: Report_id_seq; Type: SEQUENCE OWNED BY; Schema: betonz; Owner: -
---
-
-ALTER SEQUENCE betonz."Report_id_seq" OWNED BY betonz."Report".id;
-
-
---
--- Name: SessionToken; Type: TABLE; Schema: betonz; Owner: -
---
-
-CREATE TABLE betonz."SessionToken" (
-    "tokenHash" text NOT NULL,
-    "userId" uuid NOT NULL,
-    "createdAt" timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) with time zone NOT NULL,
-    "expiresAt" timestamp(3) with time zone
-);
-
-
---
--- Name: Transaction; Type: TABLE; Schema: betonz; Owner: -
---
-
-CREATE TABLE betonz."Transaction" (
-    "initiatorId" uuid NOT NULL,
-    "beneficiaryId" uuid NOT NULL,
-    product text NOT NULL,
-    "balanceBefore" numeric(32,2) NOT NULL,
-    "balanceAfter" numeric(32,2) NOT NULL,
-    amount numeric(32,2) NOT NULL,
-    type betonz."TransactionType" NOT NULL,
-    remarks text,
-    "createdAt" timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) with time zone NOT NULL,
-    id integer NOT NULL,
-    "receiptPath" text,
-    bonus numeric(32,2) DEFAULT 0 NOT NULL
-);
-
-
---
 -- Name: TransactionRequest; Type: TABLE; Schema: betonz; Owner: -
 --
 
@@ -464,26 +391,6 @@ CREATE SEQUENCE betonz."TransactionRequest_id_seq"
 --
 
 ALTER SEQUENCE betonz."TransactionRequest_id_seq" OWNED BY betonz."TransactionRequest".id;
-
-
---
--- Name: Transaction_id_seq; Type: SEQUENCE; Schema: betonz; Owner: -
---
-
-CREATE SEQUENCE betonz."Transaction_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: Transaction_id_seq; Type: SEQUENCE OWNED BY; Schema: betonz; Owner: -
---
-
-ALTER SEQUENCE betonz."Transaction_id_seq" OWNED BY betonz."Transaction".id;
 
 
 --
@@ -609,20 +516,6 @@ ALTER TABLE ONLY betonz."Notification" ALTER COLUMN id SET DEFAULT nextval('beto
 
 
 --
--- Name: Report id; Type: DEFAULT; Schema: betonz; Owner: -
---
-
-ALTER TABLE ONLY betonz."Report" ALTER COLUMN id SET DEFAULT nextval('betonz."Report_id_seq"'::regclass);
-
-
---
--- Name: Transaction id; Type: DEFAULT; Schema: betonz; Owner: -
---
-
-ALTER TABLE ONLY betonz."Transaction" ALTER COLUMN id SET DEFAULT nextval('betonz."Transaction_id_seq"'::regclass);
-
-
---
 -- Name: TransactionRequest id; Type: DEFAULT; Schema: betonz; Owner: -
 --
 
@@ -693,35 +586,11 @@ ALTER TABLE ONLY betonz."PasswordResetToken"
 
 
 --
--- Name: Report Report_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
---
-
-ALTER TABLE ONLY betonz."Report"
-    ADD CONSTRAINT "Report_pkey" PRIMARY KEY (id);
-
-
---
--- Name: SessionToken SessionToken_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
---
-
-ALTER TABLE ONLY betonz."SessionToken"
-    ADD CONSTRAINT "SessionToken_pkey" PRIMARY KEY ("tokenHash");
-
-
---
 -- Name: TransactionRequest TransactionRequest_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
 --
 
 ALTER TABLE ONLY betonz."TransactionRequest"
     ADD CONSTRAINT "TransactionRequest_pkey" PRIMARY KEY (id);
-
-
---
--- Name: Transaction Transaction_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
---
-
-ALTER TABLE ONLY betonz."Transaction"
-    ADD CONSTRAINT "Transaction_pkey" PRIMARY KEY (id);
 
 
 --
@@ -872,14 +741,6 @@ ALTER TABLE ONLY betonz."PasswordResetToken"
 
 
 --
--- Name: SessionToken SessionToken_userId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
---
-
-ALTER TABLE ONLY betonz."SessionToken"
-    ADD CONSTRAINT "SessionToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
 -- Name: TransactionRequest TransactionRequest_modifiedById_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
 --
 
@@ -893,22 +754,6 @@ ALTER TABLE ONLY betonz."TransactionRequest"
 
 ALTER TABLE ONLY betonz."TransactionRequest"
     ADD CONSTRAINT "TransactionRequest_userId_fkey" FOREIGN KEY ("userId") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: Transaction Transaction_beneficiaryId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
---
-
-ALTER TABLE ONLY betonz."Transaction"
-    ADD CONSTRAINT "Transaction_beneficiaryId_fkey" FOREIGN KEY ("beneficiaryId") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
-
-
---
--- Name: Transaction Transaction_initiatorId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
---
-
-ALTER TABLE ONLY betonz."Transaction"
-    ADD CONSTRAINT "Transaction_initiatorId_fkey" FOREIGN KEY ("initiatorId") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
 
 --
@@ -952,3 +797,6 @@ ALTER TABLE ONLY betonz."VerificationToken"
 -- Dbmate schema migrations
 --
 
+INSERT INTO betonz.schema_migrations (version) VALUES
+    ('20231113140630'),
+    ('20240216064632');
