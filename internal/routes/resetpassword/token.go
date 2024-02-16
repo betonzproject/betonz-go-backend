@@ -66,6 +66,9 @@ func PostPasswordResetToken(app *app.App) http.HandlerFunc {
 		}
 
 		passwordHash, err := utils.Argon2IDHash(resetPasswordForm.Password)
+		if err != nil {
+			log.Panicln("Can't hash password: ", err)
+		}
 
 		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
@@ -117,7 +120,7 @@ func PostPasswordResetToken(app *app.App) http.HandlerFunc {
 				Subject: "သင့်လျှိဝှက်နံပါတ်အားပြန်လည်တပ်ဆင်ပြီးပါပြီ။",
 				Body: `
 					<p>Hello ` + passwordResetToken.Username + `<p/>
-					<p>သင့်အကောင့်အားလျှိဝှက်နံပါတ်ပြန်လည်သတ်မှတ်ပြီးပါပြီ။ အကယ်၍အဲ့တာကသင်ဖြစ်လျှင်ဒီemailကိုလုံခြုံစွာလျစ်လျှူရှုနိုင်ပါသည်။<p/>
+					<p>သင့်အကောင့်အားလျှိဝှက်နံပါတ်ပြန်လည်သတ်မှတ်ပြီးပါပြီ။ အကယ်၍အဲ့တာကသင်ဖြစ်လျှင်ဒီ  email ကိုလုံခြုံစွာလျစ်လျှူရှုနိုင်ပါသည်။<p/>
 					<p>အကယ်၍သင်မဟုတ်လျှင် သင့်အကောင့်ကစိတ်မမချရဖြစ်နိုင်ပါသည်။ ချက်ချင်းသင့်အကောင့်ကိုလုံခြုံစေရန် <a href="` + href + "\">" + href + `</a>အားနှိပ်ပါ။‌<p/>
 					<p>ပျာ်ရွှင်ပါစေ:))</p>`,
 			}

@@ -68,6 +68,7 @@ func main() {
 		})
 		r.Get("/notifications", profile.GetNotifications(app))
 		r.Post("/notifications", profile.PostNotifications(app))
+		r.Post("/account-settings", profile.PostAccountSettings(app))
 	})
 
 	r.Route("/admin", func(r chi.Router) {

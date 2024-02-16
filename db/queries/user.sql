@@ -170,6 +170,9 @@ RETURNING
 -- name: UpdateUser :exec
 UPDATE "User" SET "displayName" = $2, email = $3, "phoneNumber" = $4, "updatedAt" = now() WHERE id = $1;
 
+-- name: UpdateUsername :exec
+UPDATE "User" SET username = $2, "updatedAt" = now() WHERE id = $1;
+
 -- name: UpdateUserPasswordHash :exec
 UPDATE "User" SET "passwordHash" = $2, "updatedAt" = now() WHERE id = $1;
 
