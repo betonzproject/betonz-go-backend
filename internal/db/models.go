@@ -124,6 +124,9 @@ const (
 	EventTypeRESTOREWALLET                  EventType = "RESTORE_WALLET"
 	EventTypeTRANSACTION                    EventType = "TRANSACTION"
 	EventTypeFLAG                           EventType = "FLAG"
+	EventTypeSYSTEMBANKADD                  EventType = "SYSTEM_BANK_ADD"
+	EventTypeSYSTEMBANKUPDATE               EventType = "SYSTEM_BANK_UPDATE"
+	EventTypeSYSTEMBANKDELETE               EventType = "SYSTEM_BANK_DELETE"
 )
 
 func (e *EventType) Scan(src interface{}) error {

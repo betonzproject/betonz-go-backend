@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/doorman2137/betonz-go/internal/acl"
@@ -50,17 +51,38 @@ func PostBanks(app *app.App) http.HandlerFunc {
 			return
 		}
 
+		tx, err := app.Pool.Begin(r.Context())
+		if err != nil {
+			log.Panicln("Can't start transaction: " + err.Error())
+		}
+		defer tx.Rollback(r.Context())
+		qtx := app.DB.WithTx(tx)
+
 		if r.URL.Query().Has("/create") {
 			var createBankForm CreateBankForm
 			if formutils.ParseDecodeValidate(app, w, r, &createBankForm) != nil {
 				return
 			}
 
-			app.DB.CreateSystemBank(r.Context(), db.CreateSystemBankParams{
+			bank, err := qtx.CreateSystemBank(r.Context(), db.CreateSystemBankParams{
 				Name:          db.BankName(createBankForm.BankName),
 				AccountName:   createBankForm.AccountName,
 				AccountNumber: createBankForm.AccountNumber,
 			})
+			if err != nil {
+				log.Panicln("Can't create system bank: " + err.Error())
+			}
+
+			err = utils.LogEvent(qtx, r, user.ID, db.EventTypeSYSTEMBANKADD, db.EventResultSUCCESS, "", map[string]any{
+				"bankId": utils.EncodeUUID(bank.ID.Bytes),
+				"bank":   string(bank.Name) + " " + string(bank.AccountName) + " " + string(bank.AccountNumber),
+			})
+			if err != nil {
+				log.Panicln("Can't log event: " + err.Error())
+			}
+
+			tx.Commit(r.Context())
+
 			w.WriteHeader(http.StatusCreated)
 			return
 		} else if r.URL.Query().Has("/delete") {
@@ -70,7 +92,21 @@ func PostBanks(app *app.App) http.HandlerFunc {
 			}
 
 			bankId, _ := utils.ParseUUID(deleteBankForm.Id)
-			app.DB.DeleteSystemBankById(r.Context(), bankId)
+			bank, err := qtx.DeleteSystemBankById(r.Context(), bankId)
+			if err != nil {
+				log.Panicln("Can't delete system bank: " + err.Error())
+			}
+
+			err = utils.LogEvent(qtx, r, user.ID, db.EventTypeSYSTEMBANKDELETE, db.EventResultSUCCESS, "", map[string]any{
+				"bankId": utils.EncodeUUID(bank.ID.Bytes),
+				"bank":   string(bank.Name) + " " + string(bank.AccountName) + " " + string(bank.AccountNumber),
+			})
+			if err != nil {
+				log.Panicln("Can't log event: " + err.Error())
+			}
+
+			tx.Commit(r.Context())
+
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -108,12 +144,40 @@ func PatchBanks(app *app.App) http.HandlerFunc {
 		}
 
 		bankId, _ := utils.ParseUUID(patchBankForm.Id)
-		app.DB.UpdateSystemBank(r.Context(), db.UpdateSystemBankParams{
+		oldBank, err := app.DB.GetSystemBankById(r.Context(), bankId)
+		if err != nil {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		tx, err := app.Pool.Begin(r.Context())
+		if err != nil {
+			log.Panicln("Can't start transaction: " + err.Error())
+		}
+		defer tx.Rollback(r.Context())
+		qtx := app.DB.WithTx(tx)
+
+		bank, err := qtx.UpdateSystemBank(r.Context(), db.UpdateSystemBankParams{
 			ID:            bankId,
 			AccountName:   pgtype.Text{String: patchBankForm.AccountName, Valid: patchBankForm.AccountName != ""},
 			AccountNumber: pgtype.Text{String: patchBankForm.AccountNumber, Valid: patchBankForm.AccountNumber != ""},
 			Disabled:      patchBankForm.Enabled != "on",
 		})
+		if err != nil {
+			log.Panicln("Can't update system bank: " + err.Error())
+		}
+
+		err = utils.LogEvent(qtx, r, user.ID, db.EventTypeSYSTEMBANKUPDATE, db.EventResultSUCCESS, "", map[string]any{
+			"bankId":   bankId,
+			"old":      string(oldBank.Name) + " " + string(oldBank.AccountName) + " " + string(oldBank.AccountNumber),
+			"new":      string(bank.Name) + " " + string(bank.AccountName) + " " + string(bank.AccountNumber),
+			"disabled": bank.Disabled,
+		})
+		if err != nil {
+			log.Panicln("Can't log event: " + err.Error())
+		}
+
+		tx.Commit(r.Context())
 
 		w.WriteHeader(http.StatusOK)
 	}

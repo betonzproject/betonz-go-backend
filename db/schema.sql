@@ -66,7 +66,10 @@ CREATE TYPE betonz."EventType" AS ENUM (
     'TRANSFER_WALLET',
     'RESTORE_WALLET',
     'TRANSACTION',
-    'FLAG'
+    'FLAG',
+    'SYSTEM_BANK_ADD',
+    'SYSTEM_BANK_UPDATE',
+    'SYSTEM_BANK_DELETE'
 );
 
 
@@ -799,4 +802,5 @@ ALTER TABLE ONLY betonz."VerificationToken"
 
 INSERT INTO betonz.schema_migrations (version) VALUES
     ('20231113140630'),
-    ('20240216064632');
+    ('20240216064632'),
+    ('20240216073916');

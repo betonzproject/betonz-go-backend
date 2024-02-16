@@ -21,7 +21,7 @@ VALUES
 RETURNING
 	*;
 
--- name: CreateSystemBank :exec
+-- name: CreateSystemBank :one
 INSERT INTO
 	"Bank" (id, "userId", name, "accountName", "accountNumber", "updatedAt")
 SELECT
@@ -36,7 +36,9 @@ FROM
 WHERE
 	role = 'SYSTEM'
 LIMIT
-	1;
+	1
+RETURNING
+	*;
 
 -- name: UpdateBank :exec
 UPDATE "Bank"
@@ -48,7 +50,7 @@ SET
 WHERE
 	id = $1;
 
--- name: UpdateSystemBank :exec
+-- name: UpdateSystemBank :one
 UPDATE "Bank"
 SET
 	"accountName" = COALESCE(sqlc.narg('accountName'), "accountName"),
@@ -56,10 +58,12 @@ SET
 	disabled = @disabled,
 	"updatedAt" = now()
 WHERE
-	id = $1;
+	id = $1
+RETURNING
+	*;
 
 -- name: DeleteBankById :one
 DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1 RETURNING b.*;
 
--- name: DeleteSystemBankById :exec
-DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1 AND u.role = 'SYSTEM';
+-- name: DeleteSystemBankById :one
+DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1 AND u.role = 'SYSTEM' RETURNING b.*;

@@ -76,6 +76,12 @@ func PatchBankById(app *app.App) http.HandlerFunc {
 			return
 		}
 
+		if bank.Name == db.BankName(patchBankForm.BankName) && bank.AccountName == patchBankForm.AccountName && bank.AccountNumber == patchBankForm.AccountNumber {
+			// Nothing changed. Do nothing
+			http.Redirect(w, r, "/profile/banking-details", http.StatusFound)
+			return
+		}
+
 		tx, err := app.Pool.Begin(r.Context())
 		if err != nil {
 			log.Panicln("Can't start transaction: " + err.Error())

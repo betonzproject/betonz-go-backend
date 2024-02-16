@@ -48,7 +48,7 @@ func (q *Queries) CreateBank(ctx context.Context, arg CreateBankParams) (Bank, e
 	return i, err
 }
 
-const createSystemBank = `-- name: CreateSystemBank :exec
+const createSystemBank = `-- name: CreateSystemBank :one
 INSERT INTO
 	"Bank" (id, "userId", name, "accountName", "accountNumber", "updatedAt")
 SELECT
@@ -64,6 +64,8 @@ WHERE
 	role = 'SYSTEM'
 LIMIT
 	1
+RETURNING
+	id, "userId", name, "accountName", "accountNumber", "createdAt", "updatedAt", disabled
 `
 
 type CreateSystemBankParams struct {
@@ -72,9 +74,20 @@ type CreateSystemBankParams struct {
 	AccountNumber string   `json:"accountNumber"`
 }
 
-func (q *Queries) CreateSystemBank(ctx context.Context, arg CreateSystemBankParams) error {
-	_, err := q.db.Exec(ctx, createSystemBank, arg.Name, arg.AccountName, arg.AccountNumber)
-	return err
+func (q *Queries) CreateSystemBank(ctx context.Context, arg CreateSystemBankParams) (Bank, error) {
+	row := q.db.QueryRow(ctx, createSystemBank, arg.Name, arg.AccountName, arg.AccountNumber)
+	var i Bank
+	err := row.Scan(
+		&i.ID,
+		&i.UserId,
+		&i.Name,
+		&i.AccountName,
+		&i.AccountNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Disabled,
+	)
+	return i, err
 }
 
 const deleteBankById = `-- name: DeleteBankById :one
@@ -97,13 +110,24 @@ func (q *Queries) DeleteBankById(ctx context.Context, id pgtype.UUID) (Bank, err
 	return i, err
 }
 
-const deleteSystemBankById = `-- name: DeleteSystemBankById :exec
-DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1 AND u.role = 'SYSTEM'
+const deleteSystemBankById = `-- name: DeleteSystemBankById :one
+DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1 AND u.role = 'SYSTEM' RETURNING b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled
 `
 
-func (q *Queries) DeleteSystemBankById(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteSystemBankById, id)
-	return err
+func (q *Queries) DeleteSystemBankById(ctx context.Context, id pgtype.UUID) (Bank, error) {
+	row := q.db.QueryRow(ctx, deleteSystemBankById, id)
+	var i Bank
+	err := row.Scan(
+		&i.ID,
+		&i.UserId,
+		&i.Name,
+		&i.AccountName,
+		&i.AccountNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Disabled,
+	)
+	return i, err
 }
 
 const getBankById = `-- name: GetBankById :one
@@ -273,7 +297,7 @@ func (q *Queries) UpdateBank(ctx context.Context, arg UpdateBankParams) error {
 	return err
 }
 
-const updateSystemBank = `-- name: UpdateSystemBank :exec
+const updateSystemBank = `-- name: UpdateSystemBank :one
 UPDATE "Bank"
 SET
 	"accountName" = COALESCE($2, "accountName"),
@@ -282,6 +306,8 @@ SET
 	"updatedAt" = now()
 WHERE
 	id = $1
+RETURNING
+	id, "userId", name, "accountName", "accountNumber", "createdAt", "updatedAt", disabled
 `
 
 type UpdateSystemBankParams struct {
@@ -291,12 +317,23 @@ type UpdateSystemBankParams struct {
 	Disabled      bool        `json:"disabled"`
 }
 
-func (q *Queries) UpdateSystemBank(ctx context.Context, arg UpdateSystemBankParams) error {
-	_, err := q.db.Exec(ctx, updateSystemBank,
+func (q *Queries) UpdateSystemBank(ctx context.Context, arg UpdateSystemBankParams) (Bank, error) {
+	row := q.db.QueryRow(ctx, updateSystemBank,
 		arg.ID,
 		arg.AccountName,
 		arg.AccountNumber,
 		arg.Disabled,
 	)
-	return err
+	var i Bank
+	err := row.Scan(
+		&i.ID,
+		&i.UserId,
+		&i.Name,
+		&i.AccountName,
+		&i.AccountNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Disabled,
+	)
+	return i, err
 }
