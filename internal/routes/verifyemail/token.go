@@ -15,18 +15,13 @@ import (
 	"github.com/doorman2137/betonz-go/internal/etg"
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
+	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type VerifyEmailTokenResponse struct {
 	IsTokenValid bool `json:"isTokenValid"`
-}
-
-type RegisterInfo struct {
-	Username     string `json:"username"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"passwordHash"`
 }
 
 func GetVerifyEmailToken(app *app.App) http.HandlerFunc {
@@ -68,12 +63,8 @@ func GetVerifyEmailToken(app *app.App) http.HandlerFunc {
 			log.Panicln("Can't create player: ", err)
 		}
 
-		tx, err := app.Pool.Begin(r.Context())
-		if err != nil {
-			log.Panicln("Can't start transaction: " + err.Error())
-		}
+		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
-		qtx := app.DB.WithTx(tx)
 
 		registerInfo := emailVerificationToken.RegisterInfo
 		user, err := qtx.CreateUser(r.Context(), db.CreateUserParams{

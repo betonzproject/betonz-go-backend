@@ -11,6 +11,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
+	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 )
 
 func GetBanks(app *app.App) http.HandlerFunc {
@@ -51,12 +52,8 @@ func DeleteBank(app *app.App) http.HandlerFunc {
 		}
 		bankId, _ := utils.ParseUUID(deleteBankForm.Id)
 
-		tx, err := app.Pool.Begin(r.Context())
-		if err != nil {
-			log.Panicln("Can't start transaction: " + err.Error())
-		}
+		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
-		qtx := app.DB.WithTx(tx)
 
 		bank, err := qtx.DeleteBankById(r.Context(), bankId)
 		if err != nil {

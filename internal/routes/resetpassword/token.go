@@ -14,6 +14,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/doorman2137/betonz-go/internal/utils/mailutils"
+	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -66,12 +67,8 @@ func PostPasswordResetToken(app *app.App) http.HandlerFunc {
 
 		passwordHash, err := utils.Argon2IDHash(resetPasswordForm.Password)
 
-		tx, err := app.Pool.Begin(r.Context())
-		if err != nil {
-			log.Panicln("Can't start transaction: " + err.Error())
-		}
+		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
-		qtx := app.DB.WithTx(tx)
 
 		err = qtx.UpdateUserPasswordHash(r.Context(), db.UpdateUserPasswordHashParams{
 			ID:           passwordResetToken.UserId,

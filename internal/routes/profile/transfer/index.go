@@ -16,6 +16,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/doorman2137/betonz-go/internal/utils/numericutils"
+	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -88,12 +89,8 @@ func PostTransfer(app *app.App) http.HandlerFunc {
 			"amount":     transferForm.Amount,
 		}
 
-		tx, err := app.Pool.Begin(r.Context())
-		if err != nil {
-			log.Panicln("Can't start transaction: " + err.Error())
-		}
+		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
-		qtx := app.DB.WithTx(tx)
 
 		// TODO; Need to check for turnover target
 

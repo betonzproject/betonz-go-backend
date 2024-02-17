@@ -12,6 +12,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/mailutils"
+	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -27,12 +28,8 @@ func PostPasswordReset(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		tx, err := app.Pool.Begin(r.Context())
-		if err != nil {
-			log.Panicln("Can't start transaction: " + err.Error())
-		}
+		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
-		qtx := app.DB.WithTx(tx)
 
 		user, err := qtx.GetExtendedUserByUsername(r.Context(), db.GetExtendedUserByUsernameParams{
 			Username: resetPasswordRequestForm.Username,

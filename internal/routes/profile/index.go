@@ -10,6 +10,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/db"
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
+	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -51,12 +52,8 @@ func PostProfile(app *app.App) http.HandlerFunc {
 			updateEvent["phoneNumber"] = phone
 		}
 
-		tx, err := app.Pool.Begin(r.Context())
-		if err != nil {
-			log.Panicln("Can't start transaction: " + err.Error())
-		}
+		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
-		qtx := app.DB.WithTx(tx)
 
 		err = qtx.UpdateUser(r.Context(), db.UpdateUserParams{
 			ID:          user.ID,

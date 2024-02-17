@@ -11,6 +11,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/db"
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
+	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 )
 
 type BankForm struct {
@@ -38,12 +39,8 @@ func AddBank(app *app.App) http.HandlerFunc {
 		// Strip spaces
 		addBankForm.AccountNumber = strings.ReplaceAll(addBankForm.AccountNumber, " ", "")
 
-		tx, err := app.Pool.Begin(r.Context())
-		if err != nil {
-			log.Panicln("Can't start transaction: " + err.Error())
-		}
+		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
-		qtx := app.DB.WithTx(tx)
 
 		bank, err := qtx.CreateBank(r.Context(), db.CreateBankParams{
 			UserId:        user.ID,
