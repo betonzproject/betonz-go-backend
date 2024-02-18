@@ -656,10 +656,8 @@ type User struct {
 	LastUsedBankId  pgtype.UUID        `json:"lastUsedBankId"`
 	ProfileImage    pgtype.Text        `json:"profileImage"`
 	Status          UserStatus         `json:"status"`
-	LastLoginIp     pgtype.Text        `json:"lastLoginIp"`
 	IsEmailVerified bool               `json:"isEmailVerified"`
 	Dob             pgtype.Date        `json:"dob"`
-	LastLoginAt     pgtype.Timestamp   `json:"lastLoginAt"`
 	PendingEmail    pgtype.Text        `json:"pendingEmail"`
 }
 

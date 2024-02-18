@@ -17,7 +17,7 @@ INSERT INTO
 VALUES
 	(gen_random_uuid (), $1, $2, $3, $4, true, now())
 RETURNING
-	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "lastLoginIp", "isEmailVerified", dob, "lastLoginAt", "pendingEmail"
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail"
 `
 
 type CreateUserParams struct {
@@ -50,17 +50,15 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.LastUsedBankId,
 		&i.ProfileImage,
 		&i.Status,
-		&i.LastLoginIp,
 		&i.IsEmailVerified,
 		&i.Dob,
-		&i.LastLoginAt,
 		&i.PendingEmail,
 	)
 	return i, err
 }
 
 const getExtendedUserById = `-- name: GetExtendedUserById :one
-SELECT id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "lastLoginIp", "isEmailVerified", dob, "lastLoginAt", "pendingEmail" FROM "User" WHERE id = $1
+SELECT id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail" FROM "User" WHERE id = $1
 `
 
 func (q *Queries) GetExtendedUserById(ctx context.Context, id pgtype.UUID) (User, error) {
@@ -81,10 +79,8 @@ func (q *Queries) GetExtendedUserById(ctx context.Context, id pgtype.UUID) (User
 		&i.LastUsedBankId,
 		&i.ProfileImage,
 		&i.Status,
-		&i.LastLoginIp,
 		&i.IsEmailVerified,
 		&i.Dob,
-		&i.LastLoginAt,
 		&i.PendingEmail,
 	)
 	return i, err
@@ -92,7 +88,7 @@ func (q *Queries) GetExtendedUserById(ctx context.Context, id pgtype.UUID) (User
 
 const getExtendedUserByUsername = `-- name: GetExtendedUserByUsername :one
 SELECT
-	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "lastLoginIp", "isEmailVerified", dob, "lastLoginAt", "pendingEmail"
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail"
 FROM
 	"User"
 WHERE
@@ -126,10 +122,8 @@ func (q *Queries) GetExtendedUserByUsername(ctx context.Context, arg GetExtended
 		&i.LastUsedBankId,
 		&i.ProfileImage,
 		&i.Status,
-		&i.LastLoginIp,
 		&i.IsEmailVerified,
 		&i.Dob,
-		&i.LastLoginAt,
 		&i.PendingEmail,
 	)
 	return i, err
@@ -280,90 +274,93 @@ func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (GetUserByIdR
 }
 
 const getUsers = `-- name: GetUsers :many
+WITH q AS (
+	SELECT
+		ROW_NUMBER() OVER (ORDER BY u."createdAt") "rowNumber",
+		u.id,
+		u.username,
+		u.role,
+		u.email,
+		u.dob,
+		u."displayName",
+		u."phoneNumber",
+		u."profileImage",
+		u."mainWallet",
+		u.status,
+		u."createdAt",
+		e."sourceIp" AS "lastLoginIp",
+		e."createdAt"::timestamptz AS "lastLogin",
+		tr1."lastDeposit"::timestamptz AS "lastDeposit",
+		tr2."lastWithdraw"::timestamptz AS "lastWithdraw"
+	FROM
+		"User" u
+		LEFT JOIN (
+			-- Get last login IP and time
+			SELECT DISTINCT
+				ON ("userId") "userId",
+				"sourceIp",
+				"createdAt"
+			FROM
+				"Event"
+			WHERE
+				result = 'SUCCESS'
+				AND type = 'LOGIN'
+			ORDER BY
+				"userId",
+				"createdAt" DESC
+		) e ON u.id = e."userId"
+		LEFT JOIN (
+			-- Get last deposit time
+			SELECT
+				"userId",
+				max("updatedAt") "lastDeposit"
+			FROM
+				"TransactionRequest"
+			WHERE
+				type = 'DEPOSIT'
+				AND status = 'APPROVED'
+			GROUP BY
+				"userId"
+		) tr1 ON u.id = tr1."userId"
+		LEFT JOIN (
+			-- Get last withdraw time
+			SELECT
+				"userId",
+				max("updatedAt") "lastWithdraw"
+			FROM
+				"TransactionRequest"
+			WHERE
+				type = 'WITHDRAW'
+				AND status = 'APPROVED'
+			GROUP BY
+				"userId"
+		) tr2 ON u.id = tr2."userId"
+	WHERE
+		u.role <> 'SYSTEM'
+	ORDER BY
+		u."createdAt"
+)
 SELECT
 	"rowNumber", id, username, role, email, dob, "displayName", "phoneNumber", "profileImage", "mainWallet", status, "createdAt", "lastLoginIp", "lastLogin", "lastDeposit", "lastWithdraw"
 FROM
+	q
+WHERE
 	(
-		SELECT
-			ROW_NUMBER() OVER (ORDER BY u."createdAt") "rowNumber",
-			u.id,
-			u.username,
-			u.role,
-			u.email,
-			u.dob,
-			u."displayName",
-			u."phoneNumber",
-			u."profileImage",
-			u."mainWallet",
-			u.status,
-			u."createdAt",
-			e."sourceIp" AS "lastLoginIp",
-			e."createdAt"::timestamptz AS "lastLogin",
-			tr1."lastDeposit"::timestamptz AS "lastDeposit",
-			tr2."lastWithdraw"::timestamptz AS "lastWithdraw"
-		FROM
-			"User" u
-			LEFT JOIN (
-				-- Get last login IP and time
-				SELECT DISTINCT
-					ON ("userId") "userId",
-					"sourceIp",
-					"createdAt"
-				FROM
-					"Event"
-				WHERE
-					result = 'SUCCESS'
-					AND type = 'LOGIN'
-				ORDER BY
-					"userId",
-					"createdAt" DESC
-			) e ON u.id = e."userId"
-			LEFT JOIN (
-				-- Get last deposit time
-				SELECT
-					"userId",
-					max("updatedAt") "lastDeposit"
-				FROM
-					"TransactionRequest"
-				WHERE
-					type = 'DEPOSIT'
-					AND status = 'APPROVED'
-				GROUP BY
-					"userId"
-			) tr1 ON u.id = tr1."userId"
-			LEFT JOIN (
-				-- Get last withdraw time
-				SELECT
-					"userId",
-					max("updatedAt") "lastWithdraw"
-				FROM
-					"TransactionRequest"
-				WHERE
-					type = 'WITHDRAW'
-					AND status = 'APPROVED'
-				GROUP BY
-					"userId"
-			) tr2 ON u.id = tr2."userId"
-		WHERE
-			u.role <> 'SYSTEM'
-			AND (
-				$1::"UserStatus"[] IS NULL
-				OR u.status = ANY ($1)
-			)
-			AND (
-				$2::TEXT IS NULL
-				OR u.username ILIKE '%' || $2 || '%'
-				OR u.email ILIKE '%' || $2 || '%'
-				OR u."displayName" ILIKE '%' || $2 || '%'
-				OR u."phoneNumber" ILIKE '%' || $2 || '%'
-				OR u."lastLoginIp" ILIKE '%' || $2 || '%'
-			)
-			AND u."createdAt" >= $3
-			AND u."createdAt" <= $4
-	) q
+		$1::"UserStatus"[] IS NULL
+		OR status = ANY ($1)
+	)
+	AND (
+		$2::TEXT IS NULL
+		OR username ILIKE '%' || $2 || '%'
+		OR email ILIKE '%' || $2 || '%'
+		OR "displayName" ILIKE '%' || $2 || '%'
+		OR "phoneNumber" ILIKE '%' || $2 || '%'
+		OR "lastLoginIp" ILIKE '%' || $2 || '%'
+	)
+	AND "createdAt" >= $3::timestamptz
+	AND "createdAt" <= $4::timestamptz
 ORDER BY
-	"rowNumber" DESC,
-	"createdAt" DESC
+	"rowNumber" DESC
 `
 
 type GetUsersParams struct {

@@ -17,90 +17,93 @@ WHERE
 	);
 
 -- name: GetUsers :many
+WITH q AS (
+	SELECT
+		ROW_NUMBER() OVER (ORDER BY u."createdAt") "rowNumber",
+		u.id,
+		u.username,
+		u.role,
+		u.email,
+		u.dob,
+		u."displayName",
+		u."phoneNumber",
+		u."profileImage",
+		u."mainWallet",
+		u.status,
+		u."createdAt",
+		e."sourceIp" AS "lastLoginIp",
+		e."createdAt"::timestamptz AS "lastLogin",
+		tr1."lastDeposit"::timestamptz AS "lastDeposit",
+		tr2."lastWithdraw"::timestamptz AS "lastWithdraw"
+	FROM
+		"User" u
+		LEFT JOIN (
+			-- Get last login IP and time
+			SELECT DISTINCT
+				ON ("userId") "userId",
+				"sourceIp",
+				"createdAt"
+			FROM
+				"Event"
+			WHERE
+				result = 'SUCCESS'
+				AND type = 'LOGIN'
+			ORDER BY
+				"userId",
+				"createdAt" DESC
+		) e ON u.id = e."userId"
+		LEFT JOIN (
+			-- Get last deposit time
+			SELECT
+				"userId",
+				max("updatedAt") "lastDeposit"
+			FROM
+				"TransactionRequest"
+			WHERE
+				type = 'DEPOSIT'
+				AND status = 'APPROVED'
+			GROUP BY
+				"userId"
+		) tr1 ON u.id = tr1."userId"
+		LEFT JOIN (
+			-- Get last withdraw time
+			SELECT
+				"userId",
+				max("updatedAt") "lastWithdraw"
+			FROM
+				"TransactionRequest"
+			WHERE
+				type = 'WITHDRAW'
+				AND status = 'APPROVED'
+			GROUP BY
+				"userId"
+		) tr2 ON u.id = tr2."userId"
+	WHERE
+		u.role <> 'SYSTEM'
+	ORDER BY
+		u."createdAt"
+)
 SELECT
 	*
 FROM
+	q
+WHERE
 	(
-		SELECT
-			ROW_NUMBER() OVER (ORDER BY u."createdAt") "rowNumber",
-			u.id,
-			u.username,
-			u.role,
-			u.email,
-			u.dob,
-			u."displayName",
-			u."phoneNumber",
-			u."profileImage",
-			u."mainWallet",
-			u.status,
-			u."createdAt",
-			e."sourceIp" AS "lastLoginIp",
-			e."createdAt"::timestamptz AS "lastLogin",
-			tr1."lastDeposit"::timestamptz AS "lastDeposit",
-			tr2."lastWithdraw"::timestamptz AS "lastWithdraw"
-		FROM
-			"User" u
-			LEFT JOIN (
-				-- Get last login IP and time
-				SELECT DISTINCT
-					ON ("userId") "userId",
-					"sourceIp",
-					"createdAt"
-				FROM
-					"Event"
-				WHERE
-					result = 'SUCCESS'
-					AND type = 'LOGIN'
-				ORDER BY
-					"userId",
-					"createdAt" DESC
-			) e ON u.id = e."userId"
-			LEFT JOIN (
-				-- Get last deposit time
-				SELECT
-					"userId",
-					max("updatedAt") "lastDeposit"
-				FROM
-					"TransactionRequest"
-				WHERE
-					type = 'DEPOSIT'
-					AND status = 'APPROVED'
-				GROUP BY
-					"userId"
-			) tr1 ON u.id = tr1."userId"
-			LEFT JOIN (
-				-- Get last withdraw time
-				SELECT
-					"userId",
-					max("updatedAt") "lastWithdraw"
-				FROM
-					"TransactionRequest"
-				WHERE
-					type = 'WITHDRAW'
-					AND status = 'APPROVED'
-				GROUP BY
-					"userId"
-			) tr2 ON u.id = tr2."userId"
-		WHERE
-			u.role <> 'SYSTEM'
-			AND (
-				@statuses::"UserStatus"[] IS NULL
-				OR u.status = ANY (@statuses)
-			)
-			AND (
-				sqlc.narg('search')::TEXT IS NULL
-				OR u.username ILIKE '%' || @search || '%'
-				OR u.email ILIKE '%' || @search || '%'
-				OR u."displayName" ILIKE '%' || @search || '%'
-				OR u."phoneNumber" ILIKE '%' || @search || '%'
-				OR u."lastLoginIp" ILIKE '%' || @search || '%'
-			)
-			AND u."createdAt" >= sqlc.arg('fromDate')
-			AND u."createdAt" <= sqlc.arg('toDate')
-	) q
+		@statuses::"UserStatus"[] IS NULL
+		OR status = ANY (@statuses)
+	)
+	AND (
+		sqlc.narg('search')::TEXT IS NULL
+		OR username ILIKE '%' || @search || '%'
+		OR email ILIKE '%' || @search || '%'
+		OR "displayName" ILIKE '%' || @search || '%'
+		OR "phoneNumber" ILIKE '%' || @search || '%'
+		OR "lastLoginIp" ILIKE '%' || @search || '%'
+	)
+	AND "createdAt" >= sqlc.arg('fromDate')::timestamptz
+	AND "createdAt" <= sqlc.arg('toDate')::timestamptz
 ORDER BY
-	"rowNumber" DESC,
-	"createdAt" DESC;
+	"rowNumber" DESC;
 
 -- name: GetPlayerInfoById :one
 SELECT

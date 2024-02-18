@@ -451,10 +451,8 @@ CREATE TABLE betonz."User" (
     "lastUsedBankId" uuid,
     "profileImage" text,
     status betonz."UserStatus" DEFAULT 'NORMAL'::betonz."UserStatus" NOT NULL,
-    "lastLoginIp" text,
     "isEmailVerified" boolean DEFAULT false NOT NULL,
     dob date,
-    "lastLoginAt" timestamp(3) without time zone,
     "pendingEmail" text
 );
 
@@ -803,4 +801,5 @@ ALTER TABLE ONLY betonz."VerificationToken"
 INSERT INTO betonz.schema_migrations (version) VALUES
     ('20231113140630'),
     ('20240216064632'),
-    ('20240216073916');
+    ('20240216073916'),
+    ('20240218055649');
