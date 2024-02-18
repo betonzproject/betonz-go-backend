@@ -49,7 +49,7 @@ func PostRegister(app *app.App) http.HandlerFunc {
 		defer tx.Rollback(r.Context())
 
 		passwordHash, _ := utils.Argon2IDHash(registerForm.Password)
-		SendEmailVerification(qtx, r, &db.RegisterInfo{
+		SendEmailVerification(qtx, r, db.User{}, &db.RegisterInfo{
 			Username:     registerForm.Username,
 			Email:        registerForm.Email,
 			PasswordHash: passwordHash,
@@ -69,7 +69,7 @@ func PostRegister(app *app.App) http.HandlerFunc {
 	}
 }
 
-func SendEmailVerification(q *db.Queries, r *http.Request, registerInfo *db.RegisterInfo) {
+func SendEmailVerification(q *db.Queries, r *http.Request, user db.User, registerInfo *db.RegisterInfo) {
 	randomBytes := make([]byte, 32)
 	rand.Read(randomBytes)
 	token := base64.RawURLEncoding.EncodeToString(randomBytes)
@@ -78,8 +78,9 @@ func SendEmailVerification(q *db.Queries, r *http.Request, registerInfo *db.Regi
 	hash.Write([]byte(token))
 	tokenHash := base64.RawURLEncoding.EncodeToString(hash.Sum(nil))
 
-	err := q.CreateVerificationToken(r.Context(), db.CreateVerificationTokenParams{
+	err := q.UpsertVerificationToken(r.Context(), db.UpsertVerificationTokenParams{
 		TokenHash:    tokenHash,
+		UserId:       user.ID,
 		RegisterInfo: registerInfo,
 	})
 	if err != nil {
@@ -100,6 +101,15 @@ func SendEmailVerification(q *db.Queries, r *http.Request, registerInfo *db.Regi
 	}
 	href := r.Header.Get("Origin") + "/verify-email/" + token
 
+	var username, email string
+	if registerInfo != nil {
+		username = registerInfo.Username
+		email = registerInfo.Email
+	} else {
+		username = user.Username
+		email = user.Email
+	}
+
 	if lng == "my" {
 		templateData = struct {
 			Subject string
@@ -107,7 +117,7 @@ func SendEmailVerification(q *db.Queries, r *http.Request, registerInfo *db.Regi
 		}{
 			Subject: "အီးမေးအတည်ပြု",
 			Body: `
-					<p>Hello ` + registerInfo.Username + `,</p>
+					<p>Hello ` + username + `,</p>
 					<p>Beton မှ လှိက်လှဲစွာကြိုဆိုပါတယ်</p>
 					<p>အကောင့်ဖွင့်ခြင်းအား ပီးမြောက်စေပီး game များစတင်ကစားနိုင်ရန်အတွက် 
 					email အတည်ပြုရန်သာကျန်ပါတော့သည်။ email အတည်ပြုခြင်းလင့် သည် 24 
@@ -121,7 +131,7 @@ func SendEmailVerification(q *db.Queries, r *http.Request, registerInfo *db.Regi
 		}{
 			Subject: "Verify Email",
 			Body: `
-					<p>Hello ` + registerInfo.Username + `,<p />
+					<p>Hello ` + username + `,<p />
 					<p>Welcome to BetOn! We're thrilled to have you join our community.</p>
 					<p>To complete your registration and gain access to our games, exclusive offers, and 24-hour customer service, we just need you to verify your email address. 
 					Click the button below to verify your email. The link will expire in 1 hour.<p/>
@@ -135,7 +145,7 @@ func SendEmailVerification(q *db.Queries, r *http.Request, registerInfo *db.Regi
 	}
 
 	go func() {
-		err := mailutils.SendMail(registerInfo.Email, body, templateData.Subject)
+		err := mailutils.SendMail(email, body, templateData.Subject)
 		if err != nil {
 			log.Println("Can't send mail: " + err.Error())
 		}

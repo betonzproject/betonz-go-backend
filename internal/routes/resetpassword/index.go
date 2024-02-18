@@ -48,14 +48,6 @@ func PostPasswordReset(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		exisitingToken, err := qtx.GetPasswordResetTokenByUserId(r.Context(), user.ID)
-		if err == nil {
-			err = qtx.DeletePasswordResetToken(r.Context(), exisitingToken.TokenHash)
-			if err != nil {
-				log.Panicln("Can't delete password reset token: " + err.Error())
-			}
-		}
-
 		randomBytes := make([]byte, 32)
 		rand.Read(randomBytes)
 		token := base64.RawURLEncoding.EncodeToString(randomBytes)
@@ -64,12 +56,12 @@ func PostPasswordReset(app *app.App) http.HandlerFunc {
 		hash.Write([]byte(token))
 		tokenHash := base64.RawURLEncoding.EncodeToString(hash.Sum(nil))
 
-		err = qtx.CreatePasswordResetToken(r.Context(), db.CreatePasswordResetTokenParams{
+		err = qtx.UpsertPasswordResetToken(r.Context(), db.UpsertPasswordResetTokenParams{
 			TokenHash: tokenHash,
 			UserId:    user.ID,
 		})
 		if err != nil {
-			log.Panicln("Cannot create password reset token: ", err.Error())
+			log.Panicln("Cannot upsert password reset token: ", err.Error())
 		}
 
 		var templateData struct {

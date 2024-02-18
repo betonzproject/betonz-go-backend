@@ -2,6 +2,7 @@ package routes
 
 import (
 	"crypto/rand"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -9,11 +10,17 @@ import (
 	"github.com/doorman2137/betonz-go/internal/db"
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
+	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
+	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 )
 
 type LoginForm struct {
 	Username string `form:"username" validate:"required,min=3,max=20,username" key:"user.username"`
 	Password string `form:"password" validate:"required,min=8,max=512"`
+}
+
+type LoginResponse struct {
+	Email string `json:"email"`
 }
 
 func PostLogin(app *app.App) http.HandlerFunc {
@@ -53,23 +60,53 @@ func PostLogin(app *app.App) http.HandlerFunc {
 		if err != nil {
 			// Dummy hash to prevent timing attack
 			utils.Argon2IDVerify(loginForm.Password, "$argon2id$v=19$m=65536,t=3,p=4$YGmXRJpAsWMPAU8eMrFFIw$P5NwS7fKyuGaU+siAOFeNBmfbucV3Rrj7rEUMSB4vc8")
-			utils.LogEvent(app.DB, r, user.ID, db.EventTypeLOGIN, db.EventResultFAIL, "User does not exist", map[string]any{
+
+			err := utils.LogEvent(app.DB, r, user.ID, db.EventTypeLOGIN, db.EventResultFAIL, "User does not exist", map[string]any{
 				"username":   loginForm.Username,
 				"redirectTo": redirectTo,
 				"adminMode":  adminMode,
 			})
+			if err != nil {
+				log.Panicln("Can't log event: " + err.Error())
+			}
+
 			http.Error(w, "login.usernameOrPasswordIncorrect.message", http.StatusUnauthorized)
 			return
 		}
 
 		passwordMatches, _ := utils.Argon2IDVerify(loginForm.Password, user.PasswordHash)
 		if !passwordMatches {
-			utils.LogEvent(app.DB, r, user.ID, db.EventTypeLOGIN, db.EventResultFAIL, "Password incorrect", map[string]any{
+			err := utils.LogEvent(app.DB, r, user.ID, db.EventTypeLOGIN, db.EventResultFAIL, "Password incorrect", map[string]any{
 				"username":   loginForm.Username,
 				"redirectTo": redirectTo,
 				"adminMode":  adminMode,
 			})
+			if err != nil {
+				log.Panicln("Can't log event: " + err.Error())
+			}
+
 			http.Error(w, "login.usernameOrPasswordIncorrect.message", http.StatusUnauthorized)
+			return
+		}
+
+		// If the user is a player and email is not verified, ask for email verification
+		if !adminMode && !user.IsEmailVerified {
+			tx, qtx := transactionutils.Begin(app, r.Context())
+			defer tx.Rollback(r.Context())
+
+			SendEmailVerification(qtx, r, user, nil)
+
+			err := utils.LogEvent(qtx, r, user.ID, db.EventTypeLOGIN, db.EventResultFAIL, "Email is not verified", map[string]any{
+				"redirectTo": redirectTo,
+				"adminMode":  adminMode,
+			})
+			if err != nil {
+				log.Panicln("Can't log event: " + err.Error())
+			}
+
+			tx.Commit(r.Context())
+
+			jsonutils.Write(w, LoginResponse{user.Email}, http.StatusOK)
 			return
 		}
 
@@ -79,10 +116,13 @@ func PostLogin(app *app.App) http.HandlerFunc {
 		rand.Read(randomBytes)
 		app.Scs.Put(r.Context(), "sessionId", randomBytes)
 
-		utils.LogEvent(app.DB, r, user.ID, db.EventTypeLOGIN, db.EventResultSUCCESS, "", map[string]any{
+		err = utils.LogEvent(app.DB, r, user.ID, db.EventTypeLOGIN, db.EventResultSUCCESS, "", map[string]any{
 			"redirectTo": redirectTo,
 			"adminMode":  adminMode,
 		})
+		if err != nil {
+			log.Panicln("Can't log event: " + err.Error())
+		}
 
 		http.Redirect(w, r, redirectTo, http.StatusFound)
 	}

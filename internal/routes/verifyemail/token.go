@@ -34,7 +34,7 @@ func GetVerifyEmailToken(app *app.App) http.HandlerFunc {
 
 		emailVerificationToken, err := app.DB.GetVerificationTokenByHash(r.Context(), tokenHash)
 		if err != nil || emailVerificationToken.TokenHash != tokenHash {
-			err = utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypeEMAILVERIFICATION, db.EventResultFAIL, "Email verification link invalid", map[string]any{
+			err := utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypeEMAILVERIFICATION, db.EventResultFAIL, "Email verification link invalid", map[string]any{
 				"tokenHash": tokenHash,
 			})
 			if err != nil {
@@ -47,7 +47,7 @@ func GetVerifyEmailToken(app *app.App) http.HandlerFunc {
 
 		expired := !time.Now().Before(emailVerificationToken.CreatedAt.Time.Add(1 * time.Hour))
 		if expired {
-			err = utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypeEMAILVERIFICATION, db.EventResultFAIL, "Email verification link expired", map[string]any{
+			err := utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypeEMAILVERIFICATION, db.EventResultFAIL, "Email verification link expired", map[string]any{
 				"tokenHash": tokenHash,
 			})
 			if err != nil {
@@ -66,15 +66,27 @@ func GetVerifyEmailToken(app *app.App) http.HandlerFunc {
 		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
 
+		var userId pgtype.UUID
 		registerInfo := emailVerificationToken.RegisterInfo
-		user, err := qtx.CreateUser(r.Context(), db.CreateUserParams{
-			Username:     registerInfo.Username,
-			Email:        registerInfo.Email,
-			PasswordHash: registerInfo.PasswordHash,
-			EtgUsername:  etgUsername,
-		})
-		if err != nil {
-			log.Panicln("Can't create new user: ", err)
+		if registerInfo != nil {
+			user, err := qtx.CreateUser(r.Context(), db.CreateUserParams{
+				Username:     registerInfo.Username,
+				Email:        registerInfo.Email,
+				PasswordHash: registerInfo.PasswordHash,
+				EtgUsername:  etgUsername,
+			})
+			if err != nil {
+				log.Panicln("Can't create new user: ", err)
+			}
+
+			userId = user.ID
+		} else {
+			err := qtx.MarkUserEmailAsVerified(r.Context(), emailVerificationToken.UserId)
+			if err != nil {
+				log.Panicln("Can't mark email as verified: " + err.Error())
+			}
+
+			userId = emailVerificationToken.UserId
 		}
 
 		err = qtx.DeleteVerificationTokenByHash(r.Context(), tokenHash)
@@ -82,7 +94,7 @@ func GetVerifyEmailToken(app *app.App) http.HandlerFunc {
 			log.Panicln("Can't delete email verification token: ", err)
 		}
 
-		err = utils.LogEvent(qtx, r, user.ID, db.EventTypeEMAILVERIFICATION, db.EventResultSUCCESS, "", map[string]any{
+		err = utils.LogEvent(qtx, r, userId, db.EventTypeEMAILVERIFICATION, db.EventResultSUCCESS, "", map[string]any{
 			"tokenHash": tokenHash,
 		})
 		if err != nil {

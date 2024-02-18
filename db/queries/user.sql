@@ -184,3 +184,6 @@ UPDATE "User" SET "lastUsedBankId" = $2, "updatedAt" = now() WHERE id = $1;
 
 -- name: UpdateUserStatus :exec
 UPDATE "User" SET status = $2, "updatedAt" = now() WHERE id = $1;
+
+-- name: MarkUserEmailAsVerified :exec
+UPDATE "User" SET "isEmailVerified" = true, "updatedAt" = now() WHERE id = $1;

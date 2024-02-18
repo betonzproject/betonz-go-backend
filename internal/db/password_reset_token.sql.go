@@ -11,20 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createPasswordResetToken = `-- name: CreatePasswordResetToken :exec
-INSERT INTO "PasswordResetToken" ("tokenHash", "userId", "updatedAt") VALUES ($1, $2, now())
-`
-
-type CreatePasswordResetTokenParams struct {
-	TokenHash string      `json:"tokenHash"`
-	UserId    pgtype.UUID `json:"userId"`
-}
-
-func (q *Queries) CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error {
-	_, err := q.db.Exec(ctx, createPasswordResetToken, arg.TokenHash, arg.UserId)
-	return err
-}
-
 const deletePasswordResetToken = `-- name: DeletePasswordResetToken :exec
 DELETE FROM "PasswordResetToken" WHERE "tokenHash" = $1
 `
@@ -75,4 +61,27 @@ func (q *Queries) GetPasswordResetTokenByUserId(ctx context.Context, userid pgty
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const upsertPasswordResetToken = `-- name: UpsertPasswordResetToken :exec
+INSERT INTO
+	"PasswordResetToken" AS prt ("tokenHash", "userId", "updatedAt")
+VALUES
+	($1, $2, now())
+ON CONFLICT ("userId") DO
+UPDATE
+SET
+	"tokenHash" = excluded."tokenHash",
+	"createdAt" = now(),
+	"updatedAt" = now()
+`
+
+type UpsertPasswordResetTokenParams struct {
+	TokenHash string      `json:"tokenHash"`
+	UserId    pgtype.UUID `json:"userId"`
+}
+
+func (q *Queries) UpsertPasswordResetToken(ctx context.Context, arg UpsertPasswordResetTokenParams) error {
+	_, err := q.db.Exec(ctx, upsertPasswordResetToken, arg.TokenHash, arg.UserId)
+	return err
 }

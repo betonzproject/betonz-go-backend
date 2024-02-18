@@ -9,8 +9,18 @@ FROM
 WHERE
 	"tokenHash" = $1;
 
--- name: CreateVerificationToken :exec
-INSERT INTO "VerificationToken" ("tokenHash", "registerInfo", "updatedAt") VALUES ($1, $2, now());
+-- name: UpsertVerificationToken :exec
+INSERT INTO
+	"VerificationToken" ("tokenHash", "userId", "registerInfo", "updatedAt")
+VALUES
+	($1, $2, $3, now())
+ON CONFLICT ("userId") DO
+UPDATE
+SET
+	"tokenHash" = excluded."tokenHash",
+	"registerInfo" = excluded."registerInfo",
+	"createdAt" = now(),
+	"updatedAt" = now();
 
 -- name: DeleteVerificationTokenByHash :exec
 DELETE FROM "VerificationToken" WHERE "tokenHash" = $1;

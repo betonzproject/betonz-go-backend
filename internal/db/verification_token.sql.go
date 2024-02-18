@@ -11,20 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createVerificationToken = `-- name: CreateVerificationToken :exec
-INSERT INTO "VerificationToken" ("tokenHash", "registerInfo", "updatedAt") VALUES ($1, $2, now())
-`
-
-type CreateVerificationTokenParams struct {
-	TokenHash    string        `json:"tokenHash"`
-	RegisterInfo *RegisterInfo `json:"registerInfo"`
-}
-
-func (q *Queries) CreateVerificationToken(ctx context.Context, arg CreateVerificationTokenParams) error {
-	_, err := q.db.Exec(ctx, createVerificationToken, arg.TokenHash, arg.RegisterInfo)
-	return err
-}
-
 const deleteVerificationTokenByHash = `-- name: DeleteVerificationTokenByHash :exec
 DELETE FROM "VerificationToken" WHERE "tokenHash" = $1
 `
@@ -69,4 +55,29 @@ func (q *Queries) GetVerificationTokenByHash(ctx context.Context, tokenhash stri
 		&i.Email,
 	)
 	return i, err
+}
+
+const upsertVerificationToken = `-- name: UpsertVerificationToken :exec
+INSERT INTO
+	"VerificationToken" ("tokenHash", "userId", "registerInfo", "updatedAt")
+VALUES
+	($1, $2, $3, now())
+ON CONFLICT ("userId") DO
+UPDATE
+SET
+	"tokenHash" = excluded."tokenHash",
+	"registerInfo" = excluded."registerInfo",
+	"createdAt" = now(),
+	"updatedAt" = now()
+`
+
+type UpsertVerificationTokenParams struct {
+	TokenHash    string        `json:"tokenHash"`
+	UserId       pgtype.UUID   `json:"userId"`
+	RegisterInfo *RegisterInfo `json:"registerInfo"`
+}
+
+func (q *Queries) UpsertVerificationToken(ctx context.Context, arg UpsertVerificationTokenParams) error {
+	_, err := q.db.Exec(ctx, upsertVerificationToken, arg.TokenHash, arg.UserId, arg.RegisterInfo)
+	return err
 }

@@ -431,6 +431,15 @@ func (q *Queries) GetUsers(ctx context.Context, arg GetUsersParams) ([]GetUsersR
 	return items, nil
 }
 
+const markUserEmailAsVerified = `-- name: MarkUserEmailAsVerified :exec
+UPDATE "User" SET "isEmailVerified" = true, "updatedAt" = now() WHERE id = $1
+`
+
+func (q *Queries) MarkUserEmailAsVerified(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, markUserEmailAsVerified, id)
+	return err
+}
+
 const updateUser = `-- name: UpdateUser :exec
 UPDATE "User" SET "displayName" = $2, email = $3, "phoneNumber" = $4, "updatedAt" = now() WHERE id = $1
 `
