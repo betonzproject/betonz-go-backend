@@ -114,6 +114,7 @@ SELECT
 	u."profileImage",
 	u."mainWallet",
 	u.status,
+	u."isEmailVerified",
 	u."createdAt",
 	e."sourceIp" AS "lastLoginIp",
 	e2."updatedAt"::timestamptz AS "lastActiveAt"

@@ -170,6 +170,7 @@ SELECT
 	u."profileImage",
 	u."mainWallet",
 	u.status,
+	u."isEmailVerified",
 	u."createdAt",
 	e."sourceIp" AS "lastLoginIp",
 	e2."updatedAt"::timestamptz AS "lastActiveAt"
@@ -207,19 +208,20 @@ WHERE
 `
 
 type GetPlayerInfoByIdRow struct {
-	ID           pgtype.UUID        `json:"id"`
-	Username     string             `json:"username"`
-	Role         Role               `json:"role"`
-	Email        string             `json:"email"`
-	Dob          pgtype.Date        `json:"dob"`
-	DisplayName  pgtype.Text        `json:"displayName"`
-	PhoneNumber  pgtype.Text        `json:"phoneNumber"`
-	ProfileImage pgtype.Text        `json:"profileImage"`
-	MainWallet   pgtype.Numeric     `json:"mainWallet"`
-	Status       UserStatus         `json:"status"`
-	CreatedAt    pgtype.Timestamptz `json:"createdAt"`
-	LastLoginIp  pgtype.Text        `json:"lastLoginIp"`
-	LastActiveAt pgtype.Timestamptz `json:"lastActiveAt"`
+	ID              pgtype.UUID        `json:"id"`
+	Username        string             `json:"username"`
+	Role            Role               `json:"role"`
+	Email           string             `json:"email"`
+	Dob             pgtype.Date        `json:"dob"`
+	DisplayName     pgtype.Text        `json:"displayName"`
+	PhoneNumber     pgtype.Text        `json:"phoneNumber"`
+	ProfileImage    pgtype.Text        `json:"profileImage"`
+	MainWallet      pgtype.Numeric     `json:"mainWallet"`
+	Status          UserStatus         `json:"status"`
+	IsEmailVerified bool               `json:"isEmailVerified"`
+	CreatedAt       pgtype.Timestamptz `json:"createdAt"`
+	LastLoginIp     pgtype.Text        `json:"lastLoginIp"`
+	LastActiveAt    pgtype.Timestamptz `json:"lastActiveAt"`
 }
 
 func (q *Queries) GetPlayerInfoById(ctx context.Context, id pgtype.UUID) (GetPlayerInfoByIdRow, error) {
@@ -236,6 +238,7 @@ func (q *Queries) GetPlayerInfoById(ctx context.Context, id pgtype.UUID) (GetPla
 		&i.ProfileImage,
 		&i.MainWallet,
 		&i.Status,
+		&i.IsEmailVerified,
 		&i.CreatedAt,
 		&i.LastLoginIp,
 		&i.LastActiveAt,
