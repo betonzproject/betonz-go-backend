@@ -237,7 +237,7 @@ func (q *Queries) GetSystemBanks(ctx context.Context) ([]Bank, error) {
 }
 
 const getSystemBanksByBankName = `-- name: GetSystemBanksByBankName :many
-SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM' AND b.name = $1
+SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM' AND b.name = $1 AND NOT disabled
 `
 
 func (q *Queries) GetSystemBanksByBankName(ctx context.Context, name BankName) ([]Bank, error) {

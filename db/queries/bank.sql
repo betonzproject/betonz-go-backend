@@ -11,7 +11,7 @@ SELECT b.* FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYST
 SELECT b.* FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM' ORDER BY b."createdAt", b."accountName";
 
 -- name: GetSystemBanksByBankName :many
-SELECT b.* FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM' AND b.name = $1;
+SELECT b.* FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM' AND b.name = $1 AND NOT disabled;
 
 -- name: CreateBank :one
 INSERT INTO

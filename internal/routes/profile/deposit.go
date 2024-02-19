@@ -147,7 +147,7 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 
 		receivingBankId, _ := utils.ParseUUID(depositForm.ReceivingBankId)
 		receivingBank, err := app.DB.GetSystemBankById(r.Context(), receivingBankId)
-		if err != nil || depositorBank.Name != receivingBank.Name {
+		if err != nil || depositorBank.Name != receivingBank.Name || receivingBank.Disabled {
 			http.Error(w, "deposit.receivingBankInvalid.message", http.StatusBadRequest)
 			return
 		}
