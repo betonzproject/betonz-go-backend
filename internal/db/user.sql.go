@@ -57,6 +57,20 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const depositUserMainWallet = `-- name: DepositUserMainWallet :exec
+UPDATE "User" SET "mainWallet" = "mainWallet" + $2, "updatedAt" = now() WHERE id = $1
+`
+
+type DepositUserMainWalletParams struct {
+	ID     pgtype.UUID    `json:"id"`
+	Amount pgtype.Numeric `json:"amount"`
+}
+
+func (q *Queries) DepositUserMainWallet(ctx context.Context, arg DepositUserMainWalletParams) error {
+	_, err := q.db.Exec(ctx, depositUserMainWallet, arg.ID, arg.Amount)
+	return err
+}
+
 const getExtendedUserById = `-- name: GetExtendedUserById :one
 SELECT id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail" FROM "User" WHERE id = $1
 `
@@ -475,20 +489,6 @@ func (q *Queries) UpdateUserLastUsedBank(ctx context.Context, arg UpdateUserLast
 	return err
 }
 
-const updateUserMainWallet = `-- name: UpdateUserMainWallet :exec
-UPDATE "User" SET "mainWallet" = $2, "updatedAt" = now() WHERE id = $1
-`
-
-type UpdateUserMainWalletParams struct {
-	ID         pgtype.UUID    `json:"id"`
-	MainWallet pgtype.Numeric `json:"mainWallet"`
-}
-
-func (q *Queries) UpdateUserMainWallet(ctx context.Context, arg UpdateUserMainWalletParams) error {
-	_, err := q.db.Exec(ctx, updateUserMainWallet, arg.ID, arg.MainWallet)
-	return err
-}
-
 const updateUserPasswordHash = `-- name: UpdateUserPasswordHash :exec
 UPDATE "User" SET "passwordHash" = $2, "updatedAt" = now() WHERE id = $1
 `
@@ -542,5 +542,19 @@ type UpdateUsernameParams struct {
 
 func (q *Queries) UpdateUsername(ctx context.Context, arg UpdateUsernameParams) error {
 	_, err := q.db.Exec(ctx, updateUsername, arg.ID, arg.Username)
+	return err
+}
+
+const withdrawUserMainWallet = `-- name: WithdrawUserMainWallet :exec
+UPDATE "User" SET "mainWallet" = "mainWallet" - $2, "updatedAt" = now() WHERE id = $1
+`
+
+type WithdrawUserMainWalletParams struct {
+	ID     pgtype.UUID    `json:"id"`
+	Amount pgtype.Numeric `json:"amount"`
+}
+
+func (q *Queries) WithdrawUserMainWallet(ctx context.Context, arg WithdrawUserMainWalletParams) error {
+	_, err := q.db.Exec(ctx, withdrawUserMainWallet, arg.ID, arg.Amount)
 	return err
 }

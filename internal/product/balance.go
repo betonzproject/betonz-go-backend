@@ -8,7 +8,6 @@ import (
 
 	"github.com/doorman2137/betonz-go/internal/db"
 	"github.com/doorman2137/betonz-go/internal/etg"
-	"github.com/doorman2137/betonz-go/internal/utils/numericutils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -124,9 +123,9 @@ func Withdraw(refId string, etgUsername string, product Product, amount pgtype.N
 func Transfer(q *db.Queries, ctx context.Context, refId string, user db.User, fromWallet Product, toWallet Product, amount pgtype.Numeric) error {
 	if fromWallet != toWallet {
 		if fromWallet == MainWallet {
-			err := q.UpdateUserMainWallet(ctx, db.UpdateUserMainWalletParams{
-				ID:         user.ID,
-				MainWallet: numericutils.Sub(user.MainWallet, amount),
+			err := q.WithdrawUserMainWallet(ctx, db.WithdrawUserMainWalletParams{
+				ID:     user.ID,
+				Amount: amount,
 			})
 			if err != nil {
 				return err
@@ -136,9 +135,9 @@ func Transfer(q *db.Queries, ctx context.Context, refId string, user db.User, fr
 		}
 
 		if toWallet == MainWallet {
-			err := q.UpdateUserMainWallet(ctx, db.UpdateUserMainWalletParams{
-				ID:         user.ID,
-				MainWallet: numericutils.Add(user.MainWallet, amount),
+			err := q.DepositUserMainWallet(ctx, db.DepositUserMainWalletParams{
+				ID:     user.ID,
+				Amount: amount,
 			})
 			if err != nil {
 				return err
@@ -158,9 +157,9 @@ func Transfer(q *db.Queries, ctx context.Context, refId string, user db.User, fr
 			err2 := Deposit(refId, user.EtgUsername, fromWallet, amount)
 			if err2 != nil {
 				// Undo failed! Last resort deposit back to main wallet
-				q.UpdateUserMainWallet(ctx, db.UpdateUserMainWalletParams{
-					ID:         user.ID,
-					MainWallet: numericutils.Add(user.MainWallet, amount),
+				q.DepositUserMainWallet(ctx, db.DepositUserMainWalletParams{
+					ID:     user.ID,
+					Amount: amount,
 				})
 			}
 			return err

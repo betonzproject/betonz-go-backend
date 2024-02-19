@@ -116,9 +116,9 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 		if transactionRequestForm.Action == "approve" {
 			if tr.Type == db.TransactionTypeDEPOSIT {
 				// TODO: Check tr.depositToWallet
-				err = qtx.UpdateUserMainWallet(r.Context(), db.UpdateUserMainWalletParams{
-					ID:         initiator.ID,
-					MainWallet: numericutils.Add(initiator.MainWallet, tr.Amount, tr.Bonus),
+				err = qtx.DepositUserMainWallet(r.Context(), db.DepositUserMainWalletParams{
+					ID:     initiator.ID,
+					Amount: numericutils.Add(tr.Amount, tr.Bonus),
 				})
 				if err != nil {
 					log.Panicln("Can't update user main wallet: " + err.Error())
@@ -145,9 +145,9 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 					return
 				}
 
-				err = qtx.UpdateUserMainWallet(r.Context(), db.UpdateUserMainWalletParams{
-					ID:         initiator.ID,
-					MainWallet: numericutils.Sub(initiator.MainWallet, tr.Amount),
+				err = qtx.WithdrawUserMainWallet(r.Context(), db.WithdrawUserMainWalletParams{
+					ID:     initiator.ID,
+					Amount: tr.Amount,
 				})
 				if err != nil {
 					log.Panicln("Can't update user main wallet: " + err.Error())

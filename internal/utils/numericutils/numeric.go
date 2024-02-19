@@ -10,6 +10,8 @@ import (
 
 var ten = big.NewInt(10)
 
+var Zero = pgtype.Numeric{Int: big.NewInt(0), Valid: true}
+
 // Add returns the sum of all n.
 // If any of the n is a NaN, then NaN is retruned.
 //
@@ -114,6 +116,10 @@ func Cmp(n1, n2 pgtype.Numeric) int {
 
 	rn1, rn2 := RescalePair(n1, n2)
 	return rn1.Int.Cmp(rn2.Int)
+}
+
+func IsPositive(n pgtype.Numeric) bool {
+	return Cmp(n, Zero) > 0
 }
 
 // RescalePair rescales two numerics to a common exponential value (min exp of both numerics)

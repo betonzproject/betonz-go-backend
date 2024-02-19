@@ -183,8 +183,11 @@ UPDATE "User" SET "passwordHash" = $2, "updatedAt" = now() WHERE id = $1;
 -- name: UpdateUserProfileImage :exec
 UPDATE "User" SET "profileImage" = $2, "updatedAt" = now() WHERE id = $1;
 
--- name: UpdateUserMainWallet :exec
-UPDATE "User" SET "mainWallet" = $2, "updatedAt" = now() WHERE id = $1;
+-- name: DepositUserMainWallet :exec
+UPDATE "User" SET "mainWallet" = "mainWallet" + @amount, "updatedAt" = now() WHERE id = $1;
+
+-- name: WithdrawUserMainWallet :exec
+UPDATE "User" SET "mainWallet" = "mainWallet" - @amount, "updatedAt" = now() WHERE id = $1;
 
 -- name: UpdateUserLastUsedBank :exec
 UPDATE "User" SET "lastUsedBankId" = $2, "updatedAt" = now() WHERE id = $1;
