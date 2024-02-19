@@ -9,9 +9,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/etg"
 	"github.com/doorman2137/betonz-go/internal/utils/sliceutils"
+	"github.com/redis/go-redis/v9"
 )
 
 type ProductType int
@@ -325,10 +325,10 @@ type GameInfo struct {
 	ImageLink string `json:"imageLink"`
 }
 
-func GetGameList(app *app.App, ctx context.Context, productType ProductType, product Product) ([]GameInfo, error) {
+func GetGameList(redis *redis.Client, ctx context.Context, productType ProductType, product Product) ([]GameInfo, error) {
 	// Get from redis cache
 	key := "games:" + productType.UriComponent() + "_" + product.UriComponent()
-	cached, err := app.Redis.Get(ctx, key).Result()
+	cached, err := redis.Get(ctx, key).Result()
 	if err == nil {
 		buf := bytes.NewBufferString(cached)
 		var games []GameInfo
@@ -366,7 +366,7 @@ func GetGameList(app *app.App, ctx context.Context, productType ProductType, pro
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	enc.Encode(games)
-	app.Redis.Set(ctx, key, buf.String(), time.Hour)
+	redis.Set(ctx, key, buf.String(), time.Hour)
 
 	return games, nil
 }

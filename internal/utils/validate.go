@@ -2,7 +2,9 @@ package utils
 
 import (
 	"regexp"
+	"slices"
 
+	"github.com/doorman2137/betonz-go/internal/product"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -33,4 +35,9 @@ func ValidateBankAccountNumber(fl validator.FieldLevel) bool {
 	}
 
 	return true
+}
+
+func ValidateProduct(fl validator.FieldLevel) bool {
+	i := product.Product(fl.Field().Int())
+	return i == product.MainWallet || slices.Contains(product.AllProducts, i)
 }

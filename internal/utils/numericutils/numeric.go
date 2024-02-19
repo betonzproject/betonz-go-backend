@@ -11,6 +11,7 @@ import (
 var ten = big.NewInt(10)
 
 var Zero = pgtype.Numeric{Int: big.NewInt(0), Valid: true}
+var NaN = pgtype.Numeric{NaN: true, Valid: true}
 
 // Add returns the sum of all n.
 // If any of the n is a NaN, then NaN is retruned.
@@ -32,15 +33,11 @@ func Add(n ...pgtype.Numeric) pgtype.Numeric {
 //
 // Panics if either n1 or n2 is not valid.
 func add(n1, n2 pgtype.Numeric) pgtype.Numeric {
-	if !n1.Valid {
-		log.Panicf("%+v is not valid", n1)
-	}
-	if !n2.Valid {
-		log.Panicf("%+v is not valid", n2)
-	}
+	ensureValid(n1)
+	ensureValid(n2)
 
 	if n1.NaN || n2.NaN {
-		return pgtype.Numeric{NaN: true, Valid: true}
+		return NaN
 	}
 
 	rn1, rn2 := RescalePair(n1, n2)
@@ -59,15 +56,11 @@ func add(n1, n2 pgtype.Numeric) pgtype.Numeric {
 //
 // Panics if either n1 or n2 is not valid.
 func Sub(n1, n2 pgtype.Numeric) pgtype.Numeric {
-	if !n1.Valid {
-		log.Panicf("%+v is not valid", n1)
-	}
-	if !n2.Valid {
-		log.Panicf("%+v is not valid", n2)
-	}
+	ensureValid(n1)
+	ensureValid(n2)
 
 	if n1.NaN || n2.NaN {
-		return pgtype.Numeric{NaN: true, Valid: true}
+		return NaN
 	}
 
 	rn1, rn2 := RescalePair(n1, n2)
@@ -75,6 +68,31 @@ func Sub(n1, n2 pgtype.Numeric) pgtype.Numeric {
 	return pgtype.Numeric{
 		Int:              rn3,
 		Exp:              rn1.Exp,
+		InfinityModifier: n1.InfinityModifier,
+		NaN:              n1.InfinityModifier-n2.InfinityModifier == 2 || n1.InfinityModifier-n2.InfinityModifier == -2,
+		Valid:            true,
+	}
+}
+
+// Mul returns n1 * n2.
+// If either n1 or n2 is NaN, NaN is returned.
+//
+// Panics if either n1 or n2 is not valid.
+func Mul(n1, n2 pgtype.Numeric) pgtype.Numeric {
+	ensureValid(n1)
+	ensureValid(n2)
+
+	expInt64 := int64(n1.Exp) + int64(n2.Exp)
+	if expInt64 > math.MaxInt32 || expInt64 < math.MinInt32 {
+		// NOTE(vadim): better to panic than give incorrect results, as
+		// Decimals are usually used for money
+		log.Panicf("exponent %v overflows an int32!\n", expInt64)
+	}
+
+	n3 := new(big.Int).Mul(n1.Int, n2.Int)
+	return pgtype.Numeric{
+		Int:              n3,
+		Exp:              int32(expInt64),
 		InfinityModifier: n1.InfinityModifier,
 		NaN:              n1.InfinityModifier-n2.InfinityModifier == 2 || n1.InfinityModifier-n2.InfinityModifier == -2,
 		Valid:            true,
@@ -90,12 +108,8 @@ func Sub(n1, n2 pgtype.Numeric) pgtype.Numeric {
 //
 // Panics if either n1 or n2 is not valid.
 func Cmp(n1, n2 pgtype.Numeric) int {
-	if !n1.Valid {
-		log.Panicf("%+v is not valid", n1)
-	}
-	if !n2.Valid {
-		log.Panicf("%+v is not valid", n2)
-	}
+	ensureValid(n1)
+	ensureValid(n2)
 
 	if n1.NaN || n2.NaN {
 		return -2
@@ -120,6 +134,12 @@ func Cmp(n1, n2 pgtype.Numeric) int {
 
 func IsPositive(n pgtype.Numeric) bool {
 	return Cmp(n, Zero) > 0
+}
+
+func ensureValid(n pgtype.Numeric) {
+	if !n.Valid {
+		log.Panicf("%+v is not valid", n)
+	}
 }
 
 // RescalePair rescales two numerics to a common exponential value (min exp of both numerics)

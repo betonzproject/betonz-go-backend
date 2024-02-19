@@ -70,6 +70,7 @@ func NewApp() *App {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	validate.RegisterValidation("username", utils.ValidateUsername)
 	validate.RegisterValidation("accountnumber", utils.ValidateBankAccountNumber)
+	validate.RegisterValidation("product", utils.ValidateProduct)
 
 	return &App{
 		DB:       db.New(pool),

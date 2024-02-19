@@ -11,18 +11,23 @@ import (
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/auth"
 	"github.com/doorman2137/betonz-go/internal/db"
+	"github.com/doorman2137/betonz-go/internal/product"
+	"github.com/doorman2137/betonz-go/internal/promotion"
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
+	"github.com/doorman2137/betonz-go/internal/utils/numericutils"
 	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type DepositResponse struct {
-	Banks            []db.Bank   `json:"banks"`
-	LastUsedBankId   pgtype.UUID `json:"lastUsedBankId"`
-	ReceivingBank    *db.Bank    `json:"receivingBank"`
-	HasRecentDeposit bool        `json:"hasRecentDeposit"`
+	Products           map[product.Product]string `json:"products"`
+	Banks              []db.Bank                  `json:"banks"`
+	LastUsedBankId     pgtype.UUID                `json:"lastUsedBankId"`
+	ReceivingBank      *db.Bank                   `json:"receivingBank"`
+	HasRecentDeposit   bool                       `json:"hasRecentDeposit"`
+	EligiblePromotions []db.PromotionType         `json:"eligiblePromotions"`
 }
 
 func GetDeposit(app *app.App) http.HandlerFunc {
@@ -34,6 +39,11 @@ func GetDeposit(app *app.App) http.HandlerFunc {
 
 		if acl.Authorize(app, w, r, user.Role, acl.DepositToOwnWallet) != nil {
 			return
+		}
+
+		productNames := make(map[product.Product]string)
+		for _, p := range product.AllProducts {
+			productNames[p] = p.String()
 		}
 
 		banks, err := app.DB.GetBanksByUserId(r.Context(), user.ID)
@@ -76,20 +86,26 @@ func GetDeposit(app *app.App) http.HandlerFunc {
 
 		hasRecentDeposit, _ := app.DB.HasRecentDepositRequestsByUserId(r.Context(), user.ID)
 
+		promotions := promotion.GetEligiblePromotions(app.DB, r.Context(), user.ID)
+
 		jsonutils.Write(w, DepositResponse{
-			Banks:            banks,
-			LastUsedBankId:   user.LastUsedBankId,
-			ReceivingBank:    receivingBank,
-			HasRecentDeposit: hasRecentDeposit,
+			Products:           productNames,
+			Banks:              banks,
+			LastUsedBankId:     user.LastUsedBankId,
+			ReceivingBank:      receivingBank,
+			HasRecentDeposit:   hasRecentDeposit,
+			EligiblePromotions: promotions,
 		}, http.StatusOK)
 	}
 }
 
 type DepositForm struct {
-	DepositorBankId string `form:"depositorBankId" validate:"uuid4"`
-	ReceivingBankId string `form:"receivingBankId" validate:"uuid4"`
-	DepositAmount   int64  `form:"depositAmount" validate:"min=10000,max=20000000" key:"deposit.amount"`
-	ReceiptData     string `form:"receiptData"`
+	DepositorBankId string           `form:"depositorBankId" validate:"uuid4"`
+	ReceivingBankId string           `form:"receivingBankId" validate:"uuid4"`
+	DepositAmount   int64            `form:"depositAmount" validate:"min=10000,max=20000000" key:"deposit.amount"`
+	Promotion       db.PromotionType `form:"promotion" validate:"omitempty,oneof=INACTIVE_BONUS FIVE_PERCENT_UNLIMITED_BONUS TEN_PERCENT_UNLIMITED_BONUS" key:"deposit.promotion"`
+	DepositTo       product.Product  `form:"depositTo" validate:"product"`
+	ReceiptData     string           `form:"receiptData"`
 }
 
 func PostDeposit(app *app.App) http.HandlerFunc {
@@ -117,7 +133,7 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 		// Check recent deposits
 		hasRecentDeposit, _ := app.DB.HasRecentDepositRequestsByUserId(r.Context(), user.ID)
 		if hasRecentDeposit {
-			http.Error(w, "deposit.alreadySubmitted.message", http.StatusBadRequest)
+			http.Error(w, "deposit.alreadySubmitted.message", http.StatusTooManyRequests)
 			return
 		}
 
@@ -136,6 +152,13 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 			return
 		}
 
+		// Validate promotions
+		eligiblePromotions := promotion.GetEligiblePromotions(app.DB, r.Context(), user.ID)
+		if depositForm.Promotion != "" && !slices.Contains(eligiblePromotions, depositForm.Promotion) {
+			http.Error(w, "deposit.promotionInvalid.message", http.StatusBadRequest)
+			return
+		}
+
 		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
 
@@ -147,6 +170,12 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 			log.Panicln("Can't update last used bank: " + err.Error())
 		}
 
+		amount := pgtype.Numeric{Int: big.NewInt(depositForm.DepositAmount), Valid: true}
+		bonus := numericutils.Zero
+		if depositForm.Promotion != "" {
+			bonus = promotion.GetBonus(amount, depositForm.Promotion)
+		}
+
 		err = qtx.CreateTransactionRequest(r.Context(), db.CreateTransactionRequestParams{
 			UserId:                       user.ID,
 			BankName:                     depositorBank.Name,
@@ -154,9 +183,11 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 			BankAccountNumber:            depositorBank.AccountNumber,
 			BeneficiaryBankAccountName:   pgtype.Text{String: receivingBank.AccountName, Valid: true},
 			BeneficiaryBankAccountNumber: pgtype.Text{String: receivingBank.AccountNumber, Valid: true},
-			Amount:                       pgtype.Numeric{Int: big.NewInt(depositForm.DepositAmount), Valid: true},
-			Bonus:                        pgtype.Numeric{Int: big.NewInt(0), Valid: true},
+			Amount:                       amount,
+			Bonus:                        bonus,
+			DepositToWallet:              pgtype.Int4{Int32: int32(depositForm.DepositTo), Valid: depositForm.DepositTo != product.MainWallet},
 			Type:                         db.TransactionTypeDEPOSIT,
+			Promotion:                    db.NullPromotionType{PromotionType: depositForm.Promotion, Valid: depositForm.Promotion != ""},
 			ReceiptPath:                  pgtype.Text{String: depositForm.ReceiptData, Valid: true},
 			Status:                       db.TransactionStatusPENDING,
 		})

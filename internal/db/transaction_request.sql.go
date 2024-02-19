@@ -23,12 +23,14 @@ INSERT INTO
 		amount,
 		bonus,
 		type,
+		"depositToWallet",
+		promotion,
 		"receiptPath",
 		status,
 		"updatedAt"
 	)
 VALUES
-	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now())
+	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, now())
 `
 
 type CreateTransactionRequestParams struct {
@@ -41,6 +43,8 @@ type CreateTransactionRequestParams struct {
 	Amount                       pgtype.Numeric    `json:"amount"`
 	Bonus                        pgtype.Numeric    `json:"bonus"`
 	Type                         TransactionType   `json:"type"`
+	DepositToWallet              pgtype.Int4       `json:"depositToWallet"`
+	Promotion                    NullPromotionType `json:"promotion"`
 	ReceiptPath                  pgtype.Text       `json:"receiptPath"`
 	Status                       TransactionStatus `json:"status"`
 }
@@ -56,6 +60,8 @@ func (q *Queries) CreateTransactionRequest(ctx context.Context, arg CreateTransa
 		arg.Amount,
 		arg.Bonus,
 		arg.Type,
+		arg.DepositToWallet,
+		arg.Promotion,
 		arg.ReceiptPath,
 		arg.Status,
 	)
@@ -416,6 +422,55 @@ func (q *Queries) GetTransactionRequestsByUserId(ctx context.Context, arg GetTra
 	return items, nil
 }
 
+const hasApprovedDepositRequestsWithin30DaysByUserId = `-- name: HasApprovedDepositRequestsWithin30DaysByUserId :one
+SELECT
+	EXISTS (
+		SELECT
+			id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'DEPOSIT'
+			AND status = 'APPROVED'
+			AND "updatedAt" >= now() - INTERVAL '30 days'
+	)
+`
+
+func (q *Queries) HasApprovedDepositRequestsWithin30DaysByUserId(ctx context.Context, userid pgtype.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, hasApprovedDepositRequestsWithin30DaysByUserId, userid)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const hasPendingTransactionRequestsWithPromotion = `-- name: HasPendingTransactionRequestsWithPromotion :one
+SELECT
+	EXISTS (
+		SELECT
+			id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'DEPOSIT'
+			AND status = 'PENDING'
+			AND promotion = $2
+	)
+`
+
+type HasPendingTransactionRequestsWithPromotionParams struct {
+	UserId    pgtype.UUID       `json:"userId"`
+	Promotion NullPromotionType `json:"promotion"`
+}
+
+func (q *Queries) HasPendingTransactionRequestsWithPromotion(ctx context.Context, arg HasPendingTransactionRequestsWithPromotionParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasPendingTransactionRequestsWithPromotion, arg.UserId, arg.Promotion)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const hasRecentDepositRequestsByUserId = `-- name: HasRecentDepositRequestsByUserId :one
 SELECT
 	EXISTS (
@@ -439,17 +494,18 @@ func (q *Queries) HasRecentDepositRequestsByUserId(ctx context.Context, userid p
 }
 
 const hasRecentWithdrawRequestsByUserId = `-- name: HasRecentWithdrawRequestsByUserId :one
-SELECT EXISTS (
-	SELECT
-		id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion
-	FROM
-		"TransactionRequest"
-	WHERE
-		"userId" = $1
-		AND type = 'WITHDRAW'
-		AND status = 'PENDING'
-		AND "createdAt" >= now() - INTERVAL '5 minutes'
-)
+SELECT
+	EXISTS (
+		SELECT
+			id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'WITHDRAW'
+			AND status = 'PENDING'
+			AND "createdAt" >= now() - INTERVAL '5 minutes'
+	)
 `
 
 func (q *Queries) HasRecentWithdrawRequestsByUserId(ctx context.Context, userid pgtype.UUID) (bool, error) {

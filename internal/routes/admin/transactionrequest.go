@@ -4,18 +4,47 @@ import (
 	"log"
 	"math/big"
 	"net/http"
+	"os"
 
 	"github.com/doorman2137/betonz-go/internal/acl"
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/auth"
 	"github.com/doorman2137/betonz-go/internal/db"
+	"github.com/doorman2137/betonz-go/internal/product"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/doorman2137/betonz-go/internal/utils/numericutils"
+	"github.com/doorman2137/betonz-go/internal/utils/sliceutils"
 	"github.com/doorman2137/betonz-go/internal/utils/timeutils"
 	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type TransactionRequest struct {
+	ID                           int32                `json:"id"`
+	UserId                       pgtype.UUID          `json:"userId"`
+	ModifiedById                 pgtype.UUID          `json:"modifiedById"`
+	BankName                     db.BankName          `json:"bankName"`
+	BankAccountName              string               `json:"bankAccountName"`
+	BankAccountNumber            string               `json:"bankAccountNumber"`
+	BeneficiaryBankAccountName   pgtype.Text          `json:"beneficiaryBankAccountName"`
+	BeneficiaryBankAccountNumber pgtype.Text          `json:"beneficiaryBankAccountNumber"`
+	Amount                       pgtype.Numeric       `json:"amount"`
+	Type                         db.TransactionType   `json:"type"`
+	ReceiptPath                  pgtype.Text          `json:"receiptPath"`
+	Status                       db.TransactionStatus `json:"status"`
+	Remarks                      pgtype.Text          `json:"remarks"`
+	CreatedAt                    pgtype.Timestamptz   `json:"createdAt"`
+	UpdatedAt                    pgtype.Timestamptz   `json:"updatedAt"`
+	Bonus                        pgtype.Numeric       `json:"bonus"`
+	WithdrawBankFees             pgtype.Numeric       `json:"withdrawBankFees"`
+	DepositToWalletName          pgtype.Text          `json:"depositToWalletName"`
+	Promotion                    db.NullPromotionType `json:"promotion"`
+	Username                     string               `json:"username"`
+	Role                         db.Role              `json:"role"`
+	ModifiedByUsername           pgtype.Text          `json:"modifiedByUsername"`
+	ModifiedByRole               db.NullRole          `json:"modifiedByRole"`
+}
 
 func GetTransactionRequest(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +93,38 @@ func GetTransactionRequest(app *app.App) http.HandlerFunc {
 			log.Panicln("Can't get requests: " + err.Error())
 		}
 
-		jsonutils.Write(w, requests, http.StatusOK)
+		jsonutils.Write(w, sliceutils.Map(requests, func(r db.GetTransactionRequestsRow) TransactionRequest {
+			var depositToWalletName pgtype.Text
+			if r.DepositToWallet.Valid {
+				depositToWalletName.String = product.Product(int(r.DepositToWallet.Int32)).String()
+				depositToWalletName.Valid = true
+			}
+			return TransactionRequest{
+				ID:                           r.ID,
+				UserId:                       r.UserId,
+				ModifiedById:                 r.ModifiedById,
+				BankName:                     r.BankName,
+				BankAccountName:              r.BankAccountName,
+				BankAccountNumber:            r.BankAccountNumber,
+				BeneficiaryBankAccountName:   r.BeneficiaryBankAccountName,
+				BeneficiaryBankAccountNumber: r.BeneficiaryBankAccountNumber,
+				Amount:                       r.Amount,
+				Type:                         r.Type,
+				ReceiptPath:                  r.ReceiptPath,
+				Status:                       r.Status,
+				Remarks:                      r.Remarks,
+				CreatedAt:                    r.CreatedAt,
+				UpdatedAt:                    r.UpdatedAt,
+				Bonus:                        r.Bonus,
+				WithdrawBankFees:             r.WithdrawBankFees,
+				DepositToWalletName:          depositToWalletName,
+				Promotion:                    r.Promotion,
+				Username:                     r.Username,
+				Role:                         r.Role,
+				ModifiedByUsername:           r.ModifiedByUsername,
+				ModifiedByRole:               r.ModifiedByRole,
+			}
+		}), http.StatusOK)
 	}
 }
 
@@ -115,13 +175,29 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 
 		if transactionRequestForm.Action == "approve" {
 			if tr.Type == db.TransactionTypeDEPOSIT {
-				// TODO: Check tr.depositToWallet
-				err = qtx.DepositUserMainWallet(r.Context(), db.DepositUserMainWalletParams{
-					ID:     initiator.ID,
-					Amount: numericutils.Add(tr.Amount, tr.Bonus),
-				})
-				if err != nil {
-					log.Panicln("Can't update user main wallet: " + err.Error())
+				if tr.DepositToWallet.Valid && tr.DepositToWallet.Int32 != int32(product.MainWallet) {
+					var refId string
+					if os.Getenv("ENVIRONMENT") == "development" {
+						refId = "(DEV) TRANSFER"
+					} else {
+						refId = "TRANSFER"
+					}
+
+					p := product.Product(tr.DepositToWallet.Int32)
+					err := product.Deposit(refId, user.EtgUsername, p, numericutils.Add(tr.Amount, tr.Bonus))
+					if err != nil {
+						log.Printf("Can't deposit to %s (%d) for %s: %s", p, p, user.Username, err)
+						http.Error(w, "Deposit failed", http.StatusServiceUnavailable)
+						return
+					}
+				} else {
+					err := qtx.DepositUserMainWallet(r.Context(), db.DepositUserMainWalletParams{
+						ID:     initiator.ID,
+						Amount: numericutils.Add(tr.Amount, tr.Bonus),
+					})
+					if err != nil {
+						log.Panicln("Can't update user main wallet: " + err.Error())
+					}
 				}
 
 				err = qtx.UpdateTransactionRequest(r.Context(), db.UpdateTransactionRequestParams{
@@ -145,7 +221,7 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 					return
 				}
 
-				err = qtx.WithdrawUserMainWallet(r.Context(), db.WithdrawUserMainWalletParams{
+				err := qtx.WithdrawUserMainWallet(r.Context(), db.WithdrawUserMainWalletParams{
 					ID:     initiator.ID,
 					Amount: tr.Amount,
 				})
@@ -167,7 +243,7 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 			}
 		} else {
 			// Decline transaction request
-			err = qtx.UpdateTransactionRequest(r.Context(), db.UpdateTransactionRequestParams{
+			err := qtx.UpdateTransactionRequest(r.Context(), db.UpdateTransactionRequestParams{
 				ID:           transactionRequestForm.RequestId,
 				ModifiedById: user.ID,
 				Status:       db.TransactionStatusDECLINED,

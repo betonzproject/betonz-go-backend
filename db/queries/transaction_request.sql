@@ -75,17 +75,46 @@ SELECT
 	);
 
 -- name: HasRecentWithdrawRequestsByUserId :one
-SELECT EXISTS (
-	SELECT
-		*
-	FROM
-		"TransactionRequest"
-	WHERE
-		"userId" = $1
-		AND type = 'WITHDRAW'
-		AND status = 'PENDING'
-		AND "createdAt" >= now() - INTERVAL '5 minutes'
-);
+SELECT
+	EXISTS (
+		SELECT
+			*
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'WITHDRAW'
+			AND status = 'PENDING'
+			AND "createdAt" >= now() - INTERVAL '5 minutes'
+	);
+
+-- name: HasApprovedDepositRequestsWithin30DaysByUserId :one
+SELECT
+	EXISTS (
+		SELECT
+			*
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'DEPOSIT'
+			AND status = 'APPROVED'
+			AND "updatedAt" >= now() - INTERVAL '30 days'
+	);
+
+-- name: HasPendingTransactionRequestsWithPromotion :one
+SELECT
+	EXISTS (
+		SELECT
+			*
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'DEPOSIT'
+			AND status = 'PENDING'
+			AND promotion = $2
+	);
 
 -- name: GetTotalTransactionAmountAndCount :one
 SELECT
@@ -147,12 +176,14 @@ INSERT INTO
 		amount,
 		bonus,
 		type,
+		"depositToWallet",
+		promotion,
 		"receiptPath",
 		status,
 		"updatedAt"
 	)
 VALUES
-	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now());
+	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, now());
 
 -- name: UpdateTransactionRequest :exec
 UPDATE "TransactionRequest"

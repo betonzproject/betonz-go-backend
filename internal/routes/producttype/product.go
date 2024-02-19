@@ -58,7 +58,7 @@ func GetProduct(app *app.App) http.HandlerFunc {
 			}
 		}
 
-		games, err := product.GetGameList(app, r.Context(), productType, p)
+		games, err := product.GetGameList(app.Redis, r.Context(), productType, p)
 		if err != nil {
 			log.Panicln("Can't get games: " + err.Error())
 		}
