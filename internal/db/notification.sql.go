@@ -51,7 +51,7 @@ func (q *Queries) GetNotificationsByUserId(ctx context.Context, userid pgtype.UU
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Notification
+	items := []Notification{}
 	for rows.Next() {
 		var i Notification
 		if err := rows.Scan(

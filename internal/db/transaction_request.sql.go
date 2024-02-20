@@ -273,7 +273,7 @@ func (q *Queries) GetTransactionRequests(ctx context.Context, arg GetTransaction
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetTransactionRequestsRow
+	items := []GetTransactionRequestsRow{}
 	for rows.Next() {
 		var i GetTransactionRequestsRow
 		if err := rows.Scan(
@@ -384,7 +384,7 @@ func (q *Queries) GetTransactionRequestsByUserId(ctx context.Context, arg GetTra
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetTransactionRequestsByUserIdRow
+	items := []GetTransactionRequestsByUserIdRow{}
 	for rows.Next() {
 		var i GetTransactionRequestsByUserIdRow
 		if err := rows.Scan(

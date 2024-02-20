@@ -176,7 +176,7 @@ func (q *Queries) GetEvents(ctx context.Context, arg GetEventsParams) ([]GetEven
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetEventsRow
+	items := []GetEventsRow{}
 	for rows.Next() {
 		var i GetEventsRow
 		if err := rows.Scan(
@@ -236,7 +236,7 @@ func (q *Queries) GetRestrictionEventsByUserId(ctx context.Context, userid pgtyp
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetRestrictionEventsByUserIdRow
+	items := []GetRestrictionEventsByUserIdRow{}
 	for rows.Next() {
 		var i GetRestrictionEventsByUserIdRow
 		if err := rows.Scan(

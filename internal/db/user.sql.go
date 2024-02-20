@@ -414,7 +414,7 @@ func (q *Queries) GetUsers(ctx context.Context, arg GetUsersParams) ([]GetUsersR
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetUsersRow
+	items := []GetUsersRow{}
 	for rows.Next() {
 		var i GetUsersRow
 		if err := rows.Scan(

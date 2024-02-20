@@ -160,7 +160,7 @@ func (q *Queries) GetBanksByUserId(ctx context.Context, userid pgtype.UUID) ([]B
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Bank
+	items := []Bank{}
 	for rows.Next() {
 		var i Bank
 		if err := rows.Scan(
@@ -213,7 +213,7 @@ func (q *Queries) GetSystemBanks(ctx context.Context) ([]Bank, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Bank
+	items := []Bank{}
 	for rows.Next() {
 		var i Bank
 		if err := rows.Scan(
@@ -246,7 +246,7 @@ func (q *Queries) GetSystemBanksByBankName(ctx context.Context, name BankName) (
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Bank
+	items := []Bank{}
 	for rows.Next() {
 		var i Bank
 		if err := rows.Scan(

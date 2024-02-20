@@ -107,7 +107,7 @@ func (q *Queries) GetDailyPerformance(ctx context.Context, arg GetDailyPerforman
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetDailyPerformanceRow
+	items := []GetDailyPerformanceRow{}
 	for rows.Next() {
 		var i GetDailyPerformanceRow
 		if err := rows.Scan(

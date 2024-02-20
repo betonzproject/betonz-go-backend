@@ -55,7 +55,7 @@ func (q *Queries) GetTopPayout(ctx context.Context, producttype int32) ([]GetTop
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetTopPayoutRow
+	items := []GetTopPayoutRow{}
 	for rows.Next() {
 		var i GetTopPayoutRow
 		if err := rows.Scan(
@@ -131,7 +131,7 @@ func (q *Queries) GetTurnoverByUserId(ctx context.Context, arg GetTurnoverByUser
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetTurnoverByUserIdRow
+	items := []GetTurnoverByUserIdRow{}
 	for rows.Next() {
 		var i GetTurnoverByUserIdRow
 		if err := rows.Scan(&i.ProductCode, &i.Turnover); err != nil {
