@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 
@@ -106,6 +107,11 @@ func PostProfile(app *app.App) http.HandlerFunc {
 }
 
 func restoreWallet(q *db.Queries, ctx context.Context, user db.User) []string {
+	turnoverTargets, err := q.GetTurnoverTargetsByUserId(ctx, user.ID)
+	if err != nil {
+		log.Panicln("Can't get turnover targets: " + err.Error())
+	}
+
 	var refId string
 	if os.Getenv("ENVIRONMENT") == "development" {
 		refId = "(DEV) TRANSFER"
@@ -119,6 +125,13 @@ func restoreWallet(q *db.Queries, ctx context.Context, user db.User) []string {
 	errors := make([]string, 0, len(product.AllProducts))
 	var sumMutex sync.Mutex
 	for _, p := range product.AllProducts {
+		if slices.ContainsFunc(turnoverTargets, func(tt db.GetTurnoverTargetsByUserIdRow) bool {
+			p2 := product.Product(int(tt.ProductCode.Int32))
+			return product.SharesSameWallet(p, p2)
+		}) {
+			continue
+		}
+
 		wg.Add(1)
 		go func(p product.Product) {
 			defer wg.Done()
@@ -151,7 +164,7 @@ func restoreWallet(q *db.Queries, ctx context.Context, user db.User) []string {
 	}
 
 	wg.Wait()
-	err := q.DepositUserMainWallet(ctx, db.DepositUserMainWalletParams{
+	err = q.DepositUserMainWallet(ctx, db.DepositUserMainWalletParams{
 		ID:     user.ID,
 		Amount: sum,
 	})

@@ -17,9 +17,16 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/doorman2137/betonz-go/internal/utils/numericutils"
+	"github.com/doorman2137/betonz-go/internal/utils/sliceutils"
 	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type TurnoverTargetInfo struct {
+	ProductName   string         `json:"productName"`
+	TurnoverSoFar pgtype.Numeric `json:"turnoverSoFar"`
+	Target        pgtype.Numeric `json:"target"`
+}
 
 type DepositResponse struct {
 	Products           map[product.Product]string `json:"products"`
@@ -28,6 +35,7 @@ type DepositResponse struct {
 	ReceivingBank      *db.Bank                   `json:"receivingBank"`
 	HasRecentDeposit   bool                       `json:"hasRecentDeposit"`
 	EligiblePromotions []db.PromotionType         `json:"eligiblePromotions"`
+	TurnoverTargets    []TurnoverTargetInfo       `json:"turnoverTargets"`
 }
 
 func GetDeposit(app *app.App) http.HandlerFunc {
@@ -88,6 +96,18 @@ func GetDeposit(app *app.App) http.HandlerFunc {
 
 		promotions := promotion.GetEligiblePromotions(app.DB, r.Context(), user.ID)
 
+		turnoverTargets, err := app.DB.GetTurnoverTargetsByUserId(r.Context(), user.ID)
+		if err != nil {
+			log.Panicln("Can't get turnover targets: " + err.Error())
+		}
+		turnoverTargetInfos := sliceutils.Map(turnoverTargets, func(tt db.GetTurnoverTargetsByUserIdRow) TurnoverTargetInfo {
+			return TurnoverTargetInfo{
+				ProductName:   product.Product(int(tt.ProductCode.Int32)).String(),
+				Target:        tt.Target,
+				TurnoverSoFar: tt.TurnoverSoFar,
+			}
+		})
+
 		jsonutils.Write(w, DepositResponse{
 			Products:           productNames,
 			Banks:              banks,
@@ -95,6 +115,7 @@ func GetDeposit(app *app.App) http.HandlerFunc {
 			ReceivingBank:      receivingBank,
 			HasRecentDeposit:   hasRecentDeposit,
 			EligiblePromotions: promotions,
+			TurnoverTargets:    turnoverTargetInfos,
 		}, http.StatusOK)
 	}
 }
@@ -173,7 +194,7 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 		amount := pgtype.Numeric{Int: big.NewInt(depositForm.DepositAmount), Valid: true}
 		bonus := numericutils.Zero
 		if depositForm.Promotion != "" {
-			bonus = promotion.GetBonus(amount, depositForm.Promotion)
+			bonus = promotion.CalculateBonus(amount, depositForm.Promotion)
 		}
 
 		err = qtx.CreateTransactionRequest(r.Context(), db.CreateTransactionRequestParams{

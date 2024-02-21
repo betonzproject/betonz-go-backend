@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"net/http"
 	"os"
+	"slices"
 	"sync"
 
 	"github.com/doorman2137/betonz-go/internal/acl"
@@ -83,6 +84,11 @@ func PostTransfer(app *app.App) http.HandlerFunc {
 			return
 		}
 
+		if product.SharesSameWallet(transferForm.FromWallet, transferForm.ToWallet) {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		data := map[string]any{
 			"fromWallet": transferForm.FromWallet,
 			"toWallet":   transferForm.ToWallet,
@@ -92,7 +98,22 @@ func PostTransfer(app *app.App) http.HandlerFunc {
 		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
 
-		// TODO; Need to check for turnover target
+		// Check turnover target
+		if transferForm.FromWallet != product.MainWallet {
+			turnoverTargets, err := qtx.GetTurnoverTargetsByUserId(r.Context(), user.ID)
+			if err != nil {
+				log.Panicln("Can't get turnover targets: " + err.Error())
+			}
+
+			if slices.ContainsFunc(turnoverTargets, func(tt db.GetTurnoverTargetsByUserIdRow) bool {
+				p := product.Product(int(tt.ProductCode.Int32))
+				return product.SharesSameWallet(p, transferForm.FromWallet)
+			}) {
+				tx.Commit(r.Context())
+				http.Error(w, "transfer.unmetTurnoverTarget.message", http.StatusForbidden)
+				return
+			}
+		}
 
 		var fromWalletBalance pgtype.Numeric
 		if transferForm.FromWallet == product.MainWallet {
@@ -100,7 +121,7 @@ func PostTransfer(app *app.App) http.HandlerFunc {
 		} else {
 			fromWalletBalance, err = product.GetUserBalance(user.EtgUsername, transferForm.FromWallet)
 			if err != nil {
-				err = utils.LogEvent(app.DB, r, user.ID, db.EventTypeTRANSFERWALLET, db.EventResultFAIL, err.Error(), data)
+				err := utils.LogEvent(app.DB, r, user.ID, db.EventTypeTRANSFERWALLET, db.EventResultFAIL, err.Error(), data)
 				if err != nil {
 					log.Panicln("Can't log event: " + err.Error())
 				}
@@ -114,7 +135,7 @@ func PostTransfer(app *app.App) http.HandlerFunc {
 		amount := pgtype.Numeric{Int: big.NewInt(transferForm.Amount), Valid: true}
 
 		if numericutils.Cmp(fromWalletBalance, amount) < 0 {
-			err = utils.LogEvent(app.DB, r, user.ID, db.EventTypeTRANSFERWALLET, db.EventResultFAIL, "Insufficient balance", data)
+			err := utils.LogEvent(app.DB, r, user.ID, db.EventTypeTRANSFERWALLET, db.EventResultFAIL, "Insufficient balance", data)
 			if err != nil {
 				log.Panicln("Can't log event: " + err.Error())
 			}

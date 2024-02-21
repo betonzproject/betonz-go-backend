@@ -11,31 +11,138 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const hasActivePromotionByUserId = `-- name: HasActivePromotionByUserId :one
+const createTurnoverTarget = `-- name: CreateTurnoverTarget :exec
+INSERT INTO "TurnoverTarget" (target, "transactionRequestId", "updatedAt") VALUES ($1, $2, now())
+`
+
+type CreateTurnoverTargetParams struct {
+	Target               pgtype.Numeric `json:"target"`
+	TransactionRequestId int32          `json:"transactionRequestId"`
+}
+
+func (q *Queries) CreateTurnoverTarget(ctx context.Context, arg CreateTurnoverTargetParams) error {
+	_, err := q.db.Exec(ctx, createTurnoverTarget, arg.Target, arg.TransactionRequestId)
+	return err
+}
+
+const deleteFulfilledTurnoverTargetsByUserId = `-- name: DeleteFulfilledTurnoverTargetsByUserId :exec
+DELETE FROM "TurnoverTarget" WHERE id IN (
+	-- Get all ids of turnover targets that have been fulfilled
+	SELECT
+		tt.id
+	FROM
+		"TurnoverTarget" tt
+		JOIN "TransactionRequest" tr ON tt."transactionRequestId" = tr.id
+		JOIN "User" u ON tr."userId" = u.id
+		JOIN "Bet" b ON b."etgUsername" = u."etgUsername" AND tr."depositToWallet" = b."productCode"
+	WHERE
+		b."startTime" >= tt."createdAt"
+		AND u.id = $1
+	GROUP BY
+		tt.id
+	HAVING
+		sum(b.turnover) >= target
+)
+`
+
+func (q *Queries) DeleteFulfilledTurnoverTargetsByUserId(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteFulfilledTurnoverTargetsByUserId, id)
+	return err
+}
+
+const getTurnoverTargetsByUserId = `-- name: GetTurnoverTargetsByUserId :many
+WITH "to" AS (
+	-- Calculate sum of turnover starting since the start of turnover target
+	SELECT
+		tt.id,
+		sum(b.turnover)::numeric(32, 2) AS "turnoverSoFar"
+	FROM
+		"TurnoverTarget" tt
+		JOIN "TransactionRequest" tr ON tt."transactionRequestId" = tr.id
+		JOIN "User" u ON tr."userId" = u.id
+		JOIN "Bet" b ON b."etgUsername" = u."etgUsername" AND tr."depositToWallet" = b."productCode"
+	WHERE
+		b."startTime" >= tt."createdAt"
+		AND u.id = $1
+	GROUP BY
+		tt.id
+)
 SELECT
-	EXISTS (
-		SELECT
-			id, "userId", "productCode", target, "promoCode", "transactionRequestId", "createdAt", "updatedAt"
-		FROM
-			"TurnoverTarget"
-		WHERE
-			"userId" = $1
-			AND "promoCode" = $2
-			AND (
-				$3::int IS NULL
-				OR "productCode" = $3
-			)
-	)
+	tt.id, tt.target, tt."transactionRequestId", tt."createdAt", tt."updatedAt",
+	tr."depositToWallet" AS "productCode",
+	COALESCE("turnoverSoFar", 0)::numeric(32, 0) AS "turnoverSoFar"
+FROM
+	"TurnoverTarget" tt
+	LEFT JOIN "to" ON "to".id = tt.id
+	JOIN "TransactionRequest" tr ON tt."transactionRequestId" = tr.id
+WHERE
+	tr."userId" = $1
+	AND ("turnoverSoFar" IS NULL OR "turnoverSoFar" < target)
+`
+
+type GetTurnoverTargetsByUserIdRow struct {
+	ID                   int32              `json:"id"`
+	Target               pgtype.Numeric     `json:"target"`
+	TransactionRequestId int32              `json:"transactionRequestId"`
+	CreatedAt            pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt            pgtype.Timestamptz `json:"updatedAt"`
+	ProductCode          pgtype.Int4        `json:"productCode"`
+	TurnoverSoFar        pgtype.Numeric     `json:"turnoverSoFar"`
+}
+
+func (q *Queries) GetTurnoverTargetsByUserId(ctx context.Context, userid pgtype.UUID) ([]GetTurnoverTargetsByUserIdRow, error) {
+	rows, err := q.db.Query(ctx, getTurnoverTargetsByUserId, userid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetTurnoverTargetsByUserIdRow{}
+	for rows.Next() {
+		var i GetTurnoverTargetsByUserIdRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Target,
+			&i.TransactionRequestId,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ProductCode,
+			&i.TurnoverSoFar,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const hasActivePromotionByUserId = `-- name: HasActivePromotionByUserId :one
+SELECT EXISTS (
+	SELECT
+		tt.id, tt.target, tt."transactionRequestId", tt."createdAt", tt."updatedAt"
+	FROM
+		"TurnoverTarget" tt
+		JOIN "TransactionRequest" tr ON tt."transactionRequestId" = tr.id
+	WHERE
+		tr."userId" = $1
+		AND tr.promotion = $2
+		AND (
+			$3::int IS NULL
+			OR tr."depositToWallet" = $3
+		)
+)
 `
 
 type HasActivePromotionByUserIdParams struct {
 	UserId      pgtype.UUID       `json:"userId"`
-	PromoCode   NullPromotionType `json:"promoCode"`
+	Promotion   NullPromotionType `json:"promotion"`
 	ProductCode pgtype.Int4       `json:"productCode"`
 }
 
 func (q *Queries) HasActivePromotionByUserId(ctx context.Context, arg HasActivePromotionByUserIdParams) (bool, error) {
-	row := q.db.QueryRow(ctx, hasActivePromotionByUserId, arg.UserId, arg.PromoCode, arg.ProductCode)
+	row := q.db.QueryRow(ctx, hasActivePromotionByUserId, arg.UserId, arg.Promotion, arg.ProductCode)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err

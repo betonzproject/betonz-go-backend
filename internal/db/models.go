@@ -632,10 +632,7 @@ type TransactionRequest struct {
 
 type TurnoverTarget struct {
 	ID                   int32              `json:"id"`
-	UserId               pgtype.UUID        `json:"userId"`
-	ProductCode          int32              `json:"productCode"`
 	Target               pgtype.Numeric     `json:"target"`
-	PromoCode            NullPromotionType  `json:"promoCode"`
 	TransactionRequestId int32              `json:"transactionRequestId"`
 	CreatedAt            pgtype.Timestamptz `json:"createdAt"`
 	UpdatedAt            pgtype.Timestamptz `json:"updatedAt"`

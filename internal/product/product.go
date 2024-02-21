@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/doorman2137/betonz-go/internal/etg"
@@ -257,6 +258,14 @@ func HasGameList(productType ProductType, product Product) bool {
 		return product == _1GPoker
 	}
 	return false
+}
+
+func SharesSameWallet(p1 Product, p2 Product) bool {
+	if p1 == p2 {
+		return true
+	}
+	return (slices.Contains(WalletGroup1, p1) && slices.Contains(WalletGroup1, p2) ||
+		slices.Contains(WalletGroup2, p1) && slices.Contains(WalletGroup2, p2))
 }
 
 type LaunchGameListRequest struct {

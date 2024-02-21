@@ -402,10 +402,7 @@ ALTER SEQUENCE betonz."TransactionRequest_id_seq" OWNED BY betonz."TransactionRe
 
 CREATE TABLE betonz."TurnoverTarget" (
     id integer NOT NULL,
-    "userId" uuid NOT NULL,
-    "productCode" integer NOT NULL,
     target numeric(32,2) NOT NULL,
-    "promoCode" betonz."PromotionType",
     "transactionRequestId" integer NOT NULL,
     "createdAt" timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updatedAt" timestamp(3) with time zone NOT NULL
@@ -766,14 +763,6 @@ ALTER TABLE ONLY betonz."TurnoverTarget"
 
 
 --
--- Name: TurnoverTarget TurnoverTarget_userId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
---
-
-ALTER TABLE ONLY betonz."TurnoverTarget"
-    ADD CONSTRAINT "TurnoverTarget_userId_fkey" FOREIGN KEY ("userId") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
-
-
---
 -- Name: User User_lastUsedBankId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
 --
 
@@ -802,4 +791,5 @@ INSERT INTO betonz.schema_migrations (version) VALUES
     ('20231113140630'),
     ('20240216064632'),
     ('20240216073916'),
-    ('20240218055649');
+    ('20240218055649'),
+    ('20240220030034');

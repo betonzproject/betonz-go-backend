@@ -11,6 +11,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/auth"
 	"github.com/doorman2137/betonz-go/internal/db"
 	"github.com/doorman2137/betonz-go/internal/product"
+	"github.com/doorman2137/betonz-go/internal/promotion"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/doorman2137/betonz-go/internal/utils/numericutils"
@@ -175,7 +176,7 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 
 		if transactionRequestForm.Action == "approve" {
 			if tr.Type == db.TransactionTypeDEPOSIT {
-				if tr.DepositToWallet.Valid && tr.DepositToWallet.Int32 != int32(product.MainWallet) {
+				if tr.Promotion.Valid && tr.DepositToWallet.Valid && tr.DepositToWallet.Int32 != int32(product.MainWallet) {
 					var refId string
 					if os.Getenv("ENVIRONMENT") == "development" {
 						refId = "(DEV) TRANSFER"
@@ -189,6 +190,15 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 						log.Printf("Can't deposit to %s (%d) for %s: %s", p, p, user.Username, err)
 						http.Error(w, "Deposit failed", http.StatusServiceUnavailable)
 						return
+					}
+
+					// Promotion turnover
+					err = qtx.CreateTurnoverTarget(r.Context(), db.CreateTurnoverTargetParams{
+						TransactionRequestId: tr.ID,
+						Target:               promotion.CalculateTurnoverTarget(numericutils.Add(tr.Amount, tr.Bonus), tr.Promotion.PromotionType),
+					})
+					if err != nil {
+						log.Panicln("Can't create turnover: " + err.Error())
 					}
 				} else {
 					err := qtx.DepositUserMainWallet(r.Context(), db.DepositUserMainWalletParams{
