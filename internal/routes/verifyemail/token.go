@@ -21,7 +21,8 @@ import (
 )
 
 type VerifyEmailTokenResponse struct {
-	IsTokenValid bool `json:"isTokenValid"`
+	IsTokenValid    bool `json:"isTokenValid"`
+	IsUpdatingEmail bool `json:"isUpdatingEmail"`
 }
 
 func GetVerifyEmailToken(app *app.App) http.HandlerFunc {
@@ -58,17 +59,42 @@ func GetVerifyEmailToken(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		etgUsername, err := createPlayer()
-		if err != nil {
-			log.Panicln("Can't create player: ", err)
-		}
-
 		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
 
 		var userId pgtype.UUID
-		registerInfo := emailVerificationToken.RegisterInfo
-		if registerInfo != nil {
+		var isUpdatingEmail bool
+		if emailVerificationToken.UserId.Valid {
+			if emailVerificationToken.PendingEmail.Valid {
+				err := qtx.MarkUserEmailAsVerified(r.Context(), db.MarkUserEmailAsVerifiedParams{
+					ID:    emailVerificationToken.UserId,
+					Email: emailVerificationToken.PendingEmail.String,
+				})
+				if err != nil {
+					log.Panicln("Can't mark email as verified: " + err.Error())
+				}
+
+				userId = emailVerificationToken.UserId
+				isUpdatingEmail = true
+			} else {
+				err := qtx.MarkUserEmailAsVerified(r.Context(), db.MarkUserEmailAsVerifiedParams{
+					ID:    emailVerificationToken.UserId,
+					Email: emailVerificationToken.Email.String,
+				})
+				if err != nil {
+					log.Panicln("Can't mark email as verified: " + err.Error())
+				}
+
+				userId = emailVerificationToken.UserId
+				isUpdatingEmail = false
+			}
+		} else {
+			etgUsername, err := createPlayer()
+			if err != nil {
+				log.Panicln("Can't create player: ", err)
+			}
+
+			registerInfo := emailVerificationToken.RegisterInfo
 			user, err := qtx.CreateUser(r.Context(), db.CreateUserParams{
 				Username:     registerInfo.Username,
 				Email:        registerInfo.Email,
@@ -80,13 +106,7 @@ func GetVerifyEmailToken(app *app.App) http.HandlerFunc {
 			}
 
 			userId = user.ID
-		} else {
-			err := qtx.MarkUserEmailAsVerified(r.Context(), emailVerificationToken.UserId)
-			if err != nil {
-				log.Panicln("Can't mark email as verified: " + err.Error())
-			}
-
-			userId = emailVerificationToken.UserId
+			isUpdatingEmail = false
 		}
 
 		err = qtx.DeleteVerificationTokenByHash(r.Context(), tokenHash)
@@ -103,7 +123,7 @@ func GetVerifyEmailToken(app *app.App) http.HandlerFunc {
 
 		tx.Commit(r.Context())
 
-		jsonutils.Write(w, VerifyEmailTokenResponse{IsTokenValid: true}, http.StatusOK)
+		jsonutils.Write(w, VerifyEmailTokenResponse{IsTokenValid: true, IsUpdatingEmail: isUpdatingEmail}, http.StatusOK)
 	}
 }
 

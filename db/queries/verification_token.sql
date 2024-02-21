@@ -2,7 +2,8 @@
 SELECT
 	vt.*,
 	u.username,
-	u.email
+	u.email,
+    u."pendingEmail"
 FROM
 	"VerificationToken" vt
 	LEFT JOIN "User" u ON vt."userId" = u.id

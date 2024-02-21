@@ -24,7 +24,8 @@ const getVerificationTokenByHash = `-- name: GetVerificationTokenByHash :one
 SELECT
 	vt."tokenHash", vt."userId", vt."createdAt", vt."updatedAt", vt."registerInfo",
 	u.username,
-	u.email
+	u.email,
+    u."pendingEmail"
 FROM
 	"VerificationToken" vt
 	LEFT JOIN "User" u ON vt."userId" = u.id
@@ -40,6 +41,7 @@ type GetVerificationTokenByHashRow struct {
 	RegisterInfo *RegisterInfo      `json:"registerInfo"`
 	Username     pgtype.Text        `json:"username"`
 	Email        pgtype.Text        `json:"email"`
+	PendingEmail pgtype.Text        `json:"pendingEmail"`
 }
 
 func (q *Queries) GetVerificationTokenByHash(ctx context.Context, tokenhash string) (GetVerificationTokenByHashRow, error) {
@@ -53,6 +55,7 @@ func (q *Queries) GetVerificationTokenByHash(ctx context.Context, tokenhash stri
 		&i.RegisterInfo,
 		&i.Username,
 		&i.Email,
+		&i.PendingEmail,
 	)
 	return i, err
 }

@@ -1,5 +1,5 @@
 -- name: GetUserById :one
-SELECT id, username, role, email, "displayName", "phoneNumber", "mainWallet", dob, "profileImage" FROM "User" WHERE id = $1;
+SELECT id, username, role, email, "pendingEmail", "displayName", "phoneNumber", "mainWallet", dob, "profileImage" FROM "User" WHERE id = $1;
 
 -- name: GetExtendedUserById :one
 SELECT * FROM "User" WHERE id = $1;
@@ -172,7 +172,14 @@ RETURNING
 	*;
 
 -- name: UpdateUser :exec
-UPDATE "User" SET "displayName" = $2, email = $3, "phoneNumber" = $4, "updatedAt" = now() WHERE id = $1;
+UPDATE "User"
+SET
+	"displayName" = $2,
+	"pendingEmail" = COALESCE(sqlc.arg('pendingEmail'), "pendingEmail"),
+	"phoneNumber" = $3,
+	"updatedAt" = now()
+WHERE
+	id = $1;
 
 -- name: UpdateUsername :exec
 UPDATE "User" SET username = $2, "updatedAt" = now() WHERE id = $1;
@@ -196,4 +203,4 @@ UPDATE "User" SET "lastUsedBankId" = $2, "updatedAt" = now() WHERE id = $1;
 UPDATE "User" SET status = $2, "updatedAt" = now() WHERE id = $1;
 
 -- name: MarkUserEmailAsVerified :exec
-UPDATE "User" SET "isEmailVerified" = true, "updatedAt" = now() WHERE id = $1;
+UPDATE "User" SET "isEmailVerified" = true, email = $2, "updatedAt" = now() WHERE id = $1;

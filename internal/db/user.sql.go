@@ -255,7 +255,7 @@ func (q *Queries) GetPlayerInfoById(ctx context.Context, id pgtype.UUID) (GetPla
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, username, role, email, "displayName", "phoneNumber", "mainWallet", dob, "profileImage" FROM "User" WHERE id = $1
+SELECT id, username, role, email, "pendingEmail", "displayName", "phoneNumber", "mainWallet", dob, "profileImage" FROM "User" WHERE id = $1
 `
 
 type GetUserByIdRow struct {
@@ -263,6 +263,7 @@ type GetUserByIdRow struct {
 	Username     string         `json:"username"`
 	Role         Role           `json:"role"`
 	Email        string         `json:"email"`
+	PendingEmail pgtype.Text    `json:"pendingEmail"`
 	DisplayName  pgtype.Text    `json:"displayName"`
 	PhoneNumber  pgtype.Text    `json:"phoneNumber"`
 	MainWallet   pgtype.Numeric `json:"mainWallet"`
@@ -278,6 +279,7 @@ func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (GetUserByIdR
 		&i.Username,
 		&i.Role,
 		&i.Email,
+		&i.PendingEmail,
 		&i.DisplayName,
 		&i.PhoneNumber,
 		&i.MainWallet,
@@ -446,31 +448,43 @@ func (q *Queries) GetUsers(ctx context.Context, arg GetUsersParams) ([]GetUsersR
 }
 
 const markUserEmailAsVerified = `-- name: MarkUserEmailAsVerified :exec
-UPDATE "User" SET "isEmailVerified" = true, "updatedAt" = now() WHERE id = $1
+UPDATE "User" SET "isEmailVerified" = true, email = $2, "updatedAt" = now() WHERE id = $1
 `
 
-func (q *Queries) MarkUserEmailAsVerified(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, markUserEmailAsVerified, id)
+type MarkUserEmailAsVerifiedParams struct {
+	ID    pgtype.UUID `json:"id"`
+	Email string      `json:"email"`
+}
+
+func (q *Queries) MarkUserEmailAsVerified(ctx context.Context, arg MarkUserEmailAsVerifiedParams) error {
+	_, err := q.db.Exec(ctx, markUserEmailAsVerified, arg.ID, arg.Email)
 	return err
 }
 
 const updateUser = `-- name: UpdateUser :exec
-UPDATE "User" SET "displayName" = $2, email = $3, "phoneNumber" = $4, "updatedAt" = now() WHERE id = $1
+UPDATE "User"
+SET
+	"displayName" = $2,
+	"pendingEmail" = COALESCE($4, "pendingEmail"),
+	"phoneNumber" = $3,
+	"updatedAt" = now()
+WHERE
+	id = $1
 `
 
 type UpdateUserParams struct {
-	ID          pgtype.UUID `json:"id"`
-	DisplayName pgtype.Text `json:"displayName"`
-	Email       string      `json:"email"`
-	PhoneNumber pgtype.Text `json:"phoneNumber"`
+	ID           pgtype.UUID `json:"id"`
+	DisplayName  pgtype.Text `json:"displayName"`
+	PhoneNumber  pgtype.Text `json:"phoneNumber"`
+	PendingEmail pgtype.Text `json:"pendingEmail"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 	_, err := q.db.Exec(ctx, updateUser,
 		arg.ID,
 		arg.DisplayName,
-		arg.Email,
 		arg.PhoneNumber,
+		arg.PendingEmail,
 	)
 	return err
 }
