@@ -128,21 +128,41 @@ SELECT EXISTS (
 	WHERE
 		tr."userId" = $1
 		AND tr.promotion = $2
-		AND (
-			$3::int IS NULL
-			OR tr."depositToWallet" = $3
-		)
 )
 `
 
 type HasActivePromotionByUserIdParams struct {
-	UserId      pgtype.UUID       `json:"userId"`
-	Promotion   NullPromotionType `json:"promotion"`
-	ProductCode pgtype.Int4       `json:"productCode"`
+	UserId    pgtype.UUID       `json:"userId"`
+	Promotion NullPromotionType `json:"promotion"`
 }
 
 func (q *Queries) HasActivePromotionByUserId(ctx context.Context, arg HasActivePromotionByUserIdParams) (bool, error) {
-	row := q.db.QueryRow(ctx, hasActivePromotionByUserId, arg.UserId, arg.Promotion, arg.ProductCode)
+	row := q.db.QueryRow(ctx, hasActivePromotionByUserId, arg.UserId, arg.Promotion)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const hasTurnoverTargetByProductAndUserId = `-- name: HasTurnoverTargetByProductAndUserId :one
+SELECT EXISTS (
+	SELECT
+		tt.id, tt.target, tt."transactionRequestId", tt."createdAt", tt."updatedAt"
+	FROM
+		"TurnoverTarget" tt
+		JOIN "TransactionRequest" tr ON tt."transactionRequestId" = tr.id
+	WHERE
+		tr."userId" = $1
+		AND tr."depositToWallet" = $2
+)
+`
+
+type HasTurnoverTargetByProductAndUserIdParams struct {
+	UserId      pgtype.UUID `json:"userId"`
+	ProductCode pgtype.Int4 `json:"productCode"`
+}
+
+func (q *Queries) HasTurnoverTargetByProductAndUserId(ctx context.Context, arg HasTurnoverTargetByProductAndUserIdParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasTurnoverTargetByProductAndUserId, arg.UserId, arg.ProductCode)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err

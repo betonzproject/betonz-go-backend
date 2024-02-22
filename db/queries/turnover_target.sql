@@ -37,10 +37,18 @@ SELECT EXISTS (
 	WHERE
 		tr."userId" = $1
 		AND tr.promotion = @promotion
-		AND (
-			sqlc.narg('productCode')::int IS NULL
-			OR tr."depositToWallet" = sqlc.narg('productCode')
-		)
+);
+
+-- name: HasTurnoverTargetByProductAndUserId :one
+SELECT EXISTS (
+	SELECT
+		tt.*
+	FROM
+		"TurnoverTarget" tt
+		JOIN "TransactionRequest" tr ON tt."transactionRequestId" = tr.id
+	WHERE
+		tr."userId" = $1
+		AND tr."depositToWallet" = sqlc.narg('productCode')
 );
 
 -- name: CreateTurnoverTarget :exec

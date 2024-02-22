@@ -160,6 +160,19 @@ FROM
 			AND u."createdAd" <= sqlc.arg('toDate')
 	) q;
 
+-- name: GetBonusRemaining :one
+SELECT
+	GREATEST(sqlc.arg('limit') - COALESCE(sum(bonus), 0), 0)::numeric(32, 2) AS remaining
+FROM
+	"TransactionRequest" tr
+WHERE
+	"userId" = $1
+	AND type = 'DEPOSIT'
+	AND (status = 'PENDING' OR status = 'APPROVED')
+	AND promotion = $2
+	AND "updatedAt" >= sqlc.arg('fromDate')
+	AND "updatedAt" <= sqlc.arg('toDate');
+
 -- name: CreateTransactionRequest :exec
 INSERT INTO
 	"TransactionRequest" (

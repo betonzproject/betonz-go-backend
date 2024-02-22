@@ -68,6 +68,41 @@ func (q *Queries) CreateTransactionRequest(ctx context.Context, arg CreateTransa
 	return err
 }
 
+const getBonusRemaining = `-- name: GetBonusRemaining :one
+SELECT
+	GREATEST($3 - COALESCE(sum(bonus), 0), 0)::numeric(32, 2) AS remaining
+FROM
+	"TransactionRequest" tr
+WHERE
+	"userId" = $1
+	AND type = 'DEPOSIT'
+	AND (status = 'PENDING' OR status = 'APPROVED')
+	AND promotion = $2
+	AND "updatedAt" >= $4
+	AND "updatedAt" <= $5
+`
+
+type GetBonusRemainingParams struct {
+	UserId    pgtype.UUID        `json:"userId"`
+	Promotion NullPromotionType  `json:"promotion"`
+	Limit     pgtype.Numeric     `json:"limit"`
+	FromDate  pgtype.Timestamptz `json:"fromDate"`
+	ToDate    pgtype.Timestamptz `json:"toDate"`
+}
+
+func (q *Queries) GetBonusRemaining(ctx context.Context, arg GetBonusRemainingParams) (pgtype.Numeric, error) {
+	row := q.db.QueryRow(ctx, getBonusRemaining,
+		arg.UserId,
+		arg.Promotion,
+		arg.Limit,
+		arg.FromDate,
+		arg.ToDate,
+	)
+	var remaining pgtype.Numeric
+	err := row.Scan(&remaining)
+	return remaining, err
+}
+
 const getNewPlayerWithTransactionsCount = `-- name: GetNewPlayerWithTransactionsCount :one
 SELECT
 	count(*)

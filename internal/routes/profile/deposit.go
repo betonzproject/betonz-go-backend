@@ -29,13 +29,15 @@ type TurnoverTargetInfo struct {
 }
 
 type DepositResponse struct {
-	Products           map[product.Product]string `json:"products"`
-	Banks              []db.Bank                  `json:"banks"`
-	LastUsedBankId     pgtype.UUID                `json:"lastUsedBankId"`
-	ReceivingBank      *db.Bank                   `json:"receivingBank"`
-	HasRecentDeposit   bool                       `json:"hasRecentDeposit"`
-	EligiblePromotions []db.PromotionType         `json:"eligiblePromotions"`
-	TurnoverTargets    []TurnoverTargetInfo       `json:"turnoverTargets"`
+	Products                  map[product.Product]string `json:"products"`
+	Banks                     []db.Bank                  `json:"banks"`
+	LastUsedBankId            pgtype.UUID                `json:"lastUsedBankId"`
+	ReceivingBank             *db.Bank                   `json:"receivingBank"`
+	HasRecentDeposit          bool                       `json:"hasRecentDeposit"`
+	EligiblePromotions        []db.PromotionType         `json:"eligiblePromotions"`
+	FivePercentBonusRemaining pgtype.Numeric             `json:"fivePercentBonusRemaining"`
+	TenPercentBonusRemaining  pgtype.Numeric             `json:"tenPercentBonusRemaining"`
+	TurnoverTargets           []TurnoverTargetInfo       `json:"turnoverTargets"`
 }
 
 func GetDeposit(app *app.App) http.HandlerFunc {
@@ -94,7 +96,7 @@ func GetDeposit(app *app.App) http.HandlerFunc {
 
 		hasRecentDeposit, _ := app.DB.HasRecentDepositRequestsByUserId(r.Context(), user.ID)
 
-		promotions := promotion.GetEligiblePromotions(app.DB, r.Context(), user.ID)
+		promotions, fivePercentBonusRemaining, tenPercentBonusRemaining := promotion.GetEligiblePromotions(app.DB, r.Context(), user.ID)
 
 		turnoverTargets, err := app.DB.GetTurnoverTargetsByUserId(r.Context(), user.ID)
 		if err != nil {
@@ -109,13 +111,15 @@ func GetDeposit(app *app.App) http.HandlerFunc {
 		})
 
 		jsonutils.Write(w, DepositResponse{
-			Products:           productNames,
-			Banks:              banks,
-			LastUsedBankId:     user.LastUsedBankId,
-			ReceivingBank:      receivingBank,
-			HasRecentDeposit:   hasRecentDeposit,
-			EligiblePromotions: promotions,
-			TurnoverTargets:    turnoverTargetInfos,
+			Products:                  productNames,
+			Banks:                     banks,
+			LastUsedBankId:            user.LastUsedBankId,
+			ReceivingBank:             receivingBank,
+			HasRecentDeposit:          hasRecentDeposit,
+			EligiblePromotions:        promotions,
+			FivePercentBonusRemaining: fivePercentBonusRemaining,
+			TenPercentBonusRemaining:  tenPercentBonusRemaining,
+			TurnoverTargets:           turnoverTargetInfos,
 		}, http.StatusOK)
 	}
 }
@@ -174,10 +178,29 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 		}
 
 		// Validate promotions
-		eligiblePromotions := promotion.GetEligiblePromotions(app.DB, r.Context(), user.ID)
-		if depositForm.Promotion != "" && !slices.Contains(eligiblePromotions, depositForm.Promotion) {
-			http.Error(w, "deposit.promotionInvalid.message", http.StatusBadRequest)
-			return
+		eligiblePromotions, fivePercentBonusRemaining, tenPercentBonusRemaining := promotion.GetEligiblePromotions(app.DB, r.Context(), user.ID)
+		if depositForm.Promotion != "" {
+			if depositForm.DepositTo == product.MainWallet {
+				http.Error(w, "deposit.depositToInvalid.message", http.StatusBadRequest)
+				return
+			}
+
+			if !slices.Contains(eligiblePromotions, depositForm.Promotion) {
+				http.Error(w, "deposit.promotionInvalid.message", http.StatusBadRequest)
+				return
+			}
+
+			hasTurnoverTarget, err := app.DB.HasTurnoverTargetByProductAndUserId(r.Context(), db.HasTurnoverTargetByProductAndUserIdParams{
+				UserId:      user.ID,
+				ProductCode: pgtype.Int4{Int32: int32(depositForm.DepositTo), Valid: true},
+			})
+			if err != nil {
+				log.Panicln("Can't get turnover target by product: " + err.Error())
+			}
+			if hasTurnoverTarget {
+				http.Error(w, "transfer.unmetTurnoverTarget.message", http.StatusForbidden)
+				return
+			}
 		}
 
 		tx, qtx := transactionutils.Begin(app, r.Context())
@@ -195,6 +218,11 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 		bonus := numericutils.Zero
 		if depositForm.Promotion != "" {
 			bonus = promotion.CalculateBonus(amount, depositForm.Promotion)
+			if depositForm.Promotion == db.PromotionTypeFIVEPERCENTUNLIMITEDBONUS {
+				bonus = numericutils.Min(bonus, fivePercentBonusRemaining)
+			} else if depositForm.Promotion == db.PromotionTypeTENPERCENTUNLIMITEDBONUS {
+				bonus = numericutils.Min(bonus, tenPercentBonusRemaining)
+			}
 		}
 
 		err = qtx.CreateTransactionRequest(r.Context(), db.CreateTransactionRequestParams{

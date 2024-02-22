@@ -136,6 +136,22 @@ func IsPositive(n pgtype.Numeric) bool {
 	return Cmp(n, Zero) > 0
 }
 
+// Returns min(n1, n2).
+//
+// Panics if either n1 or n2 is not valid.
+func Min(n1, n2 pgtype.Numeric) pgtype.Numeric {
+	ensureValid(n1)
+	ensureValid(n2)
+
+	cmp := Cmp(n1, n2)
+	if cmp == -2 {
+		return NaN
+	} else if cmp >= 0 {
+		return n2
+	}
+	return n1
+}
+
 func ensureValid(n pgtype.Numeric) {
 	if !n.Valid {
 		log.Panicf("%+v is not valid", n)
