@@ -6,10 +6,10 @@ import (
 
 	"github.com/doorman2137/betonz-go/internal/acl"
 	"github.com/doorman2137/betonz-go/internal/app"
+	"github.com/doorman2137/betonz-go/internal/auth"
 	"github.com/doorman2137/betonz-go/internal/db"
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Response struct {
@@ -20,13 +20,7 @@ type Response struct {
 
 func GetIndex(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userId := app.Scs.GetBytes(r.Context(), "userId")
-		if len(userId) < 16 {
-			jsonutils.Write(w, Response{}, http.StatusOK)
-			return
-		}
-
-		user, err := app.DB.GetUserById(r.Context(), pgtype.UUID{Bytes: [16]byte(userId), Valid: true})
+		user, err := auth.GetUser(app, w, r)
 		if err != nil {
 			jsonutils.Write(w, Response{}, http.StatusOK)
 			return

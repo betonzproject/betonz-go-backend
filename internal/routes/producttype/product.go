@@ -47,14 +47,11 @@ func GetProduct(app *app.App) http.HandlerFunc {
 		}
 
 		var balance pgtype.Numeric
-		userId := app.Scs.GetBytes(r.Context(), "userId")
-		if len(userId) == 16 {
-			user, err := app.DB.GetExtendedUserById(r.Context(), pgtype.UUID{Bytes: [16]byte(userId), Valid: true})
-			if err == nil {
-				balance, err = product.GetUserBalance(user.EtgUsername, p)
-				if err != nil {
-					log.Panicf("Can't get balance of %s (%d) for %s: %s\n", p, p, user.EtgUsername, err)
-				}
+		user, err := auth.GetExtendedUser(app, w, r)
+		if err != nil {
+			balance, err = product.GetUserBalance(user.EtgUsername, p)
+			if err != nil {
+				log.Panicf("Can't get balance of %s (%d) for %s: %s\n", p, p, user.EtgUsername, err)
 			}
 		}
 

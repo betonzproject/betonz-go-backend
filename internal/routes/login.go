@@ -7,12 +7,24 @@ import (
 	"net/url"
 
 	"github.com/doorman2137/betonz-go/internal/app"
+	"github.com/doorman2137/betonz-go/internal/auth"
 	"github.com/doorman2137/betonz-go/internal/db"
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 )
+
+func GetLogin(app *app.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_, err := auth.GetUser(app, w, r)
+		if err == nil {
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+		jsonutils.Write(w, struct{}{}, http.StatusOK)
+	}
+}
 
 type LoginForm struct {
 	Username string `form:"username" validate:"required,min=3,max=20,username" key:"user.username"`

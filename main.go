@@ -31,6 +31,7 @@ func main() {
 	r.Use(middleware.Logger)
 
 	r.Get("/", routes.GetIndex(app))
+	r.Get("/login", routes.GetLogin(app))
 	r.Post("/login", routes.PostLogin(app))
 	r.Post("/logout", routes.PostLogout(app))
 	r.Post("/register", routes.PostRegister(app))
