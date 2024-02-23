@@ -78,7 +78,7 @@ SELECT
 FROM
 	TransactionSummary ts
 	FULL JOIN BetSummary bs ON ts."date" = bs."date"
-	FULL JOIN ActivePlayerCount apc ON ts."date" = apc."date"
+	LEFT JOIN ActivePlayerCount apc ON ts."date" = apc."date" OR bs."date" = apc."date"
 ORDER BY
 	"createdAt" DESC
 `
