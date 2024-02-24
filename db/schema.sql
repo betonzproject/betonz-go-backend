@@ -358,9 +358,9 @@ CREATE TABLE betonz."TransactionRequest" (
     id integer NOT NULL,
     "userId" uuid NOT NULL,
     "modifiedById" uuid,
-    "bankName" betonz."BankName" NOT NULL,
-    "bankAccountName" text NOT NULL,
-    "bankAccountNumber" text NOT NULL,
+    "bankName" betonz."BankName",
+    "bankAccountName" text,
+    "bankAccountNumber" text,
     "beneficiaryBankAccountName" text,
     "beneficiaryBankAccountNumber" text,
     amount numeric(32,2) NOT NULL,
@@ -794,4 +794,5 @@ INSERT INTO betonz.schema_migrations (version) VALUES
     ('20240216073916'),
     ('20240218055649'),
     ('20240220030034'),
-    ('20240223031215');
+    ('20240223031215'),
+    ('20240224161223');

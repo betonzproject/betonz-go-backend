@@ -27,17 +27,19 @@ INSERT INTO
 		promotion,
 		"receiptPath",
 		status,
+		"modifiedById",
+		"remarks",
 		"updatedAt"
 	)
 VALUES
-	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, now())
+	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, now())
 `
 
 type CreateTransactionRequestParams struct {
 	UserId                       pgtype.UUID       `json:"userId"`
-	BankName                     BankName          `json:"bankName"`
-	BankAccountName              string            `json:"bankAccountName"`
-	BankAccountNumber            string            `json:"bankAccountNumber"`
+	BankName                     NullBankName      `json:"bankName"`
+	BankAccountName              pgtype.Text       `json:"bankAccountName"`
+	BankAccountNumber            pgtype.Text       `json:"bankAccountNumber"`
 	BeneficiaryBankAccountName   pgtype.Text       `json:"beneficiaryBankAccountName"`
 	BeneficiaryBankAccountNumber pgtype.Text       `json:"beneficiaryBankAccountNumber"`
 	Amount                       pgtype.Numeric    `json:"amount"`
@@ -47,6 +49,8 @@ type CreateTransactionRequestParams struct {
 	Promotion                    NullPromotionType `json:"promotion"`
 	ReceiptPath                  pgtype.Text       `json:"receiptPath"`
 	Status                       TransactionStatus `json:"status"`
+	ModifiedById                 pgtype.UUID       `json:"modifiedById"`
+	Remarks                      pgtype.Text       `json:"remarks"`
 }
 
 func (q *Queries) CreateTransactionRequest(ctx context.Context, arg CreateTransactionRequestParams) error {
@@ -64,6 +68,8 @@ func (q *Queries) CreateTransactionRequest(ctx context.Context, arg CreateTransa
 		arg.Promotion,
 		arg.ReceiptPath,
 		arg.Status,
+		arg.ModifiedById,
+		arg.Remarks,
 	)
 	return err
 }
@@ -286,9 +292,9 @@ type GetTransactionRequestsRow struct {
 	ID                           int32              `json:"id"`
 	UserId                       pgtype.UUID        `json:"userId"`
 	ModifiedById                 pgtype.UUID        `json:"modifiedById"`
-	BankName                     BankName           `json:"bankName"`
-	BankAccountName              string             `json:"bankAccountName"`
-	BankAccountNumber            string             `json:"bankAccountNumber"`
+	BankName                     NullBankName       `json:"bankName"`
+	BankAccountName              pgtype.Text        `json:"bankAccountName"`
+	BankAccountNumber            pgtype.Text        `json:"bankAccountNumber"`
 	BeneficiaryBankAccountName   pgtype.Text        `json:"beneficiaryBankAccountName"`
 	BeneficiaryBankAccountNumber pgtype.Text        `json:"beneficiaryBankAccountNumber"`
 	Amount                       pgtype.Numeric     `json:"amount"`
@@ -397,9 +403,9 @@ type GetTransactionRequestsByUserIdRow struct {
 	ID                           int32              `json:"id"`
 	UserId                       pgtype.UUID        `json:"userId"`
 	ModifiedById                 pgtype.UUID        `json:"modifiedById"`
-	BankName                     BankName           `json:"bankName"`
-	BankAccountName              string             `json:"bankAccountName"`
-	BankAccountNumber            string             `json:"bankAccountNumber"`
+	BankName                     NullBankName       `json:"bankName"`
+	BankAccountName              pgtype.Text        `json:"bankAccountName"`
+	BankAccountNumber            pgtype.Text        `json:"bankAccountNumber"`
 	BeneficiaryBankAccountName   pgtype.Text        `json:"beneficiaryBankAccountName"`
 	BeneficiaryBankAccountNumber pgtype.Text        `json:"beneficiaryBankAccountNumber"`
 	Amount                       pgtype.Numeric     `json:"amount"`

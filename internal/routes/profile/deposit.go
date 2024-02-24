@@ -233,10 +233,13 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 		}
 
 		err = qtx.CreateTransactionRequest(r.Context(), db.CreateTransactionRequestParams{
-			UserId:                       user.ID,
-			BankName:                     depositorBank.Name,
-			BankAccountName:              depositorBank.AccountName,
-			BankAccountNumber:            depositorBank.AccountNumber,
+			UserId: user.ID,
+			BankName: db.NullBankName{
+				BankName: depositorBank.Name,
+				Valid:    true,
+			},
+			BankAccountName:              pgtype.Text{String: depositorBank.AccountName, Valid: true},
+			BankAccountNumber:            pgtype.Text{String: depositorBank.AccountNumber, Valid: true},
 			BeneficiaryBankAccountName:   pgtype.Text{String: receivingBank.AccountName, Valid: true},
 			BeneficiaryBankAccountNumber: pgtype.Text{String: receivingBank.AccountNumber, Valid: true},
 			Amount:                       amount,

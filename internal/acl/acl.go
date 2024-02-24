@@ -23,6 +23,8 @@ const (
 	ManageTransactionRequests                    Permission = "ManageTransactionRequests"
 	ManageIdentityVerificationRequests           Permission = "ManageIdentityVerificationRequests"
 	OverruleApprovedIdentityVerificationRequests Permission = "OverruleApprovedIdentityVerificationRequests"
+	AdminDeposit                                 Permission = "AdminDeposit"
+	AdminWithdraw                                Permission = "AdminWithdraw"
 	ManagePlayers                                Permission = "ManagePlayers"
 	ManageAdmins                                 Permission = "ManageAdmins"
 	ToggleSystemBanks                            Permission = "ToggleSystemBanks"
@@ -65,6 +67,8 @@ var Acl = map[db.Role][]Permission{
 		ManageTransactionRequests,
 		ManageIdentityVerificationRequests,
 		OverruleApprovedIdentityVerificationRequests,
+		AdminDeposit,
+		AdminWithdraw,
 		ManagePlayers,
 		ManageAdmins,
 		ToggleSystemBanks,

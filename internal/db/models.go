@@ -613,9 +613,9 @@ type TransactionRequest struct {
 	ID                           int32              `json:"id"`
 	UserId                       pgtype.UUID        `json:"userId"`
 	ModifiedById                 pgtype.UUID        `json:"modifiedById"`
-	BankName                     BankName           `json:"bankName"`
-	BankAccountName              string             `json:"bankAccountName"`
-	BankAccountNumber            string             `json:"bankAccountNumber"`
+	BankName                     NullBankName       `json:"bankName"`
+	BankAccountName              pgtype.Text        `json:"bankAccountName"`
+	BankAccountNumber            pgtype.Text        `json:"bankAccountNumber"`
 	BeneficiaryBankAccountName   pgtype.Text        `json:"beneficiaryBankAccountName"`
 	BeneficiaryBankAccountNumber pgtype.Text        `json:"beneficiaryBankAccountNumber"`
 	Amount                       pgtype.Numeric     `json:"amount"`

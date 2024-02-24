@@ -97,6 +97,10 @@ func main() {
 		r.Get("/identity-verification-request", admin.GetIdentityVerificationRequest(app))
 		r.Post("/identity-verification-request", admin.PostIdentityVerificationRequest(app))
 		r.Get("/file/{filename}", admin.GetFile(app))
+		r.Get("/deposit", admin.GetDeposit(app))
+		r.Post("/deposit", admin.PostDeposit(app))
+		r.Get("/withdraw", admin.GetWithdraw(app))
+		r.Post("/withdraw", admin.PostWithdraw(app))
 	})
 
 	minutes, _ := strconv.Atoi(os.Getenv("FETCH_BETS_INTERVAL_MINUTES"))

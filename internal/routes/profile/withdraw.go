@@ -110,10 +110,13 @@ func PostWithdraw(app *app.App) http.HandlerFunc {
 		}
 
 		err = qtx.CreateTransactionRequest(r.Context(), db.CreateTransactionRequestParams{
-			UserId:            user.ID,
-			BankName:          withdrawerBank.Name,
-			BankAccountName:   withdrawerBank.AccountName,
-			BankAccountNumber: withdrawerBank.AccountNumber,
+			UserId: user.ID,
+			BankName: db.NullBankName{
+				BankName: withdrawerBank.Name,
+				Valid:    true,
+			},
+			BankAccountName:   pgtype.Text{String: withdrawerBank.AccountName, Valid: true},
+			BankAccountNumber: pgtype.Text{String: withdrawerBank.AccountNumber, Valid: true},
 			Amount:            withdrawAmount,
 			Bonus:             pgtype.Numeric{Int: big.NewInt(0), Valid: true},
 			Type:              db.TransactionTypeWITHDRAW,
