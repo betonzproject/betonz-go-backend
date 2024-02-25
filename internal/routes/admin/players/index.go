@@ -32,8 +32,8 @@ func GetPlayers(app *app.App) http.HandlerFunc {
 		toParam := r.URL.Query().Get("to")
 		statusParam := r.URL.Query().Get("status")
 
-		from, _ := timeutils.ParseDate(fromParam)
-		to, err := timeutils.ParseDate(toParam)
+		from, _ := timeutils.ParseDatetime(fromParam)
+		to, err := timeutils.ParseDatetime(toParam)
 		if err != nil {
 			to = timeutils.EndOfToday()
 		}

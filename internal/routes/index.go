@@ -29,6 +29,9 @@ func GetIndex(app *app.App) http.HandlerFunc {
 		var unreadNotificationCount int64
 		if acl.IsAuthorized(user.Role, acl.ViewNotifications) {
 			unreadNotificationCount, err = app.DB.GetUnreadNotificationCountByUserId(r.Context(), user.ID)
+			if err != nil {
+				log.Panicln("Can't get notification count: ", err)
+			}
 		}
 
 		event, err := app.DB.GetActiveEventTodayByUserId(r.Context(), user.ID)

@@ -57,11 +57,11 @@ func GetHistory(app *app.App) http.HandlerFunc {
 		transactionTypeParam := r.URL.Query().Get("transactionType")
 		statusParam := r.URL.Query().Get("status")
 
-		from, err := timeutils.ParseDate(fromParam)
+		from, err := timeutils.ParseDatetime(fromParam)
 		if err != nil {
 			from = timeutils.StartOfToday().AddDate(0, 0, -6)
 		}
-		to, err := timeutils.ParseDate(toParam)
+		to, err := timeutils.ParseDatetime(toParam)
 		if err != nil {
 			to = timeutils.EndOfToday()
 		}

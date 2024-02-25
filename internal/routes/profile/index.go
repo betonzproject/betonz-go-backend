@@ -27,6 +27,28 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type GetProfileResponse struct {
+	*db.IdentityVerificationStatus `json:"identityVerificationStatus"`
+}
+
+func GetProfile(app *app.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, err := auth.GetUser(app, w, r)
+		if err != nil {
+			jsonutils.Write(w, GetProfileResponse{}, http.StatusOK)
+			return
+		}
+
+		request, err := app.DB.GetLatestIdentityVerificationRequestByUserId(r.Context(), user.ID)
+		if err != nil {
+			jsonutils.Write(w, GetProfileResponse{}, http.StatusOK)
+			return
+		}
+
+		jsonutils.Write(w, GetProfileResponse{IdentityVerificationStatus: &request.Status}, http.StatusOK)
+	}
+}
+
 type UpdateProfileForm struct {
 	DisplayName string `form:"displayName" validate:"max=30"`
 	Email       string `form:"email" validate:"required,email" key:"user.email"`

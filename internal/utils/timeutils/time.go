@@ -47,11 +47,18 @@ func EndOfThisYear() time.Time {
 	return time.Date(now.Year()+1, time.January, 1, 0, 0, 0, -1, location)
 }
 
+// Parses a string in the format "YYYY/MM/DD" representing a date into a `time.Time` struct.
+func ParseDate(s string) (time.Time, error) {
+	location, _ := time.LoadLocation("Asia/Yangon")
+	t, err := time.ParseInLocation("2006/01/02", s, location)
+	return t, err
+}
+
 // Parses a string in the format "YYYY/MM/DD hh:mm:ss" (24-hour format) or "YYYY/MM/DD h:mm:ss AA" (12-hour format)
-// representing a date into a `time.Time` struct.
+// representing a datetime into a `time.Time` struct.
 //
 // The timestamp strings are assumed to have Asia/Yangon timezone.
-func ParseDate(s string) (time.Time, error) {
+func ParseDatetime(s string) (time.Time, error) {
 	location, _ := time.LoadLocation("Asia/Yangon")
 	is12HourFormat := strings.Contains(s, "AM") || strings.Contains(s, "PM")
 	var layout string
@@ -62,9 +69,5 @@ func ParseDate(s string) (time.Time, error) {
 	}
 
 	t, err := time.ParseInLocation(layout, s, location)
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	return t, nil
+	return t, err
 }

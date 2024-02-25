@@ -69,6 +69,7 @@ func main() {
 		r.Post("/{product}", producttype.PostProduct(app))
 	})
 	r.Route("/profile", func(r chi.Router) {
+		r.Get("/", profile.GetProfile(app))
 		r.Post("/", profile.PostProfile(app))
 		r.Post("/avatar", profile.PostAvatar(app))
 		r.Get("/deposit", profile.GetDeposit(app))
@@ -92,6 +93,8 @@ func main() {
 		r.Post("/notifications", profile.PostNotifications(app))
 		r.Post("/account-settings", profile.PostAccountSettings(app))
 	})
+	r.Get("/verify-identity", routes.GetVerifyIdentity(app))
+	r.Post("/verify-identity", routes.PostVerifyIdentity(app))
 
 	r.Route("/admin", func(r chi.Router) {
 		r.Get("/transaction-request", admin.GetTransactionRequest(app))

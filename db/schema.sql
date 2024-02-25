@@ -91,7 +91,8 @@ CREATE TYPE betonz."FlagStatus" AS ENUM (
 CREATE TYPE betonz."IdentityVerificationStatus" AS ENUM (
     'VERIFIED',
     'REJECTED',
-    'PENDING'
+    'PENDING',
+    'INCOMPLETE'
 );
 
 
@@ -261,10 +262,10 @@ CREATE TABLE betonz."Flag" (
 
 
 --
--- Name: IdentityVerificationRequests; Type: TABLE; Schema: betonz; Owner: -
+-- Name: IdentityVerificationRequest; Type: TABLE; Schema: betonz; Owner: -
 --
 
-CREATE TABLE betonz."IdentityVerificationRequests" (
+CREATE TABLE betonz."IdentityVerificationRequest" (
     id integer NOT NULL,
     "userId" uuid NOT NULL,
     "modifiedById" uuid,
@@ -277,7 +278,7 @@ CREATE TABLE betonz."IdentityVerificationRequests" (
     nric text NOT NULL,
     "createdAt" timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updatedAt" timestamp(3) with time zone NOT NULL,
-    dob date
+    dob date NOT NULL
 );
 
 
@@ -298,7 +299,7 @@ CREATE SEQUENCE betonz."IdentityVerificationRequests_id_seq"
 -- Name: IdentityVerificationRequests_id_seq; Type: SEQUENCE OWNED BY; Schema: betonz; Owner: -
 --
 
-ALTER SEQUENCE betonz."IdentityVerificationRequests_id_seq" OWNED BY betonz."IdentityVerificationRequests".id;
+ALTER SEQUENCE betonz."IdentityVerificationRequests_id_seq" OWNED BY betonz."IdentityVerificationRequest".id;
 
 
 --
@@ -500,10 +501,10 @@ ALTER TABLE ONLY betonz."Event" ALTER COLUMN id SET DEFAULT nextval('betonz."Eve
 
 
 --
--- Name: IdentityVerificationRequests id; Type: DEFAULT; Schema: betonz; Owner: -
+-- Name: IdentityVerificationRequest id; Type: DEFAULT; Schema: betonz; Owner: -
 --
 
-ALTER TABLE ONLY betonz."IdentityVerificationRequests" ALTER COLUMN id SET DEFAULT nextval('betonz."IdentityVerificationRequests_id_seq"'::regclass);
+ALTER TABLE ONLY betonz."IdentityVerificationRequest" ALTER COLUMN id SET DEFAULT nextval('betonz."IdentityVerificationRequests_id_seq"'::regclass);
 
 
 --
@@ -560,10 +561,10 @@ ALTER TABLE ONLY betonz."Flag"
 
 
 --
--- Name: IdentityVerificationRequests IdentityVerificationRequests_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
+-- Name: IdentityVerificationRequest IdentityVerificationRequests_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
 --
 
-ALTER TABLE ONLY betonz."IdentityVerificationRequests"
+ALTER TABLE ONLY betonz."IdentityVerificationRequest"
     ADD CONSTRAINT "IdentityVerificationRequests_pkey" PRIMARY KEY (id);
 
 
@@ -707,18 +708,18 @@ ALTER TABLE ONLY betonz."Flag"
 
 
 --
--- Name: IdentityVerificationRequests IdentityVerificationRequests_modifiedById_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
+-- Name: IdentityVerificationRequest IdentityVerificationRequests_modifiedById_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
 --
 
-ALTER TABLE ONLY betonz."IdentityVerificationRequests"
+ALTER TABLE ONLY betonz."IdentityVerificationRequest"
     ADD CONSTRAINT "IdentityVerificationRequests_modifiedById_fkey" FOREIGN KEY ("modifiedById") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
--- Name: IdentityVerificationRequests IdentityVerificationRequests_userId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
+-- Name: IdentityVerificationRequest IdentityVerificationRequests_userId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
 --
 
-ALTER TABLE ONLY betonz."IdentityVerificationRequests"
+ALTER TABLE ONLY betonz."IdentityVerificationRequest"
     ADD CONSTRAINT "IdentityVerificationRequests_userId_fkey" FOREIGN KEY ("userId") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
@@ -792,4 +793,5 @@ INSERT INTO betonz.schema_migrations (version) VALUES
     ('20240216064632'),
     ('20240216073916'),
     ('20240218055649'),
-    ('20240220030034');
+    ('20240220030034'),
+    ('20240223031215');

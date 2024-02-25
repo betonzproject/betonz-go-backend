@@ -180,6 +180,13 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 		// Validate promotions
 		eligiblePromotions, fivePercentBonusRemaining, tenPercentBonusRemaining := promotion.GetEligiblePromotions(app.DB, r.Context(), user.ID)
 		if depositForm.Promotion != "" {
+			// User must be verified to apply for promotions
+			request, _ := app.DB.GetLatestIdentityVerificationRequestByUserId(r.Context(), user.ID)
+			if request.Status != db.IdentityVerificationStatusVERIFIED {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+
 			if depositForm.DepositTo == product.MainWallet {
 				http.Error(w, "deposit.depositToInvalid.message", http.StatusBadRequest)
 				return

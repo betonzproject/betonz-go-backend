@@ -58,11 +58,11 @@ func GetReport(app *app.App) http.HandlerFunc {
 		retentionFromParam := r.URL.Query().Get("retentionFrom")
 		retentionToParam := r.URL.Query().Get("retentionTo")
 
-		retentionFrom, err := timeutils.ParseDate(retentionFromParam)
+		retentionFrom, err := timeutils.ParseDatetime(retentionFromParam)
 		if err != nil {
 			retentionFrom = timeutils.StartOfToday().AddDate(0, 0, -6)
 		}
-		retentionTo, err := timeutils.ParseDate(retentionToParam)
+		retentionTo, err := timeutils.ParseDatetime(retentionToParam)
 		if err != nil {
 			retentionTo = timeutils.EndOfToday()
 		}
@@ -70,7 +70,7 @@ func GetReport(app *app.App) http.HandlerFunc {
 		retentionReport := getRetentionReport(app, r.Context(), retentionFrom, retentionTo)
 
 		monthlyReportDateParam := r.URL.Query().Get("monthlyReportDate")
-		monthlyReportDate, err := timeutils.ParseDate(monthlyReportDateParam)
+		monthlyReportDate, err := timeutils.ParseDatetime(monthlyReportDateParam)
 		if err != nil {
 			monthlyReportDate = time.Now()
 		}
@@ -80,11 +80,11 @@ func GetReport(app *app.App) http.HandlerFunc {
 		dailyReportFromParam := r.URL.Query().Get("dailyReportFrom")
 		dailyReportToParam := r.URL.Query().Get("dailyReportTo")
 
-		dailyReportFrom, err := timeutils.ParseDate(dailyReportFromParam)
+		dailyReportFrom, err := timeutils.ParseDatetime(dailyReportFromParam)
 		if err != nil {
 			dailyReportFrom = timeutils.StartOfThisMonth()
 		}
-		dailyReportTo, err := timeutils.ParseDate(dailyReportToParam)
+		dailyReportTo, err := timeutils.ParseDatetime(dailyReportToParam)
 		if err != nil {
 			dailyReportTo = timeutils.EndOfThisMonth()
 		}

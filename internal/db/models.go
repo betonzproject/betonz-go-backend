@@ -210,9 +210,10 @@ func (ns NullFlagStatus) Value() (driver.Value, error) {
 type IdentityVerificationStatus string
 
 const (
-	IdentityVerificationStatusVERIFIED IdentityVerificationStatus = "VERIFIED"
-	IdentityVerificationStatusREJECTED IdentityVerificationStatus = "REJECTED"
-	IdentityVerificationStatusPENDING  IdentityVerificationStatus = "PENDING"
+	IdentityVerificationStatusVERIFIED   IdentityVerificationStatus = "VERIFIED"
+	IdentityVerificationStatusREJECTED   IdentityVerificationStatus = "REJECTED"
+	IdentityVerificationStatusPENDING    IdentityVerificationStatus = "PENDING"
+	IdentityVerificationStatusINCOMPLETE IdentityVerificationStatus = "INCOMPLETE"
 )
 
 func (e *IdentityVerificationStatus) Scan(src interface{}) error {

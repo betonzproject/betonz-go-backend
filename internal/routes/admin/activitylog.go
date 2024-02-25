@@ -33,11 +33,11 @@ func GetActivityLog(app *app.App) http.HandlerFunc {
 		eventResultParam := r.URL.Query().Get("eventResult")
 		eventTypeParam := r.URL.Query().Get("eventType")
 
-		from, err := timeutils.ParseDate(fromParam)
+		from, err := timeutils.ParseDatetime(fromParam)
 		if err != nil {
 			from = timeutils.StartOfToday()
 		}
-		to, err := timeutils.ParseDate(toParam)
+		to, err := timeutils.ParseDatetime(toParam)
 		if err != nil {
 			to = timeutils.EndOfToday()
 		}
