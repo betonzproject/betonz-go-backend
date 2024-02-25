@@ -97,6 +97,7 @@ func main() {
 	r.Post("/verify-identity", routes.PostVerifyIdentity(app))
 
 	r.Route("/admin", func(r chi.Router) {
+		r.Get("/", admin.GetIndex(app))
 		r.Get("/transaction-request", admin.GetTransactionRequest(app))
 		r.Post("/transaction-request", admin.PostTransactionRequest(app))
 		r.Get("/report", report.GetReport(app))
