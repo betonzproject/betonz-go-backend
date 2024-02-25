@@ -38,6 +38,7 @@ func NewApp() *App {
 		registerType(ctx, c, "Role")
 		registerType(ctx, c, "TransactionType")
 		registerType(ctx, c, "TransactionStatus")
+		registerType(ctx, c, "IdentityVerificationStatus")
 		registerType(ctx, c, "EventType")
 		registerType(ctx, c, "EventResult")
 		return nil

@@ -12,22 +12,24 @@ import (
 type Permission string
 
 const (
-	UpdateProfile             Permission = "UpdateProfile"
-	DepositToOwnWallet        Permission = "DepositToOwnWallet"
-	WithdrawFromOwnWallet     Permission = "WithdrawFromOwnWallet"
-	TransferBetweenWallets    Permission = "TransferBetweenWallets"
-	ViewOwnTransactionHistory Permission = "ViewOwnTransactionHistory"
-	ManageOwnBankingDetails   Permission = "ManageOwnBankingDetails"
-	ViewNotifications         Permission = "ViewNotifications"
-	ManageTransactionRequests Permission = "ManageTransactionRequests"
-	ViewReports               Permission = "ViewReports"
-	ManagePlayers             Permission = "ManagePlayers"
-	ManageAdmins              Permission = "ManageAdmins"
-	ToggleSystemBanks         Permission = "ToggleSystemBanks"
-	ManageSystemBanks         Permission = "ManageSystemBanks"
-	ViewActivityLog           Permission = "ViewActivityLog"
-	ViewSuperadminActivityLog Permission = "ViewSuperadminActivityLog"
-	ViewFiles                 Permission = "ViewFiles"
+	UpdateProfile                                Permission = "UpdateProfile"
+	DepositToOwnWallet                           Permission = "DepositToOwnWallet"
+	WithdrawFromOwnWallet                        Permission = "WithdrawFromOwnWallet"
+	TransferBetweenWallets                       Permission = "TransferBetweenWallets"
+	ViewOwnTransactionHistory                    Permission = "ViewOwnTransactionHistory"
+	ManageOwnBankingDetails                      Permission = "ManageOwnBankingDetails"
+	ViewNotifications                            Permission = "ViewNotifications"
+	ManageTransactionRequests                    Permission = "ManageTransactionRequests"
+	ViewReports                                  Permission = "ViewReports"
+	ManagePlayers                                Permission = "ManagePlayers"
+	ManageAdmins                                 Permission = "ManageAdmins"
+	ToggleSystemBanks                            Permission = "ToggleSystemBanks"
+	ManageSystemBanks                            Permission = "ManageSystemBanks"
+	ViewActivityLog                              Permission = "ViewActivityLog"
+	ViewSuperadminActivityLog                    Permission = "ViewSuperadminActivityLog"
+	ManageIdentityVerificationRequests           Permission = "ManageIdentityVerificationRequests"
+	OverruleApprovedIdentityVerificationRequests Permission = "OverruleApprovedIdentityVerificationRequests"
+	ViewFiles                                    Permission = "ViewFiles"
 )
 
 var Acl = map[db.Role][]Permission{
@@ -46,6 +48,7 @@ var Acl = map[db.Role][]Permission{
 		ManagePlayers,
 		ToggleSystemBanks,
 		ViewActivityLog,
+		ManageIdentityVerificationRequests,
 		ViewFiles,
 	},
 	db.RoleSUPERADMIN: {
@@ -64,6 +67,8 @@ var Acl = map[db.Role][]Permission{
 		ManageSystemBanks,
 		ViewActivityLog,
 		ViewSuperadminActivityLog,
+		ManageIdentityVerificationRequests,
+		OverruleApprovedIdentityVerificationRequests,
 		ViewFiles,
 	},
 }

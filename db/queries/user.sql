@@ -187,6 +187,9 @@ UPDATE "User" SET username = $2, "updatedAt" = now() WHERE id = $1;
 -- name: UpdateUserPasswordHash :exec
 UPDATE "User" SET "passwordHash" = $2, "updatedAt" = now() WHERE id = $1;
 
+-- name: UpdateUserDob :exec
+UPDATE "User" SET dob = $2, "updatedAt" = now() WHERE id = $1;
+
 -- name: UpdateUserProfileImage :exec
 UPDATE "User" SET "profileImage" = $2, "updatedAt" = now() WHERE id = $1;
 
