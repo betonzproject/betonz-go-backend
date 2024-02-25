@@ -18,10 +18,11 @@ import (
 )
 
 type Response struct {
-	Player            db.GetPlayerInfoByIdRow              `json:"player"`
-	RestrictionEvents []db.GetRestrictionEventsByUserIdRow `json:"restrictionEvents"`
-	Banks             []db.Bank                            `json:"banks"`
-	Turnover          map[string]int64                     `json:"turnover"`
+	Player                     db.GetPlayerInfoByIdRow              `json:"player"`
+	IdentityVerificationStatus *db.IdentityVerificationStatus       `json:"identityVerificationStatus"`
+	RestrictionEvents          []db.GetRestrictionEventsByUserIdRow `json:"restrictionEvents"`
+	Banks                      []db.Bank                            `json:"banks"`
+	Turnover                   map[string]int64                     `json:"turnover"`
 }
 
 func GetPlayersById(app *app.App) http.HandlerFunc {
@@ -46,6 +47,12 @@ func GetPlayersById(app *app.App) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, "404 page not found", http.StatusNotFound)
 			return
+		}
+
+		var status *db.IdentityVerificationStatus
+		request, err := app.DB.GetLatestIdentityVerificationRequestByUserId(r.Context(), id)
+		if err == nil {
+			status = &request.Status
 		}
 
 		restrictionEvents, err := app.DB.GetRestrictionEventsByUserId(r.Context(), id)
@@ -108,10 +115,11 @@ func GetPlayersById(app *app.App) http.HandlerFunc {
 		}
 
 		jsonutils.Write(w, Response{
-			Player:            player,
-			RestrictionEvents: restrictionEvents,
-			Banks:             banks,
-			Turnover:          toMap(turnover),
+			Player:                     player,
+			IdentityVerificationStatus: status,
+			RestrictionEvents:          restrictionEvents,
+			Banks:                      banks,
+			Turnover:                   toMap(turnover),
 		}, http.StatusOK)
 	}
 }
