@@ -12,6 +12,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
+	"github.com/doorman2137/betonz-go/internal/utils/ratelimiter"
 	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 )
 
@@ -27,6 +28,11 @@ type UpdatePasswordForm struct {
 type AccountSettingsResponse struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
+}
+
+var usernameChangeLimitOpts = ratelimiter.LimiterOptions{
+	Tokens: 1,
+	Window: time.Duration(24 * time.Hour),
 }
 
 func PostAccountSettings(app *app.App) http.HandlerFunc {
@@ -49,9 +55,14 @@ func PostAccountSettings(app *app.App) http.HandlerFunc {
 				return
 			}
 
+			if user.Username == updateUsernameForm.Username {
+				jsonutils.Write(w, AccountSettingsResponse{Type: "username"}, http.StatusOK)
+				return
+			}
+
 			key := "username_change:" + utils.EncodeUUID(user.ID.Bytes)
-			_, err := app.Redis.Get(r.Context(), key).Result()
-			if err == nil {
+			err = app.Limiter.Consume(r.Context(), key, usernameChangeLimitOpts)
+			if err == ratelimiter.RateLimited {
 				jsonutils.Write(w, AccountSettingsResponse{
 					Type:    "username",
 					Message: "accountSettings.usernameChangedTooManyTimes.message",
@@ -77,11 +88,6 @@ func PostAccountSettings(app *app.App) http.HandlerFunc {
 				return
 			}
 
-			if exisitingUser.Username == updateUsernameForm.Username {
-				jsonutils.Write(w, AccountSettingsResponse{Type: "username"}, http.StatusOK)
-				return
-			}
-
 			err = qtx.UpdateUsername(r.Context(), db.UpdateUsernameParams{
 				ID:       user.ID,
 				Username: updateUsernameForm.Username,
@@ -96,11 +102,6 @@ func PostAccountSettings(app *app.App) http.HandlerFunc {
 			})
 			if err != nil {
 				log.Panicln("Can't log event: ", err.Error())
-			}
-
-			err = app.Redis.Set(r.Context(), key, time.Now().Format(time.RFC3339), 24*time.Hour).Err()
-			if err != nil {
-				log.Panicln("Can't set to redis: ", err)
 			}
 
 			tx.Commit(r.Context())

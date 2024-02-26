@@ -6,12 +6,14 @@ import (
 	"encoding/base64"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/db"
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/mailutils"
+	"github.com/doorman2137/betonz-go/internal/utils/ratelimiter"
 	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -22,6 +24,11 @@ type RegisterForm struct {
 	Password string `form:"password" validate:"required,min=8,max=512"`
 }
 
+var registerIpLimitOpts = ratelimiter.LimiterOptions{
+	Tokens: 20,
+	Window: time.Duration(24 * time.Hour),
+}
+
 func PostRegister(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var registerForm RegisterForm
@@ -29,7 +36,22 @@ func PostRegister(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		_, err := app.DB.GetExtendedUserByUsername(r.Context(), db.GetExtendedUserByUsernameParams{
+		key := "register_ip:" + r.RemoteAddr
+		err := app.Limiter.Consume(r.Context(), key, registerIpLimitOpts)
+		if err == ratelimiter.RateLimited {
+			err := utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypeREGISTER, db.EventResultFAIL, "Rate limited", map[string]any{
+				"username": registerForm.Username,
+				"email":    registerForm.Email,
+			})
+			if err != nil {
+				log.Panicln("Can't log event: " + err.Error())
+			}
+
+			http.Error(w, "tooManyRequests.message", http.StatusTooManyRequests)
+			return
+		}
+
+		_, err = app.DB.GetExtendedUserByUsername(r.Context(), db.GetExtendedUserByUsernameParams{
 			Username: registerForm.Username,
 		})
 		if err == nil {

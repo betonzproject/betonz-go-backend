@@ -6,12 +6,14 @@ import (
 	"encoding/base64"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/db"
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/mailutils"
+	"github.com/doorman2137/betonz-go/internal/utils/ratelimiter"
 	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -21,10 +23,37 @@ type ResetPasswordRequestForm struct {
 	Email    string `form:"email" validate:"required,email" key:"user.email"`
 }
 
+var passwordResetIpLimitOpts = ratelimiter.LimiterOptions{
+	Tokens: 20,
+	Window: time.Duration(24 * time.Hour),
+}
+
+var passwordResetUsernameLimitOpts = ratelimiter.LimiterOptions{
+	Tokens: 10,
+	Window: time.Duration(24 * time.Hour),
+}
+
 func PostPasswordReset(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var resetPasswordRequestForm ResetPasswordRequestForm
 		if formutils.ParseDecodeValidate(app, w, r, &resetPasswordRequestForm) != nil {
+			return
+		}
+
+		ipKey := "password_reset_ip:" + r.RemoteAddr
+		ipUsernameKey := "password_reset_username:" + resetPasswordRequestForm.Username
+		err := app.Limiter.Consume(r.Context(), ipKey, passwordResetIpLimitOpts)
+		err2 := app.Limiter.Consume(r.Context(), ipUsernameKey, passwordResetUsernameLimitOpts)
+		if err == ratelimiter.RateLimited || err2 == ratelimiter.RateLimited {
+			err := utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypePASSWORDRESETREQUEST, db.EventResultFAIL, "Rate limited", map[string]any{
+				"username": resetPasswordRequestForm.Username,
+				"email":    resetPasswordRequestForm.Email,
+			})
+			if err != nil {
+				log.Panicln("Can't log event: " + err.Error())
+			}
+
+			http.Error(w, "resetPassword.tooManyPasswordResetRequests.message", http.StatusTooManyRequests)
 			return
 		}
 

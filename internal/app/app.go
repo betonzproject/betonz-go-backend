@@ -10,6 +10,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/doorman2137/betonz-go/internal/db"
 	"github.com/doorman2137/betonz-go/internal/utils"
+	"github.com/doorman2137/betonz-go/internal/utils/ratelimiter"
 	"github.com/go-playground/form/v4"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
@@ -24,6 +25,7 @@ type App struct {
 	Scs      *scs.SessionManager
 	Decoder  *form.Decoder
 	Validate *validator.Validate
+	Limiter  *ratelimiter.Limiter
 }
 
 func NewApp() *App {
@@ -73,6 +75,9 @@ func NewApp() *App {
 	validate.RegisterValidation("accountnumber", utils.ValidateBankAccountNumber)
 	validate.RegisterValidation("product", utils.ValidateProduct)
 
+	// Rate limiter
+	limiter := ratelimiter.NewLimiter(client)
+
 	return &App{
 		DB:       db.New(pool),
 		Pool:     pool,
@@ -80,6 +85,7 @@ func NewApp() *App {
 		Scs:      sessionManager,
 		Decoder:  decoder,
 		Validate: validate,
+		Limiter:  limiter,
 	}
 }
 

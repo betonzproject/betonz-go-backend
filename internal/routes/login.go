@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/auth"
@@ -12,7 +13,9 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
+	"github.com/doorman2137/betonz-go/internal/utils/ratelimiter"
 	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func GetLogin(app *app.App) http.HandlerFunc {
@@ -35,6 +38,16 @@ type LoginResponse struct {
 	Email string `json:"email"`
 }
 
+var loginIpLimitOpts = ratelimiter.LimiterOptions{
+	Tokens: 100,
+	Window: time.Duration(24 * time.Hour),
+}
+
+var loginIpUsernameLimitOpts = ratelimiter.LimiterOptions{
+	Tokens: 20,
+	Window: time.Duration(24 * time.Hour),
+}
+
 func PostLogin(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var loginForm LoginForm
@@ -50,6 +63,23 @@ func PostLogin(app *app.App) http.HandlerFunc {
 			redirectTo = "/"
 		} else {
 			redirectTo = "/" + redirectTo[1:]
+		}
+
+		ipKey := "login_ip:" + r.RemoteAddr
+		ipUsernameKey := "login_ip_username:" + r.RemoteAddr + ":" + loginForm.Username
+		err = app.Limiter.Consume(r.Context(), ipKey, loginIpLimitOpts)
+		err2 := app.Limiter.Consume(r.Context(), ipUsernameKey, loginIpUsernameLimitOpts)
+		if err == ratelimiter.RateLimited || err2 == ratelimiter.RateLimited {
+			err := utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypeLOGIN, db.EventResultFAIL, "Rate limited", map[string]any{
+				"redirectTo": redirectTo,
+				"adminMode":  adminMode,
+			})
+			if err != nil {
+				log.Panicln("Can't log event: " + err.Error())
+			}
+
+			http.Error(w, "login.tooManyAttempts.message", http.StatusTooManyRequests)
+			return
 		}
 
 		var user db.User
@@ -127,6 +157,8 @@ func PostLogin(app *app.App) http.HandlerFunc {
 		randomBytes := make([]byte, 16)
 		rand.Read(randomBytes)
 		app.Scs.Put(r.Context(), "sessionId", randomBytes)
+
+		app.Limiter.Reset(r.Context(), ipUsernameKey)
 
 		err = utils.LogEvent(app.DB, r, user.ID, db.EventTypeLOGIN, db.EventResultSUCCESS, "", map[string]any{
 			"redirectTo": redirectTo,

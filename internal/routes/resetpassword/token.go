@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -14,14 +15,15 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/doorman2137/betonz-go/internal/utils/mailutils"
+	"github.com/doorman2137/betonz-go/internal/utils/ratelimiter"
 	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type VerifyTokenResponse struct {
-	IsTokenValid bool   `json:"isTokenValid"`
-	Username     string `json:"username"`
+	Username string `json:"username"`
+	Message  string `json:"message"`
 }
 
 func GetPasswordResetToken(app *app.App) http.HandlerFunc {
@@ -34,11 +36,15 @@ func GetPasswordResetToken(app *app.App) http.HandlerFunc {
 
 		passwordResetToken, err := checkPasswordResetToken(app, r, tokenHash)
 		if err != nil {
-			jsonutils.Write(w, VerifyTokenResponse{IsTokenValid: false}, http.StatusBadRequest)
+			if errors.Is(err, ratelimiter.RateLimited) {
+				jsonutils.Write(w, VerifyTokenResponse{Message: "tooManyRequests.message"}, http.StatusTooManyRequests)
+			} else {
+				jsonutils.Write(w, VerifyTokenResponse{Message: "resetPassword.passwordResetLinkInvalid.message"}, http.StatusBadRequest)
+			}
 			return
 		}
 
-		jsonutils.Write(w, VerifyTokenResponse{IsTokenValid: true, Username: passwordResetToken.Username}, http.StatusOK)
+		jsonutils.Write(w, VerifyTokenResponse{Username: passwordResetToken.Username}, http.StatusOK)
 	}
 }
 
@@ -61,7 +67,11 @@ func PostPasswordResetToken(app *app.App) http.HandlerFunc {
 
 		passwordResetToken, err := checkPasswordResetToken(app, r, tokenHash)
 		if err != nil {
-			http.Error(w, "Invalid token", http.StatusBadRequest)
+			if errors.Is(err, ratelimiter.RateLimited) {
+				http.Error(w, "Too many requests", http.StatusTooManyRequests)
+			} else {
+				http.Error(w, "Invalid token", http.StatusBadRequest)
+			}
 			return
 		}
 
@@ -162,6 +172,19 @@ func PostPasswordResetToken(app *app.App) http.HandlerFunc {
 }
 
 func checkPasswordResetToken(app *app.App, r *http.Request, tokenHash string) (db.GetPasswordResetTokenByHashRow, error) {
+	key := "password_reset_ip:" + r.RemoteAddr
+	err := app.Limiter.Consume(r.Context(), key, passwordResetIpLimitOpts)
+	if err == ratelimiter.RateLimited {
+		err2 := utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypePASSWORDRESETTOKENVERIFICATION, db.EventResultFAIL, "Rate limited", map[string]any{
+			"tokenHash": tokenHash,
+		})
+		if err2 != nil {
+			log.Panicln("Can't log event: " + err2.Error())
+		}
+
+		return db.GetPasswordResetTokenByHashRow{}, err
+	}
+
 	passwordResetToken, err := app.DB.GetPasswordResetTokenByHash(r.Context(), tokenHash)
 	if err != nil || passwordResetToken.TokenHash != tokenHash {
 		err2 := utils.LogEvent(app.DB, r, pgtype.UUID{}, db.EventTypePASSWORDRESETTOKENVERIFICATION, db.EventResultFAIL, "Password reset link invalid", map[string]any{
