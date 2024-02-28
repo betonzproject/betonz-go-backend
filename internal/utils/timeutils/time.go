@@ -71,3 +71,26 @@ func ParseDatetime(s string) (time.Time, error) {
 	t, err := time.ParseInLocation(layout, s, location)
 	return t, err
 }
+
+// ParseDateTimeInLocation parses a string into the format "YYYY/MM/DD hh:mm:ss" (24-hour format) or "YYYY/MM/DD h:mm:ss AA" (12-hour format),
+// considering the given timezone represented by loc.
+//
+// Parameters:
+//   - s: The string to be parsed into a timestamp.
+//   - loc: The time.Location representing the timezone for the timestamp string.
+//
+// Returns:
+//   - A time.Time object representing the parsed timestamp.
+//   - An error if the string cannot be parsed into a valid timestamp.
+func ParseDateTimeInLocation(s string, loc time.Location) (time.Time, error) {
+	is12HourFormat := strings.Contains(s, "AM") || strings.Contains(s, "PM")
+	var layout string
+	if is12HourFormat {
+		layout = "2006/01/02 3:04:05 PM"
+	} else {
+		layout = "2006/01/02 15:04:05"
+	}
+
+	t, err := time.ParseInLocation(layout, s, &loc)
+	return t, err
+}

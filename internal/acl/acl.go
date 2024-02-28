@@ -33,6 +33,7 @@ const (
 	ViewActivityLog                              Permission = "ViewActivityLog"
 	ViewSuperadminActivityLog                    Permission = "ViewSuperadminActivityLog"
 	ViewFiles                                    Permission = "ViewFiles"
+	ManageProductMaintenance                     Permission = "ManageProductMaintenance"
 )
 
 var Acl = map[db.Role][]Permission{
@@ -54,6 +55,7 @@ var Acl = map[db.Role][]Permission{
 		ViewBetHistory,
 		ViewActivityLog,
 		ViewFiles,
+		ManageProductMaintenance,
 	},
 	db.RoleSUPERADMIN: {
 		UpdateProfile,
@@ -77,6 +79,7 @@ var Acl = map[db.Role][]Permission{
 		ViewActivityLog,
 		ViewSuperadminActivityLog,
 		ViewFiles,
+		ManageProductMaintenance,
 	},
 }
 

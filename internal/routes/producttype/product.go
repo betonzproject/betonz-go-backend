@@ -3,6 +3,7 @@ package producttype
 import (
 	"log"
 	"net/http"
+	"slices"
 
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/auth"
@@ -14,9 +15,10 @@ import (
 )
 
 type GetProductResponse struct {
-	ProductName string             `json:"productName"`
-	Balance     pgtype.Numeric     `json:"balance"`
-	Games       []product.GameInfo `json:"games"`
+	ProductName             string             `json:"productName"`
+	Balance                 pgtype.Numeric     `json:"balance"`
+	Games                   []product.GameInfo `json:"games"`
+	ProductUnderMaintenance bool               `json:"productUnderMaintenance"`
 }
 
 func GetProduct(app *app.App) http.HandlerFunc {
@@ -28,6 +30,19 @@ func GetProduct(app *app.App) http.HandlerFunc {
 
 		if productType == 0 {
 			http.Error(w, "404 page not found", http.StatusNotFound)
+			return
+		}
+
+		productsUnderMaintenance, err := app.DB.GetMaintenanceProductCodes(r.Context())
+		if err != nil {
+			log.Panicln("Error fetching maintained products: ", err.Error())
+		}
+
+		if slices.Contains(productsUnderMaintenance, int32(p)) {
+			jsonutils.Write(w, GetProductResponse{
+				ProductName:             p.String(),
+				ProductUnderMaintenance: true,
+			}, http.StatusOK)
 			return
 		}
 
@@ -61,9 +76,10 @@ func GetProduct(app *app.App) http.HandlerFunc {
 		}
 
 		jsonutils.Write(w, GetProductResponse{
-			ProductName: p.String(),
-			Games:       games,
-			Balance:     balance,
+			ProductName:             p.String(),
+			Games:                   games,
+			Balance:                 balance,
+			ProductUnderMaintenance: false,
 		}, http.StatusOK)
 	}
 }

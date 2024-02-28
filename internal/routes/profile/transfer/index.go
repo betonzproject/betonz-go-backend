@@ -32,13 +32,18 @@ func GetTransfer(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		balances := getAllBalances(user.EtgUsername)
+		productsUnderMaintenance, err := app.DB.GetMaintenanceProductCodes(r.Context())
+		if err != nil {
+			log.Panicln("Error fetching maintained products: ", err.Error())
+		}
+
+		balances := getAllBalances(user.EtgUsername, productsUnderMaintenance)
 
 		jsonutils.Write(w, balances, http.StatusOK)
 	}
 }
 
-func getAllBalances(etgUsername string) map[product.Product]pgtype.Numeric {
+func getAllBalances(etgUsername string, productsUnderMaintenance []int32) map[product.Product]pgtype.Numeric {
 	var wg sync.WaitGroup
 
 	balances := make(map[product.Product]pgtype.Numeric)
@@ -50,6 +55,9 @@ func getAllBalances(etgUsername string) map[product.Product]pgtype.Numeric {
 		wg.Add(1)
 		go func(p product.Product) {
 			defer wg.Done()
+			if slices.Contains(productsUnderMaintenance, int32(p)) {
+				return
+			}
 			balance, err := product.GetUserBalance(etgUsername, p)
 			if err != nil {
 				log.Printf("Can't get balance of %s (%d) for %s: %s\n", p, p, etgUsername, err)
@@ -97,6 +105,16 @@ func PostTransfer(app *app.App) http.HandlerFunc {
 
 		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
+
+		productsUnderMaintenance, err := qtx.GetMaintenanceProductCodes(r.Context())
+		if err != nil {
+			log.Panicln("Error fetching maintenance product codes: ", err.Error())
+		}
+
+		if slices.Contains(productsUnderMaintenance, int32(transferForm.FromWallet)) || slices.Contains(productsUnderMaintenance, int32(transferForm.ToWallet)) {
+			http.Error(w, "transfer.productUnderMaintenance.message", http.StatusForbidden)
+			return
+		}
 
 		// Check turnover target
 		if transferForm.FromWallet != product.MainWallet {

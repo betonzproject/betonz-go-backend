@@ -195,6 +195,11 @@ func PostProfile(app *app.App) http.HandlerFunc {
 }
 
 func restoreWallet(q *db.Queries, ctx context.Context, user db.User) []string {
+	productsUnderMaintenance, err := q.GetMaintenanceProductCodes(ctx)
+	if err != nil {
+		log.Panicln("Can't get maintained products: " + err.Error())
+	}
+
 	turnoverTargets, err := q.GetTurnoverTargetsByUserId(ctx, user.ID)
 	if err != nil {
 		log.Panicln("Can't get turnover targets: " + err.Error())
@@ -223,6 +228,14 @@ func restoreWallet(q *db.Queries, ctx context.Context, user db.User) []string {
 		wg.Add(1)
 		go func(p product.Product) {
 			defer wg.Done()
+			if slices.Contains(productsUnderMaintenance, int32(p)) {
+				errStr := fmt.Sprintf("Can't get balance of %s (%d) for %s: %s", p, p, user.EtgUsername, err)
+				trimmed := strings.Split(errStr, "\n")[0]
+				errors = append(errors, trimmed)
+				log.Println(errStr)
+				return
+			}
+
 			balance, err := product.GetUserBalance(user.EtgUsername, p)
 			if err != nil {
 				sumMutex.Lock()

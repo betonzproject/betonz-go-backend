@@ -114,6 +114,7 @@ func ParseDecodeValidateMultipart[T any](app *app.App, w http.ResponseWriter, r 
 
 	_ = app.Decoder.Decode(dst, values)
 	err = app.Validate.Struct(dst)
+
 	if err != nil {
 		var ve validator.ValidationErrors
 		if errors.As(err, &ve) {

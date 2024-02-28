@@ -47,7 +47,7 @@ func main() {
 	r.Get("/verify-email/{token}", verifyemail.GetVerifyEmailToken(app))
 	r.Get("/leaderboard/{productType}", routes.GetLeaderboard(app))
 	r.Route("/{productType}", func(r chi.Router) {
-		r.Get("/", producttype.GetProducts)
+		r.Get("/", producttype.GetProducts(app))
 		r.Get("/{product}", producttype.GetProduct(app))
 		r.Post("/{product}", producttype.PostProduct(app))
 	})
@@ -62,7 +62,7 @@ func main() {
 		r.Route("/transfer", func(r chi.Router) {
 			r.Get("/", transfer.GetTransfer(app))
 			r.Post("/", transfer.PostTransfer(app))
-			r.Get("/products", transfer.GetProducts)
+			r.Get("/products", transfer.GetProducts(app))
 		})
 		r.Get("/history", profile.GetHistory(app))
 		r.Route("/banking-details", func(r chi.Router) {
@@ -101,6 +101,8 @@ func main() {
 		r.Post("/deposit", admin.PostDeposit(app))
 		r.Get("/withdraw", admin.GetWithdraw(app))
 		r.Post("/withdraw", admin.PostWithdraw(app))
+		r.Get("/maintenance", admin.GetMaintenance(app))
+		r.Post("/maintenance", admin.PostMaintenance(app))
 	})
 
 	minutes, _ := strconv.Atoi(os.Getenv("FETCH_BETS_INTERVAL_MINUTES"))

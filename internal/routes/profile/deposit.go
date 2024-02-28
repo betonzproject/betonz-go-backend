@@ -38,6 +38,7 @@ type DepositResponse struct {
 	FivePercentBonusRemaining pgtype.Numeric             `json:"fivePercentBonusRemaining"`
 	TenPercentBonusRemaining  pgtype.Numeric             `json:"tenPercentBonusRemaining"`
 	TurnoverTargets           []TurnoverTargetInfo       `json:"turnoverTargets"`
+	ProductsUnderMaintenance  []string                   `json:"productsUnderMaintenance"`
 }
 
 func GetDeposit(app *app.App) http.HandlerFunc {
@@ -110,6 +111,11 @@ func GetDeposit(app *app.App) http.HandlerFunc {
 			}
 		})
 
+		productsUnderMaintenance, err := app.DB.GetMaintenanceProductCodes(r.Context())
+		if err != nil {
+			log.Panicln("Error fetching maintained products: ", err.Error())
+		}
+
 		jsonutils.Write(w, DepositResponse{
 			Products:                  productNames,
 			Banks:                     banks,
@@ -120,6 +126,9 @@ func GetDeposit(app *app.App) http.HandlerFunc {
 			FivePercentBonusRemaining: fivePercentBonusRemaining,
 			TenPercentBonusRemaining:  tenPercentBonusRemaining,
 			TurnoverTargets:           turnoverTargetInfos,
+			ProductsUnderMaintenance: sliceutils.Map(productsUnderMaintenance, func(prodInt int32) string {
+				return product.Product(prodInt).String()
+			}),
 		}, http.StatusOK)
 	}
 }
@@ -146,6 +155,16 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 
 		var depositForm DepositForm
 		if formutils.ParseDecodeValidateMultipart(app, w, r, &depositForm) != nil {
+			return
+		}
+
+		productsUnderMaintenance, err := app.DB.GetMaintenanceProductCodes(r.Context())
+		if err != nil {
+			log.Panicln("Error fetching maintained products: ", err.Error())
+		}
+
+		if slices.Contains(productsUnderMaintenance, int32(depositForm.DepositTo)) {
+			http.Error(w, "transfer.productUnderMaintenance.message", http.StatusNotAcceptable)
 			return
 		}
 

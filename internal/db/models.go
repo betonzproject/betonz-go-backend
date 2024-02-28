@@ -127,6 +127,9 @@ const (
 	EventTypeSYSTEMBANKADD                  EventType = "SYSTEM_BANK_ADD"
 	EventTypeSYSTEMBANKUPDATE               EventType = "SYSTEM_BANK_UPDATE"
 	EventTypeSYSTEMBANKDELETE               EventType = "SYSTEM_BANK_DELETE"
+	EventTypeMAINTENANCEADD                 EventType = "MAINTENANCE_ADD"
+	EventTypeMAINTENANCEUPDATE              EventType = "MAINTENANCE_UPDATE"
+	EventTypeMAINTENANCEDELETE              EventType = "MAINTENANCE_DELETE"
 )
 
 func (e *EventType) Scan(src interface{}) error {
@@ -578,6 +581,15 @@ type IdentityVerificationRequest struct {
 	CreatedAt    pgtype.Timestamptz         `json:"createdAt"`
 	UpdatedAt    pgtype.Timestamptz         `json:"updatedAt"`
 	Dob          pgtype.Date                `json:"dob"`
+}
+
+type Maintenance struct {
+	ID                int32                            `json:"id"`
+	ProductCode       int32                            `json:"productCode"`
+	MaintenancePeriod pgtype.Range[pgtype.Timestamptz] `json:"maintenancePeriod"`
+	GmtOffsetSecs     int32                            `json:"gmtOffsetSecs"`
+	CreatedAt         pgtype.Timestamptz               `json:"createdAt"`
+	UpdatedAt         pgtype.Timestamptz               `json:"updatedAt"`
 }
 
 type Notification struct {

@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"net/http"
 	"os"
+	"slices"
 
 	"github.com/doorman2137/betonz-go/internal/acl"
 	"github.com/doorman2137/betonz-go/internal/app"
@@ -14,6 +15,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/doorman2137/betonz-go/internal/utils/numericutils"
+	"github.com/doorman2137/betonz-go/internal/utils/sliceutils"
 	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -22,6 +24,11 @@ type DepositForm struct {
 	Username string          `form:"username" validate:"required,min=3,max=20,username" key:"user.username"`
 	Product  product.Product `form:"product" validate:"required"`
 	Amount   int64           `form:"amount"  validate:"min=0" key:"deposit.amount"`
+}
+
+type DepositResponse struct {
+	Products                 map[product.Product]string `json:"products"`
+	ProductsUnderMaintenance []string                   `json:"productsUnderMaintenance"`
 }
 
 func GetDeposit(app *app.App) http.HandlerFunc {
@@ -41,7 +48,17 @@ func GetDeposit(app *app.App) http.HandlerFunc {
 			productNames[p] = p.String()
 		}
 
-		jsonutils.Write(w, productNames, http.StatusOK)
+		productsUnderMaintenance, err := app.DB.GetMaintenanceProductCodes(r.Context())
+		if err != nil {
+			log.Panicln("Error fetching maintained products: ", err.Error())
+		}
+
+		jsonutils.Write(w, DepositResponse{
+			Products: productNames,
+			ProductsUnderMaintenance: sliceutils.Map(productsUnderMaintenance, func(prodInt int32) string {
+				return product.Product(prodInt).String()
+			}),
+		}, http.StatusOK)
 	}
 }
 
@@ -58,6 +75,16 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 
 		var depositForm DepositForm
 		if formutils.ParseDecodeValidate(app, w, r, &depositForm) != nil {
+			return
+		}
+
+		productsUnderMaintenance, err := app.DB.GetMaintenanceProductCodes(r.Context())
+		if err != nil {
+			log.Panicln("Error fetching maintained products: ", err.Error())
+		}
+
+		if slices.Contains(productsUnderMaintenance, int32(depositForm.Product)) {
+			http.Error(w, "deposit.productUnderMaintenance.message", http.StatusNotAcceptable)
 			return
 		}
 

@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"net/http"
 	"os"
+	"slices"
 
 	"github.com/doorman2137/betonz-go/internal/acl"
 	"github.com/doorman2137/betonz-go/internal/app"
@@ -14,6 +15,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/doorman2137/betonz-go/internal/utils/numericutils"
+	"github.com/doorman2137/betonz-go/internal/utils/sliceutils"
 	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -24,6 +26,11 @@ type WithdrawForm struct {
 	Amount       int64           `form:"amount" validate:"min=1" key:"withdraw.amount"`
 	Remarks      string          `form:"remarks"`
 	OtherRemarks string          `form:"otherRemarks"`
+}
+
+type WithdrawResponse struct {
+	Products                 map[product.Product]string `json:"products"`
+	ProductsUnderMaintenance []string                   `json:"productsUnderMaintenance"`
 }
 
 func GetWithdraw(app *app.App) http.HandlerFunc {
@@ -43,7 +50,17 @@ func GetWithdraw(app *app.App) http.HandlerFunc {
 			productNames[p] = p.String()
 		}
 
-		jsonutils.Write(w, productNames, http.StatusOK)
+		productsUnderMaintenance, err := app.DB.GetMaintenanceProductCodes(r.Context())
+		if err != nil {
+			log.Panicln("Error fetching maintained products: ", err.Error())
+		}
+
+		jsonutils.Write(w, WithdrawResponse{
+			Products: productNames,
+			ProductsUnderMaintenance: sliceutils.Map(productsUnderMaintenance, func(prodInt int32) string {
+				return product.Product(prodInt).String()
+			}),
+		}, http.StatusOK)
 	}
 }
 
@@ -61,6 +78,17 @@ func PostWithdraw(app *app.App) http.HandlerFunc {
 		var withdrawForm WithdrawForm
 		if formutils.ParseDecodeValidate(app, w, r, &withdrawForm) != nil {
 			return
+		}
+
+		productsUnderMaintenance, err := app.DB.GetMaintenanceProductCodes(r.Context())
+		if err != nil {
+			log.Panicln("Error fetching maintained products: ", err.Error())
+		}
+
+		if slices.Contains(productsUnderMaintenance, int32(withdrawForm.Product)) {
+			http.Error(w, "deposit.productUnderMaintenance.message", http.StatusNotAcceptable)
+			return
+
 		}
 
 		// GetUserByUsername
