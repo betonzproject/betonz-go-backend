@@ -48,7 +48,7 @@ func GetProduct(app *app.App) http.HandlerFunc {
 
 		var balance pgtype.Numeric
 		user, err := auth.GetExtendedUser(app, w, r)
-		if err != nil {
+		if err == nil {
 			balance, err = product.GetUserBalance(user.EtgUsername, p)
 			if err != nil {
 				log.Panicf("Can't get balance of %s (%d) for %s: %s\n", p, p, user.EtgUsername, err)
