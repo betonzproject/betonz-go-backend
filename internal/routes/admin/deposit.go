@@ -88,6 +88,16 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 			return
 		}
 
+		productsUnderMaintenance, err := app.DB.GetMaintenanceProductCodes(r.Context())
+		if err != nil {
+			log.Panicln("Error fetching maintained products: ", err.Error())
+		}
+
+		if slices.Contains(productsUnderMaintenance, int32(depositForm.Product)) {
+			http.Error(w, "deposit.productUnderMaintenance.message", http.StatusNotAcceptable)
+			return
+		}
+
 		depositAmount := pgtype.Numeric{
 			Int:   big.NewInt(depositForm.Amount),
 			Valid: true,
