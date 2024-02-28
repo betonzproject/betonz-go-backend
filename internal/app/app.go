@@ -9,6 +9,7 @@ import (
 	"github.com/alexedwards/scs/goredisstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/doorman2137/betonz-go/internal/db"
+	"github.com/doorman2137/betonz-go/internal/sse"
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/ratelimiter"
 	"github.com/go-playground/form/v4"
@@ -19,13 +20,14 @@ import (
 )
 
 type App struct {
-	DB       *db.Queries
-	Pool     *pgxpool.Pool
-	Redis    *redis.Client
-	Scs      *scs.SessionManager
-	Decoder  *form.Decoder
-	Validate *validator.Validate
-	Limiter  *ratelimiter.Limiter
+	DB          *db.Queries
+	Pool        *pgxpool.Pool
+	Redis       *redis.Client
+	Scs         *scs.SessionManager
+	Decoder     *form.Decoder
+	Validate    *validator.Validate
+	Limiter     *ratelimiter.Limiter
+	EventServer *sse.EventServer
 }
 
 func NewApp() *App {
@@ -78,14 +80,18 @@ func NewApp() *App {
 	// Rate limiter
 	limiter := ratelimiter.NewLimiter(client)
 
+	// SSE Server
+	server := sse.NewServer()
+
 	return &App{
-		DB:       db.New(pool),
-		Pool:     pool,
-		Redis:    client,
-		Scs:      sessionManager,
-		Decoder:  decoder,
-		Validate: validate,
-		Limiter:  limiter,
+		DB:          db.New(pool),
+		Pool:        pool,
+		Redis:       client,
+		Scs:         sessionManager,
+		Decoder:     decoder,
+		Validate:    validate,
+		Limiter:     limiter,
+		EventServer: server,
 	}
 }
 

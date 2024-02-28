@@ -115,6 +115,20 @@ func PostIdentityVerificationRequest(app *app.App) http.HandlerFunc {
 			log.Panicln("Can't update user dob: " + err.Error())
 		}
 
+		err = qtx.CreateNotification(r.Context(), db.CreateNotificationParams{
+			UserId: ivr.UserId,
+			Type:   db.NotificationTypeIDENTITYVERIFICATION,
+			Variables: map[string]any{
+				"id":     ivr.ID,
+				"time":   ivr.CreatedAt.Time,
+				"action": identityVerificationRequestForm.Action,
+			},
+		})
+		if err != nil {
+			log.Panicln("Can't create notification: " + err.Error())
+		}
+		app.EventServer.Notify(ivr.UserId, "notification")
+
 		tx.Commit(r.Context())
 
 		w.WriteHeader(http.StatusOK)

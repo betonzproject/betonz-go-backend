@@ -99,7 +99,7 @@ func PostPasswordResetToken(app *app.App) http.HandlerFunc {
 		// Invalidate all of the user's sessions
 		err = app.Scs.Iterate(r.Context(), func(ctx context.Context) error {
 			userID := app.Scs.GetBytes(ctx, "userId")
-			if string(userID) == string(passwordResetToken.UserId.Bytes[:]) {
+			if len(userID) == 16 && [16]byte(userID) == passwordResetToken.UserId.Bytes {
 				return app.Scs.Destroy(ctx)
 			}
 			return nil

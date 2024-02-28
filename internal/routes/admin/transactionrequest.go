@@ -269,6 +269,7 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 			Type:   db.NotificationTypeTRANSACTION,
 			Variables: map[string]any{
 				"id":              transactionRequestForm.RequestId,
+				"time":            tr.CreatedAt.Time,
 				"transactionType": tr.Type,
 				"amount":          tr.Amount,
 				"action":          transactionRequestForm.Action,
@@ -277,6 +278,7 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 		if err != nil {
 			log.Panicln("Can't create notification: " + err.Error())
 		}
+		app.EventServer.Notify(tr.UserId, "notification")
 
 		tx.Commit(r.Context())
 

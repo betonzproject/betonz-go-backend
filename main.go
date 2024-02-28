@@ -34,23 +34,6 @@ func main() {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 
-	m, _ := strconv.Atoi(os.Getenv("FETCH_BETS_INTERVAL_MINUTES"))
-	if m > 0 {
-		log.Printf("Starting bet fetch ticker every %d minutes", m)
-		ticker := time.NewTicker(time.Duration(m) * time.Minute)
-		defer ticker.Stop()
-
-		go func() {
-			jobs.FetchBets(app, 0)
-			for {
-				select {
-				case <-ticker.C:
-					jobs.FetchBets(app, 0)
-				}
-			}
-		}()
-	}
-
 	r.Get("/", routes.GetIndex(app))
 	r.Get("/login", routes.GetLogin(app))
 	r.Post("/login", routes.PostLogin(app))
@@ -95,6 +78,7 @@ func main() {
 	})
 	r.Get("/verify-identity", routes.GetVerifyIdentity(app))
 	r.Post("/verify-identity", routes.PostVerifyIdentity(app))
+	r.Get("/sse", routes.GetSse(app))
 
 	r.Route("/admin", func(r chi.Router) {
 		r.Get("/", admin.GetIndex(app))
@@ -113,6 +97,23 @@ func main() {
 		r.Post("/identity-verification-request", admin.PostIdentityVerificationRequest(app))
 		r.Get("/file/{filename}", admin.GetFile(app))
 	})
+
+	minutes, _ := strconv.Atoi(os.Getenv("FETCH_BETS_INTERVAL_MINUTES"))
+	if minutes > 0 {
+		log.Printf("Starting bet fetch ticker every %d minutes", minutes)
+		ticker := time.NewTicker(time.Duration(minutes) * time.Minute)
+		defer ticker.Stop()
+
+		go func() {
+			jobs.FetchBets(app, 0)
+			for {
+				select {
+				case <-ticker.C:
+					jobs.FetchBets(app, 0)
+				}
+			}
+		}()
+	}
 
 	log.Println("🥖 Server started at port 8080!")
 	http.ListenAndServe(":8080", app.Scs.LoadAndSave(r))
