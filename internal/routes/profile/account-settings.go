@@ -61,8 +61,7 @@ func PostAccountSettings(app *app.App) http.HandlerFunc {
 			}
 
 			key := "username_change:" + utils.EncodeUUID(user.ID.Bytes)
-			err = app.Limiter.Consume(r.Context(), key, usernameChangeLimitOpts)
-			if err == ratelimiter.RateLimited {
+			if !app.Limiter.Allow(r.Context(), key, usernameChangeLimitOpts) {
 				jsonutils.Write(w, AccountSettingsResponse{
 					Type:    "username",
 					Message: "accountSettings.usernameChangedTooManyTimes.message",
@@ -87,6 +86,8 @@ func PostAccountSettings(app *app.App) http.HandlerFunc {
 				}, http.StatusForbidden)
 				return
 			}
+
+			app.Limiter.Consume(r.Context(), key, usernameChangeLimitOpts)
 
 			err = qtx.UpdateUsername(r.Context(), db.UpdateUsernameParams{
 				ID:       user.ID,

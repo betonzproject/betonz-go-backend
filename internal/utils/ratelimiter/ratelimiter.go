@@ -24,6 +24,18 @@ func NewLimiter(redis *redis.Client) *Limiter {
 	return &Limiter{redis: redis}
 }
 
+// Returns whether a token can be consumed based on fixed window rate limiting.
+func (l *Limiter) Allow(ctx context.Context, key string, opts LimiterOptions) bool {
+	result, err := l.redis.Get(ctx, key).Int()
+	if err != nil {
+		if !errors.Is(err, redis.Nil) {
+			log.Panicln("Can't get redis: " + err.Error())
+		}
+		return true
+	}
+	return result < opts.Tokens
+}
+
 // Consumes a token based on fixed window rate limiting.
 //
 // If the limit is reached, it returns `ratelimiter.RateLimited`.
