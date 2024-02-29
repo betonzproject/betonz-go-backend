@@ -60,6 +60,9 @@ WHERE
 ORDER BY
 	tr.id DESC;
 
+-- name: GetPendingTransactionRequestCount :one
+SELECT COUNT(*) FROM "TransactionRequest" WHERE status = 'PENDING';
+
 -- name: HasRecentDepositRequestsByUserId :one
 SELECT EXISTS (
 	SELECT

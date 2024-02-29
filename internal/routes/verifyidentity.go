@@ -155,6 +155,8 @@ func PostVerifyIdentity(app *app.App) http.HandlerFunc {
 				log.Panicln("Can't update identity verification request: " + err2.Error())
 			}
 
+			app.EventServer.NotifyAdmins("request")
+
 			w.WriteHeader(http.StatusCreated)
 			return
 		}

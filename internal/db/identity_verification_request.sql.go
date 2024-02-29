@@ -187,6 +187,17 @@ func (q *Queries) GetLatestIdentityVerificationRequestByUserId(ctx context.Conte
 	return i, err
 }
 
+const getPendingIdentityVerificationRequestCount = `-- name: GetPendingIdentityVerificationRequestCount :one
+SELECT COUNT(*) FROM "IdentityVerificationRequest" WHERE status = 'PENDING'
+`
+
+func (q *Queries) GetPendingIdentityVerificationRequestCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, getPendingIdentityVerificationRequestCount)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const updateIdentityVerificationRequestById = `-- name: UpdateIdentityVerificationRequestById :exec
 UPDATE
 	"IdentityVerificationRequest"

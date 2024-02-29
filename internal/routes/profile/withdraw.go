@@ -123,6 +123,8 @@ func PostWithdraw(app *app.App) http.HandlerFunc {
 			log.Panicln("Can't create withdraw request: " + err.Error())
 		}
 
+		app.EventServer.NotifyAdmins("request")
+
 		tx.Commit(r.Context())
 
 		w.WriteHeader(http.StatusOK)

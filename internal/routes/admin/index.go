@@ -13,8 +13,10 @@ import (
 )
 
 type Response struct {
-	User       *db.GetUserByIdRow `json:"user"`
-	Permissons []acl.Permission   `json:"permissions"`
+	User                                    *db.GetUserByIdRow `json:"user"`
+	PendingTransactionRequestCount          int64              `json:"pendingTransactionRequestCount"`
+	PendingIdentityVerificationRequestCount int64              `json:"pendingIdentityVerificationRequestCount"`
+	Permissons                              []acl.Permission   `json:"permissions"`
 }
 
 func GetIndex(app *app.App) http.HandlerFunc {
@@ -23,6 +25,22 @@ func GetIndex(app *app.App) http.HandlerFunc {
 		if err != nil {
 			jsonutils.Write(w, Response{}, http.StatusOK)
 			return
+		}
+
+		var pendingTransactionRequestCount int64
+		if acl.IsAuthorized(user.Role, acl.ManageTransactionRequests) {
+			pendingTransactionRequestCount, err = app.DB.GetPendingTransactionRequestCount(r.Context())
+			if err != nil {
+				log.Panicln("Can't get pending transaction request count: " + err.Error())
+			}
+		}
+
+		var pendingIdentityVerificationRequestCount int64
+		if acl.IsAuthorized(user.Role, acl.ManageIdentityVerificationRequests) {
+			pendingIdentityVerificationRequestCount, err = app.DB.GetPendingIdentityVerificationRequestCount(r.Context())
+			if err != nil {
+				log.Panicln("Can't get pending identity verification request count: " + err.Error())
+			}
 		}
 
 		event, err := app.DB.GetActiveEventTodayByUserId(r.Context(), user.ID)
@@ -38,6 +56,11 @@ func GetIndex(app *app.App) http.HandlerFunc {
 			}
 		}
 
-		jsonutils.Write(w, Response{User: &user, Permissons: acl.Acl[user.Role]}, http.StatusOK)
+		jsonutils.Write(w, Response{
+			User:                                    &user,
+			PendingTransactionRequestCount:          pendingTransactionRequestCount,
+			PendingIdentityVerificationRequestCount: pendingIdentityVerificationRequestCount,
+			Permissons:                              acl.Acl[user.Role],
+		}, http.StatusOK)
 	}
 }

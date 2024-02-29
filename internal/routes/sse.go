@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/auth"
@@ -22,7 +23,7 @@ func GetSse(app *app.App) http.HandlerFunc {
 		rand.Read(randomBytes)
 
 		connection := app.EventServer.Subscribe([16]byte(randomBytes), user)
-		log.Printf("%s (%x) connected to SSE channel", user.Username, randomBytes)
+		log.Printf("%x (%s) connected to SSE channel", randomBytes, user.Username)
 
 		rc := http.NewResponseController(w)
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -34,11 +35,14 @@ func GetSse(app *app.App) http.HandlerFunc {
 		for {
 			select {
 			case <-r.Context().Done():
-				log.Printf("%s (%x) disconnected from SSE channel", user.Username, randomBytes)
+				log.Printf("%x (%s) disconnected from SSE channel", randomBytes, user.Username)
 				app.EventServer.Unsubscribe([16]byte(randomBytes))
 				return
+			case <-time.After(time.Duration(30 * time.Second)):
+				fmt.Fprint(w, "data: keepalive\n\n")
+				rc.Flush()
 			case message := <-connection.MessageChannel:
-				log.Printf("Sending message %s to %s\n", message, user.Username)
+				log.Printf("Sending message %s to %x (%s)\n", message, randomBytes, user.Username)
 				fmt.Fprintf(w, "data: %s\n\n", message)
 				rc.Flush()
 			}

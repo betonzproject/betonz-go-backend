@@ -38,3 +38,11 @@ func (s *EventServer) Notify(userId pgtype.UUID, message string) {
 		}
 	}
 }
+
+func (s *EventServer) NotifyAdmins(message string) {
+	for _, connection := range s.connections {
+		if connection.User.Role == db.RoleADMIN || connection.User.Role == db.RoleSUPERADMIN {
+			connection.MessageChannel <- message
+		}
+	}
+}

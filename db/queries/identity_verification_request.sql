@@ -33,6 +33,9 @@ SELECT * FROM "IdentityVerificationRequest" WHERE id = $1;
 -- name: GetLatestIdentityVerificationRequestByUserId :one
 SELECT * FROM "IdentityVerificationRequest" WHERE "userId" = $1 AND status <> 'REJECTED' ORDER BY "createdAt" DESC LIMIT 1;
 
+-- name: GetPendingIdentityVerificationRequestCount :one
+SELECT COUNT(*) FROM "IdentityVerificationRequest" WHERE status = 'PENDING';
+
 -- name: CreateIdentityVerificationRequest :exec
 INSERT INTO
 	"IdentityVerificationRequest" ("userId", "nricName", nric, dob, "nricFront", "nricBack", "holderFace", status, "updatedAt")

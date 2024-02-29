@@ -134,6 +134,17 @@ func (q *Queries) GetNewPlayerWithTransactionsCount(ctx context.Context, arg Get
 	return count, err
 }
 
+const getPendingTransactionRequestCount = `-- name: GetPendingTransactionRequestCount :one
+SELECT COUNT(*) FROM "TransactionRequest" WHERE status = 'PENDING'
+`
+
+func (q *Queries) GetPendingTransactionRequestCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, getPendingTransactionRequestCount)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getPlayerWithTransactionsCount = `-- name: GetPlayerWithTransactionsCount :one
 SELECT
 	count(*)
