@@ -94,6 +94,7 @@ WHERE
 	)
 	AND (
 		sqlc.narg('search')::TEXT IS NULL
+		OR "rowNumber"::TEXT ILIKE '%' || @search || '%'
 		OR username ILIKE '%' || @search || '%'
 		OR email ILIKE '%' || @search || '%'
 		OR "displayName" ILIKE '%' || @search || '%'

@@ -82,6 +82,7 @@ WHERE
 		$2::TEXT IS NULL
 		OR u.username ILIKE '%' || $2 || '%'
 		OR u2.username ILIKE '%' || $2 || '%'
+		OR ivr.id::TEXT ILIKE '%' || $2 || '%'
 		OR ivr."nricName" ILIKE '%' || $2 || '%'
 		OR ivr.nric ILIKE '%' || $2 || '%'
 		OR ivr.remarks ILIKE '%' || $2 || '%'

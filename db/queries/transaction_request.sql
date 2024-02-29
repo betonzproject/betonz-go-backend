@@ -22,6 +22,7 @@ WHERE
 		sqlc.narg('search')::TEXT IS NULL
 		OR u.username ILIKE '%' || @search || '%'
 		OR u2.username ILIKE '%' || @search || '%'
+		OR tr.id::TEXT ILIKE '%' || @search || '%'
 		OR tr."bankAccountName" ILIKE '%' || @search || '%'
 		OR tr."beneficiaryBankAccountName" ILIKE '%' || @search || '%'
 		OR tr.remarks ILIKE '%' || @search || '%'

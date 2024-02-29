@@ -367,6 +367,7 @@ WHERE
 	)
 	AND (
 		$2::TEXT IS NULL
+		OR "rowNumber"::TEXT ILIKE '%' || $2 || '%'
 		OR username ILIKE '%' || $2 || '%'
 		OR email ILIKE '%' || $2 || '%'
 		OR "displayName" ILIKE '%' || $2 || '%'

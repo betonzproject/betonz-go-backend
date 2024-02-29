@@ -23,6 +23,7 @@ FROM
 WHERE
 	(
 		$3::TEXT IS NULL
+		OR b.id::TEXT ILIKE '%' || $3 || '%'
 		OR u.username ILIKE '%' || $3 || '%'
 		OR b."providerUsername" ILIKE '%' || $3 || '%'
 	)

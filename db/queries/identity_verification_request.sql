@@ -18,6 +18,7 @@ WHERE
 		sqlc.narg('search')::TEXT IS NULL
 		OR u.username ILIKE '%' || @search || '%'
 		OR u2.username ILIKE '%' || @search || '%'
+		OR ivr.id::TEXT ILIKE '%' || @search || '%'
 		OR ivr."nricName" ILIKE '%' || @search || '%'
 		OR ivr.nric ILIKE '%' || @search || '%'
 		OR ivr.remarks ILIKE '%' || @search || '%'

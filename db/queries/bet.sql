@@ -10,6 +10,7 @@ FROM
 WHERE
 	(
 		sqlc.narg('search')::TEXT IS NULL
+		OR b.id::TEXT ILIKE '%' || @search || '%'
 		OR u.username ILIKE '%' || @search || '%'
 		OR b."providerUsername" ILIKE '%' || @search || '%'
 	)

@@ -263,6 +263,7 @@ WHERE
 		$3::TEXT IS NULL
 		OR u.username ILIKE '%' || $3 || '%'
 		OR u2.username ILIKE '%' || $3 || '%'
+		OR tr.id::TEXT ILIKE '%' || $3 || '%'
 		OR tr."bankAccountName" ILIKE '%' || $3 || '%'
 		OR tr."beneficiaryBankAccountName" ILIKE '%' || $3 || '%'
 		OR tr.remarks ILIKE '%' || $3 || '%'
