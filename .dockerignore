@@ -1,0 +1,24 @@
+## Common
+README.md
+CHANGELOG.md
+docker-compose.yml
+Dockerfile
+
+## Git
+.git
+.gitattributes
+.gitignore
+
+## Misc
+.env
+.env.example
+.sql-formatter.json
+dump.rdb
+uploads
+build-and-push.config
+build-and-push.config.example
+build-and-push.sh
+captain-definition
+betonz-go
+seed.sh
+sqlc.yaml

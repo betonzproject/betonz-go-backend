@@ -1,3 +1,5 @@
 .env
 dump.rdb
 uploads/
+build-and-push.config
+betonz-go
