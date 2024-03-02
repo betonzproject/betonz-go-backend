@@ -2,6 +2,7 @@ package routes
 
 import (
 	"crypto/rand"
+	"errors"
 	"log"
 	"net/http"
 	"net/url"
@@ -15,6 +16,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/doorman2137/betonz-go/internal/utils/ratelimiter"
 	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -100,6 +102,10 @@ func PostLogin(app *app.App) http.HandlerFunc {
 			})
 		}
 		if err != nil {
+			if !errors.Is(err, pgx.ErrNoRows) {
+				log.Panicln("Can't get user: " + err.Error())
+			}
+
 			// Dummy hash to prevent timing attack
 			utils.Argon2IDVerify(loginForm.Password, "$argon2id$v=19$m=65536,t=3,p=4$YGmXRJpAsWMPAU8eMrFFIw$P5NwS7fKyuGaU+siAOFeNBmfbucV3Rrj7rEUMSB4vc8")
 
