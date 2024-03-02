@@ -15,6 +15,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /betonz-go
 
 FROM alpine:3.19
 
+# https://stackoverflow.com/questions/60103251/time-loadlocation-works-regularly-but-throws-an-error-on-my-docker-instance-how
+RUN apk --no-cache add tzdata
+
 COPY template.html .
 COPY --from=builder betonz-go .
 
