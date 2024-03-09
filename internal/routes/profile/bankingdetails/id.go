@@ -83,6 +83,15 @@ func PatchBankById(app *app.App) http.HandlerFunc {
 			return
 		}
 
+		exisitingBank, err := app.DB.GetBankByBankNameAndNumber(r.Context(), db.GetBankByBankNameAndNumberParams{
+			Name:          db.BankName(patchBankForm.BankName),
+			AccountNumber: patchBankForm.AccountNumber,
+		})
+		if err == nil && exisitingBank.ID != bank.ID {
+			http.Error(w, "bank.alreadyExist.message", http.StatusBadRequest)
+			return
+		}
+
 		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
 

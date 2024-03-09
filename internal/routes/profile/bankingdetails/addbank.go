@@ -39,6 +39,15 @@ func AddBank(app *app.App) http.HandlerFunc {
 		// Strip spaces
 		addBankForm.AccountNumber = strings.ReplaceAll(addBankForm.AccountNumber, " ", "")
 
+		_, err = app.DB.GetBankByBankNameAndNumber(r.Context(), db.GetBankByBankNameAndNumberParams{
+			Name:          db.BankName(addBankForm.BankName),
+			AccountNumber: addBankForm.AccountNumber,
+		})
+		if err == nil {
+			http.Error(w, "bank.alreadyExist.message", http.StatusBadRequest)
+			return
+		}
+
 		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
 
