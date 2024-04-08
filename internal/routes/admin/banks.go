@@ -57,7 +57,7 @@ func PostBanks(app *app.App) http.HandlerFunc {
 
 		if r.URL.Query().Has("/create") {
 			var createBankForm CreateBankForm
-			if formutils.ParseDecodeValidate(app, w, r, &createBankForm) != nil {
+			if formutils.ParseDecodeValidateMultipart(app, w, r, &createBankForm) != nil {
 				return
 			}
 
@@ -84,7 +84,7 @@ func PostBanks(app *app.App) http.HandlerFunc {
 			return
 		} else if r.URL.Query().Has("/delete") {
 			var deleteBankForm DeleteBankForm
-			if formutils.ParseDecodeValidate(app, w, r, &deleteBankForm) != nil {
+			if formutils.ParseDecodeValidateMultipart(app, w, r, &deleteBankForm) != nil {
 				return
 			}
 
@@ -131,7 +131,7 @@ func PatchBanks(app *app.App) http.HandlerFunc {
 		}
 
 		var patchBankForm PatchBankForm
-		if formutils.ParseDecodeValidate(app, w, r, &patchBankForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &patchBankForm) != nil {
 			return
 		}
 

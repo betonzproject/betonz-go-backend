@@ -75,7 +75,7 @@ func PostPlayers(app *app.App) http.HandlerFunc {
 		}
 
 		var manageUserForm ManageUserForm
-		if formutils.ParseDecodeValidate(app, w, r, &manageUserForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &manageUserForm) != nil {
 			return
 		}
 

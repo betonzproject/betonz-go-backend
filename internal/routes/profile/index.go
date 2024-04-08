@@ -58,6 +58,7 @@ type UpdateProfileForm struct {
 
 type PostProfileResponse struct {
 	ResentVerification bool `json:"resentVerification"`
+	ProfileUpdate      bool `json:"profileUpdate"`
 }
 
 func PostProfile(app *app.App) http.HandlerFunc {
@@ -77,7 +78,7 @@ func PostProfile(app *app.App) http.HandlerFunc {
 
 			var updateProfileForm UpdateProfileForm
 			phone := ""
-			if formutils.ParseDecodeValidate(app, w, r, &updateProfileForm) != nil {
+			if formutils.ParseDecodeValidateMultipart(app, w, r, &updateProfileForm) != nil {
 				return
 			}
 			if updateProfileForm.PhoneNumber != "" {
@@ -165,7 +166,14 @@ func PostProfile(app *app.App) http.HandlerFunc {
 
 			tx.Commit(r.Context())
 
-			jsonutils.Write(w, PostProfileResponse{}, http.StatusOK)
+			jsonutils.Write(w, PostProfileResponse{ProfileUpdate: true}, http.StatusOK)
+			return
+		} else if r.URL.Query().Has("/resendVerification") && user.PendingEmail.Valid {
+			requestVerification(qtx, r, user, user.PendingEmail.String)
+
+			tx.Commit(r.Context())
+
+			jsonutils.Write(w, PostProfileResponse{ResentVerification: true}, http.StatusOK)
 			return
 		} else if r.URL.Query().Has("/restoreWallet") {
 			errors := restoreWallet(qtx, r.Context(), user)
@@ -181,17 +189,78 @@ func PostProfile(app *app.App) http.HandlerFunc {
 
 			jsonutils.Write(w, PostProfileResponse{}, http.StatusOK)
 			return
-		} else if r.URL.Query().Has("/resendVerification") && user.PendingEmail.Valid {
-			requestVerification(qtx, r, user, user.PendingEmail.String)
-
-			tx.Commit(r.Context())
-
-			jsonutils.Write(w, PostProfileResponse{ResentVerification: true}, http.StatusOK)
-			return
 		}
 
 		w.WriteHeader(http.StatusBadRequest)
 	}
+}
+
+func requestVerification(q *db.Queries, r *http.Request, user db.User, newEmail string) {
+	randomBytes := make([]byte, 32)
+	rand.Read(randomBytes)
+	token := base64.RawURLEncoding.EncodeToString(randomBytes)
+
+	hash := sha256.New()
+	hash.Write([]byte(token))
+	tokenHash := base64.RawURLEncoding.EncodeToString(hash.Sum(nil))
+
+	err := q.UpsertVerificationToken(r.Context(), db.UpsertVerificationTokenParams{
+		TokenHash: tokenHash,
+		UserId:    user.ID,
+	})
+	if err != nil {
+		log.Panicln("Can't create verification token: ", err)
+	}
+
+	var templateData struct {
+		Subject string
+		Body    string
+	}
+
+	cookie, err := r.Cookie("i18next")
+	var lng string
+	if err != nil {
+		lng = "en"
+	} else {
+		lng = cookie.Value
+	}
+	href := r.Header.Get("Origin") + "/verify-email/" + token
+
+	if lng == "my" {
+		templateData = struct {
+			Subject string
+			Body    string
+		}{
+			Subject: "အီးမေးအတည်ပြု",
+			Body: `
+				<p>မင်္ဂလာပါ ` + user.Username + `ရေ,</p>
+				<p>သင်၏ အီးမေးအား ` + newEmail + ` သို ချိန်းပြီးပါပြီ။ အောက်ပါလင့်ကို နှိပ်ပီး အတည်ပြုပေးပါ။ လင့်ထဲသို တစ်နာရီအတွင်း သာ ဝင်ရောက်ခွင့်ရှိမည်</p>
+				<center style="margin-top: 10px;"><button style="color:white;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none"><a style="color:black;text-decoration:none" href="` + href + "\">Verify Email</a></button></center>",
+		}
+	} else {
+		templateData = struct {
+			Subject string
+			Body    string
+		}{
+			Subject: "Verify Email",
+			Body: `
+				<p>Hello ` + user.Username + `,</p>
+				<p>You have requested to verify your email ` + newEmail + `. Click the link below to verify your email. The link will expire in 1 hour.</p>
+				<center style="margin-top: 10px;"><button style="color:white;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none"><a style="color:black;text-decoration:none" href="` + href + "\">Verify Email</a></button></center>",
+		}
+	}
+
+	body, err := utils.ParseTemplate("template.html", templateData)
+	if err != nil {
+		log.Panicln("Can't parse template : ", err.Error())
+	}
+
+	go func() {
+		err := mailutils.SendMail(newEmail, body, templateData.Subject)
+		if err != nil {
+			log.Println("Can't send mail: " + err.Error())
+		}
+	}()
 }
 
 func restoreWallet(q *db.Queries, ctx context.Context, user db.User) []string {
@@ -274,72 +343,4 @@ func restoreWallet(q *db.Queries, ctx context.Context, user db.User) []string {
 	}
 
 	return errors
-}
-
-func requestVerification(q *db.Queries, r *http.Request, user db.User, newEmail string) {
-	randomBytes := make([]byte, 32)
-	rand.Read(randomBytes)
-	token := base64.RawURLEncoding.EncodeToString(randomBytes)
-
-	hash := sha256.New()
-	hash.Write([]byte(token))
-	tokenHash := base64.RawURLEncoding.EncodeToString(hash.Sum(nil))
-
-	err := q.UpsertVerificationToken(r.Context(), db.UpsertVerificationTokenParams{
-		TokenHash: tokenHash,
-		UserId:    user.ID,
-	})
-	if err != nil {
-		log.Panicln("Can't create verification token: ", err)
-	}
-
-	var templateData struct {
-		Subject string
-		Body    string
-	}
-
-	cookie, err := r.Cookie("i18next")
-	var lng string
-	if err != nil {
-		lng = "en"
-	} else {
-		lng = cookie.Value
-	}
-	href := r.Header.Get("Origin") + "/verify-email/" + token
-
-	if lng == "my" {
-		templateData = struct {
-			Subject string
-			Body    string
-		}{
-			Subject: "အီးမေးအတည်ပြု",
-			Body: `
-				<p>မင်္ဂလာပါ ` + user.Username + `ရေ,</p>
-				<p>သင်၏ အီးမေးအား ` + newEmail + ` သို ချိန်းပြီးပါပြီ။ အောက်ပါလင့်ကို နှိပ်ပီး အတည်ပြုပေးပါ။ လင့်ထဲသို တစ်နာရီအတွင်း သာ ဝင်ရောက်ခွင့်ရှိမည်</p>
-				<center style="margin-top: 10px;"><button style="color:white;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none"><a style="color:black;text-decoration:none" href="` + href + "\">Verify Email</a></button></center>",
-		}
-	} else {
-		templateData = struct {
-			Subject string
-			Body    string
-		}{
-			Subject: "Verify Email",
-			Body: `
-				<p>Hello ` + user.Username + `,</p>
-				<p>You have requested to verify your email ` + newEmail + `. Click the link below to verify your email. The link will expire in 1 hour.</p>
-				<center style="margin-top: 10px;"><button style="color:white;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none"><a style="color:black;text-decoration:none" href="` + href + "\">Verify Email</a></button></center>",
-		}
-	}
-
-	body, err := utils.ParseTemplate("template.html", templateData)
-	if err != nil {
-		log.Panicln("Can't parse template : ", err.Error())
-	}
-
-	go func() {
-		err := mailutils.SendMail(newEmail, body, templateData.Subject)
-		if err != nil {
-			log.Println("Can't send mail: " + err.Error())
-		}
-	}()
 }

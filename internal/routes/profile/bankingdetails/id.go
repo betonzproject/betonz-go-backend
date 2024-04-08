@@ -57,7 +57,7 @@ func PatchBankById(app *app.App) http.HandlerFunc {
 		}
 
 		var patchBankForm BankForm
-		if formutils.ParseDecodeValidate(app, w, r, &patchBankForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &patchBankForm) != nil {
 			return
 		}
 

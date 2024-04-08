@@ -87,8 +87,11 @@ func PostTransfer(app *app.App) http.HandlerFunc {
 			return
 		}
 
+		tx, qtx := transactionutils.Begin(app, r.Context())
+		defer tx.Rollback(r.Context())
+
 		var transferForm TransferForm
-		if formutils.ParseDecodeValidate(app, w, r, &transferForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &transferForm) != nil {
 			return
 		}
 
@@ -102,9 +105,6 @@ func PostTransfer(app *app.App) http.HandlerFunc {
 			"toWallet":   transferForm.ToWallet,
 			"amount":     transferForm.Amount,
 		}
-
-		tx, qtx := transactionutils.Begin(app, r.Context())
-		defer tx.Rollback(r.Context())
 
 		productsUnderMaintenance, err := qtx.GetMaintenanceProductCodes(r.Context())
 		if err != nil {

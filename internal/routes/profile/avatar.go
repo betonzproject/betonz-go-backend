@@ -23,7 +23,7 @@ func PostAvatar(app *app.App) http.HandlerFunc {
 		}
 
 		var avatarForm AvatarForm
-		if formutils.ParseDecodeValidate(app, w, r, &avatarForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &avatarForm) != nil {
 			return
 		}
 

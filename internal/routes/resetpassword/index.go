@@ -36,7 +36,7 @@ var passwordResetUsernameLimitOpts = ratelimiter.LimiterOptions{
 func PostPasswordReset(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var resetPasswordRequestForm ResetPasswordRequestForm
-		if formutils.ParseDecodeValidate(app, w, r, &resetPasswordRequestForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &resetPasswordRequestForm) != nil {
 			return
 		}
 

@@ -66,7 +66,7 @@ func PostWithdraw(app *app.App) http.HandlerFunc {
 		}
 
 		var withdrawForm WithdrawForm
-		if formutils.ParseDecodeValidate(app, w, r, &withdrawForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &withdrawForm) != nil {
 			return
 		}
 

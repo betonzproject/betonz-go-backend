@@ -47,7 +47,7 @@ func DeleteBank(app *app.App) http.HandlerFunc {
 		}
 
 		var deleteBankForm DeleteBankForm
-		if formutils.ParseDecodeValidate(app, w, r, &deleteBankForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &deleteBankForm) != nil {
 			return
 		}
 		bankId, _ := utils.ParseUUID(deleteBankForm.Id)
@@ -62,7 +62,7 @@ func DeleteBank(app *app.App) http.HandlerFunc {
 
 		err = utils.LogEvent(qtx, r, user.ID, db.EventTypeBANKDELETE, db.EventResultSUCCESS, "", map[string]any{
 			"bankId": utils.EncodeUUID(bankId.Bytes),
-			"bank":    string(bank.Name) + " " + string(bank.AccountName) + " " + string(bank.AccountNumber),
+			"bank":   string(bank.Name) + " " + string(bank.AccountName) + " " + string(bank.AccountNumber),
 		})
 		if err != nil {
 			log.Panicln("Can't log event: " + err.Error())

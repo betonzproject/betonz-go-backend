@@ -48,7 +48,7 @@ func PostNotifications(app *app.App) http.HandlerFunc {
 
 		if r.URL.Query().Has("/delete") {
 			var deleteNotificationForm DeleteNotificationForm
-			if formutils.ParseDecodeValidate(app, w, r, &deleteNotificationForm) != nil {
+			if formutils.ParseDecodeValidateMultipart(app, w, r, &deleteNotificationForm) != nil {
 				return
 			}
 
