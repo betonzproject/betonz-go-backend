@@ -139,6 +139,7 @@ func PostLogin(app *app.App) http.HandlerFunc {
 
 		// If the user is a player and email is not verified, ask for email verification
 		if !adminMode && !user.IsEmailVerified {
+			log.Println(user)
 			tx, qtx := transactionutils.Begin(app, r.Context())
 			defer tx.Rollback(r.Context())
 
