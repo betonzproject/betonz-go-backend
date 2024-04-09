@@ -32,7 +32,7 @@ var registerIpLimitOpts = ratelimiter.LimiterOptions{
 func PostRegister(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var registerForm RegisterForm
-		if formutils.ParseDecodeValidate(app, w, r, &registerForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &registerForm) != nil {
 			return
 		}
 

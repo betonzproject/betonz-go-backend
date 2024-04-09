@@ -47,7 +47,7 @@ func PostAccountSettings(app *app.App) http.HandlerFunc {
 
 		if r.URL.Query().Has("/username") {
 			var updateUsernameForm UpdateUsernameForm
-			if formutils.ParseDecodeValidate(app, w, r, &updateUsernameForm) != nil {
+			if formutils.ParseDecodeValidateMultipart(app, w, r, &updateUsernameForm) != nil {
 				return
 			}
 
@@ -114,7 +114,7 @@ func PostAccountSettings(app *app.App) http.HandlerFunc {
 			return
 		} else if r.URL.Query().Has("/password") {
 			var updatePasswordForm UpdatePasswordForm
-			if formutils.ParseDecodeValidate(app, w, r, &updatePasswordForm) != nil {
+			if formutils.ParseDecodeValidateMultipart(app, w, r, &updatePasswordForm) != nil {
 				return
 			}
 

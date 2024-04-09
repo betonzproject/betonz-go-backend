@@ -55,7 +55,7 @@ type ResetPasswordForm struct {
 func PostPasswordResetToken(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var resetPasswordForm ResetPasswordForm
-		if formutils.ParseDecodeValidate(app, w, r, &resetPasswordForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &resetPasswordForm) != nil {
 			return
 		}
 

@@ -74,7 +74,7 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 		}
 
 		var depositForm DepositForm
-		if formutils.ParseDecodeValidate(app, w, r, &depositForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &depositForm) != nil {
 			return
 		}
 

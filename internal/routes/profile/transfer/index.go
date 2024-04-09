@@ -88,7 +88,7 @@ func PostTransfer(app *app.App) http.HandlerFunc {
 		}
 
 		var transferForm TransferForm
-		if formutils.ParseDecodeValidate(app, w, r, &transferForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &transferForm) != nil {
 			return
 		}
 

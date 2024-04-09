@@ -32,7 +32,7 @@ func AddBank(app *app.App) http.HandlerFunc {
 		}
 
 		var addBankForm BankForm
-		if formutils.ParseDecodeValidate(app, w, r, &addBankForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &addBankForm) != nil {
 			return
 		}
 

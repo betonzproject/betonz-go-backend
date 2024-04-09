@@ -91,7 +91,7 @@ func PostVerifyIdentity(app *app.App) http.HandlerFunc {
 		switch step {
 		case 1:
 			var identityVerificationForm IdentityVerificationFormStep1
-			err2 := formutils.ParseDecodeValidate(app, w, r, &identityVerificationForm)
+			err2 := formutils.ParseDecodeValidateMultipart(app, w, r, &identityVerificationForm)
 			if err2 != nil {
 				return
 			}

@@ -53,7 +53,7 @@ var loginIpUsernameLimitOpts = ratelimiter.LimiterOptions{
 func PostLogin(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var loginForm LoginForm
-		if formutils.ParseDecodeValidate(app, w, r, &loginForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &loginForm) != nil {
 			return
 		}
 

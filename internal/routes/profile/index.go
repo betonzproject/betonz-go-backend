@@ -77,7 +77,7 @@ func PostProfile(app *app.App) http.HandlerFunc {
 
 			var updateProfileForm UpdateProfileForm
 			phone := ""
-			if formutils.ParseDecodeValidate(app, w, r, &updateProfileForm) != nil {
+			if formutils.ParseDecodeValidateMultipart(app, w, r, &updateProfileForm) != nil {
 				return
 			}
 			if updateProfileForm.PhoneNumber != "" {

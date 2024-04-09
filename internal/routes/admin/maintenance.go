@@ -110,7 +110,7 @@ func PostMaintenance(app *app.App) http.HandlerFunc {
 
 		if r.URL.Query().Has("/create") {
 			var createMaintenance CreateMaintenanceItemForm
-			if formutils.ParseDecodeValidate(app, w, r, &createMaintenance) != nil {
+			if formutils.ParseDecodeValidateMultipart(app, w, r, &createMaintenance) != nil {
 				return
 			}
 
@@ -156,7 +156,7 @@ func PostMaintenance(app *app.App) http.HandlerFunc {
 			}, http.StatusCreated)
 		} else if r.URL.Query().Has("/delete") {
 			var deleteMaintenanceItemForm DeleteMaintenanceItemForm
-			if formutils.ParseDecodeValidate(app, w, r, &deleteMaintenanceItemForm) != nil {
+			if formutils.ParseDecodeValidateMultipart(app, w, r, &deleteMaintenanceItemForm) != nil {
 				return
 			}
 
@@ -176,7 +176,7 @@ func PostMaintenance(app *app.App) http.HandlerFunc {
 			}, http.StatusOK)
 		} else if r.URL.Query().Has("/update") {
 			var updateMaintenanceItemForm UpdateMaintenanceItemForm
-			if formutils.ParseDecodeValidate(app, w, r, &updateMaintenanceItemForm) != nil {
+			if formutils.ParseDecodeValidateMultipart(app, w, r, &updateMaintenanceItemForm) != nil {
 				return
 			}
 

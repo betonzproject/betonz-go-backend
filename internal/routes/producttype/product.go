@@ -96,7 +96,7 @@ func PostProduct(app *app.App) http.HandlerFunc {
 		}
 
 		var gameForm GameForm
-		if formutils.ParseDecodeValidate(app, w, r, &gameForm) != nil {
+		if formutils.ParseDecodeValidateMultipart(app, w, r, &gameForm) != nil {
 			return
 		}
 
