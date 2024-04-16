@@ -178,6 +178,7 @@ SET
 	"displayName" = $2,
 	"pendingEmail" = COALESCE(sqlc.arg('pendingEmail'), "pendingEmail"),
 	"phoneNumber" = $3,
+    "isEmailVerified"= $4,
 	"updatedAt" = now()
 WHERE
 	id = $1;

@@ -15,6 +15,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
 	"github.com/doorman2137/betonz-go/internal/utils/ratelimiter"
+	"github.com/doorman2137/betonz-go/internal/utils/transactionutils"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -137,26 +138,25 @@ func PostLogin(app *app.App) http.HandlerFunc {
 		}
 
 		// If the user is a player and email is not verified, ask for email verification
-		// if !adminMode && !user.IsEmailVerified {
-		// 	log.Println(user)
-		// 	tx, qtx := transactionutils.Begin(app, r.Context())
-		// 	defer tx.Rollback(r.Context())
+		if !adminMode && !user.IsEmailVerified {
+			tx, qtx := transactionutils.Begin(app, r.Context())
+			defer tx.Rollback(r.Context())
 
-		// 	SendEmailVerification(qtx, r, user, nil)
+			SendEmailVerification(qtx, r, user, nil)
 
-		// 	err := utils.LogEvent(qtx, r, user.ID, db.EventTypeLOGIN, db.EventResultFAIL, "Email is not verified", map[string]any{
-		// 		"redirectTo": redirectTo,
-		// 		"adminMode":  adminMode,
-		// 	})
-		// 	if err != nil {
-		// 		log.Panicln("Can't log event: " + err.Error())
-		// 	}
+			err := utils.LogEvent(qtx, r, user.ID, db.EventTypeLOGIN, db.EventResultFAIL, "Email is not verified", map[string]any{
+				"redirectTo": redirectTo,
+				"adminMode":  adminMode,
+			})
+			if err != nil {
+				log.Panicln("Can't log event: " + err.Error())
+			}
 
-		// 	tx.Commit(r.Context())
+			tx.Commit(r.Context())
 
-		// 	jsonutils.Write(w, LoginResponse{user.Email}, http.StatusOK)
-		// 	return
-		// }
+			jsonutils.Write(w, LoginResponse{user.Email}, http.StatusOK)
+			return
+		}
 
 		app.Scs.RenewToken(r.Context())
 		app.Scs.Put(r.Context(), "userId", user.ID.Bytes[:])

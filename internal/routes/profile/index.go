@@ -71,6 +71,8 @@ func PostProfile(app *app.App) http.HandlerFunc {
 		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
 
+		isEmailVerified := user.IsEmailVerified
+
 		if r.URL.Query().Has("/update") {
 			if acl.Authorize(app, w, r, user.Role, acl.UpdateProfile) != nil {
 				return
@@ -90,6 +92,8 @@ func PostProfile(app *app.App) http.HandlerFunc {
 				updateEvent["displayName"] = updateProfileForm.DisplayName
 			}
 			if user.PendingEmail.Valid && updateProfileForm.Email != user.PendingEmail.String || !user.PendingEmail.Valid && updateProfileForm.Email != user.Email {
+				isEmailVerified = false
+
 				updateEvent["email"] = updateProfileForm.Email
 
 				var templateData struct {
@@ -150,10 +154,11 @@ func PostProfile(app *app.App) http.HandlerFunc {
 			}
 
 			err = qtx.UpdateUser(r.Context(), db.UpdateUserParams{
-				ID:           user.ID,
-				DisplayName:  pgtype.Text{String: updateProfileForm.DisplayName, Valid: updateProfileForm.DisplayName != ""},
-				PendingEmail: pgtype.Text{String: updateProfileForm.Email, Valid: updateProfileForm.Email != ""},
-				PhoneNumber:  pgtype.Text{String: phone, Valid: phone != ""},
+				ID:              user.ID,
+				DisplayName:     pgtype.Text{String: updateProfileForm.DisplayName, Valid: updateProfileForm.DisplayName != ""},
+				PendingEmail:    pgtype.Text{String: updateProfileForm.Email, Valid: updateProfileForm.Email != ""},
+				PhoneNumber:     pgtype.Text{String: phone, Valid: phone != ""},
+				IsEmailVerified: isEmailVerified,
 			})
 			if err != nil {
 				log.Panicln("Can't update user: " + err.Error())

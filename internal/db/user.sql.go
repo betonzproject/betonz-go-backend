@@ -466,18 +466,20 @@ const updateUser = `-- name: UpdateUser :exec
 UPDATE "User"
 SET
 	"displayName" = $2,
-	"pendingEmail" = COALESCE($4, "pendingEmail"),
+	"pendingEmail" = COALESCE($5, "pendingEmail"),
 	"phoneNumber" = $3,
+    "isEmailVerified"= $4,
 	"updatedAt" = now()
 WHERE
 	id = $1
 `
 
 type UpdateUserParams struct {
-	ID           pgtype.UUID `json:"id"`
-	DisplayName  pgtype.Text `json:"displayName"`
-	PhoneNumber  pgtype.Text `json:"phoneNumber"`
-	PendingEmail pgtype.Text `json:"pendingEmail"`
+	ID              pgtype.UUID `json:"id"`
+	DisplayName     pgtype.Text `json:"displayName"`
+	PhoneNumber     pgtype.Text `json:"phoneNumber"`
+	IsEmailVerified bool        `json:"isEmailVerified"`
+	PendingEmail    pgtype.Text `json:"pendingEmail"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
@@ -485,6 +487,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 		arg.ID,
 		arg.DisplayName,
 		arg.PhoneNumber,
+		arg.IsEmailVerified,
 		arg.PendingEmail,
 	)
 	return err
