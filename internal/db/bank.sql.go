@@ -130,6 +130,31 @@ func (q *Queries) DeleteSystemBankById(ctx context.Context, id pgtype.UUID) (Ban
 	return i, err
 }
 
+const getBankByBankNameAndNumber = `-- name: GetBankByBankNameAndNumber :one
+SELECT id, "userId", name, "accountName", "accountNumber", "createdAt", "updatedAt", disabled FROM "Bank" WHERE "accountNumber" = $1 AND name = $2
+`
+
+type GetBankByBankNameAndNumberParams struct {
+	AccountNumber string   `json:"accountNumber"`
+	Name          BankName `json:"name"`
+}
+
+func (q *Queries) GetBankByBankNameAndNumber(ctx context.Context, arg GetBankByBankNameAndNumberParams) (Bank, error) {
+	row := q.db.QueryRow(ctx, getBankByBankNameAndNumber, arg.AccountNumber, arg.Name)
+	var i Bank
+	err := row.Scan(
+		&i.ID,
+		&i.UserId,
+		&i.Name,
+		&i.AccountName,
+		&i.AccountNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Disabled,
+	)
+	return i, err
+}
+
 const getBankById = `-- name: GetBankById :one
 SELECT id, "userId", name, "accountName", "accountNumber", "createdAt", "updatedAt", disabled FROM "Bank" WHERE id = $1
 `

@@ -61,6 +61,15 @@ func PostBanks(app *app.App) http.HandlerFunc {
 				return
 			}
 
+			_, err = app.DB.GetBankByBankNameAndNumber(r.Context(), db.GetBankByBankNameAndNumberParams{
+				Name:          db.BankName(createBankForm.BankName),
+				AccountNumber: createBankForm.AccountNumber,
+			})
+			if err == nil {
+				http.Error(w, "bank.alreadyExist.message", http.StatusBadRequest)
+				return
+			}
+
 			bank, err := qtx.CreateSystemBank(r.Context(), db.CreateSystemBankParams{
 				Name:          db.BankName(createBankForm.BankName),
 				AccountName:   createBankForm.AccountName,
@@ -144,6 +153,15 @@ func PatchBanks(app *app.App) http.HandlerFunc {
 		oldBank, err := app.DB.GetSystemBankById(r.Context(), bankId)
 		if err != nil {
 			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		_, err = app.DB.GetBankByBankNameAndNumber(r.Context(), db.GetBankByBankNameAndNumberParams{
+			Name:          oldBank.Name,
+			AccountNumber: patchBankForm.AccountNumber,
+		})
+		if err == nil {
+			http.Error(w, "bank.alreadyExist.message", http.StatusBadRequest)
 			return
 		}
 

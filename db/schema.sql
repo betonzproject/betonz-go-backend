@@ -69,10 +69,7 @@ CREATE TYPE betonz."EventType" AS ENUM (
     'FLAG',
     'SYSTEM_BANK_ADD',
     'SYSTEM_BANK_UPDATE',
-    'SYSTEM_BANK_DELETE',
-    'MAINTENANCE_ADD',
-    'MAINTENANCE_UPDATE',
-    'MAINTENANCE_DELETE'
+    'SYSTEM_BANK_DELETE'
 );
 
 
@@ -306,40 +303,6 @@ ALTER SEQUENCE betonz."IdentityVerificationRequests_id_seq" OWNED BY betonz."Ide
 
 
 --
--- Name: Maintenance; Type: TABLE; Schema: betonz; Owner: -
---
-
-CREATE TABLE betonz."Maintenance" (
-    id integer NOT NULL,
-    "productCode" integer NOT NULL,
-    "maintenancePeriod" tstzrange NOT NULL,
-    "gmtOffsetSecs" integer NOT NULL,
-    "createdAt" timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) with time zone NOT NULL
-);
-
-
---
--- Name: Maintenance_id_seq; Type: SEQUENCE; Schema: betonz; Owner: -
---
-
-CREATE SEQUENCE betonz."Maintenance_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: Maintenance_id_seq; Type: SEQUENCE OWNED BY; Schema: betonz; Owner: -
---
-
-ALTER SEQUENCE betonz."Maintenance_id_seq" OWNED BY betonz."Maintenance".id;
-
-
---
 -- Name: Notification; Type: TABLE; Schema: betonz; Owner: -
 --
 
@@ -545,13 +508,6 @@ ALTER TABLE ONLY betonz."IdentityVerificationRequest" ALTER COLUMN id SET DEFAUL
 
 
 --
--- Name: Maintenance id; Type: DEFAULT; Schema: betonz; Owner: -
---
-
-ALTER TABLE ONLY betonz."Maintenance" ALTER COLUMN id SET DEFAULT nextval('betonz."Maintenance_id_seq"'::regclass);
-
-
---
 -- Name: Notification id; Type: DEFAULT; Schema: betonz; Owner: -
 --
 
@@ -610,14 +566,6 @@ ALTER TABLE ONLY betonz."Flag"
 
 ALTER TABLE ONLY betonz."IdentityVerificationRequest"
     ADD CONSTRAINT "IdentityVerificationRequests_pkey" PRIMARY KEY (id);
-
-
---
--- Name: Maintenance Maintenance_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
---
-
-ALTER TABLE ONLY betonz."Maintenance"
-    ADD CONSTRAINT "Maintenance_pkey" PRIMARY KEY (id);
 
 
 --
@@ -847,5 +795,4 @@ INSERT INTO betonz.schema_migrations (version) VALUES
     ('20240218055649'),
     ('20240220030034'),
     ('20240223031215'),
-    ('20240224161223'),
-    ('20240228111636');
+    ('20240224161223');
