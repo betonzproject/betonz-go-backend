@@ -231,7 +231,6 @@ var AllProducts = []Product{
 var LiveCasinoProducts = []Product{
 	PragmaticPlay,
 	SexyBaccarat,
-	PlayNGo,
 	Allbet,
 	AsiaGaming,
 	SAGaming,
