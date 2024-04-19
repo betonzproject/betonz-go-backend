@@ -144,7 +144,7 @@ func SendEmailVerification(q *db.Queries, r *http.Request, user db.User, registe
 				<p>အကောင့်ဖွင့်ခြင်းအား ပီးမြောက်စေပီး game များစတင်ကစားနိုင်ရန်အတွက် 
 				email အတည်ပြုရန်သာကျန်ပါတော့သည်။ email အတည်ပြုခြင်းလင့် သည် 24 
 				နာရီကြာပီးချိန်တွင် သက်တမ်းကုန်ပါမည်။</p>
-				<center style="margin-top: 10px;"><button style="color:white;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none"><a style="color:black;text-decoration:none" href="` + href + "\">Verify Email</a></button></center>",
+				<center style="margin-top: 10px;"><button style="color:black;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none"><a style="color:black;text-decoration:none" href="` + href + "\">Verify Email</a></button></center>",
 		}
 	} else {
 		templateData = struct {
@@ -157,7 +157,7 @@ func SendEmailVerification(q *db.Queries, r *http.Request, user db.User, registe
 				<p>Welcome to BetOn! We're thrilled to have you join our community.</p>
 				<p>To complete your registration and gain access to our games, exclusive offers, and 24-hour customer service, we just need you to verify your email address. 
 				Click the button below to verify your email. The link will expire in 1 hour.<p/>
-				<center style="margin-top: 10px;"><button style="color:white;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none"><a style="color:black;text-decoration:none" href="` + href + "\">Verify Email</a></button></center>",
+				<center style="margin-top: 10px;"><button style="color:black;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none"><a style="color:black;text-decoration:none" href="` + href + "\">Verify Email</a></button></center>",
 		}
 	}
 

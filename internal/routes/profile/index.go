@@ -240,7 +240,7 @@ func requestVerification(q *db.Queries, r *http.Request, user db.User, newEmail 
 			Body: `
 				<p>မင်္ဂလာပါ ` + user.Username + `ရေ,</p>
 				<p>သင်၏ အီးမေးအား ` + newEmail + ` သို ချိန်းပြီးပါပြီ။ အောက်ပါလင့်ကို နှိပ်ပီး အတည်ပြုပေးပါ။ လင့်ထဲသို တစ်နာရီအတွင်း သာ ဝင်ရောက်ခွင့်ရှိမည်</p>
-				<center style="margin-top: 10px;"><button style="color:white;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none"><a style="color:black;text-decoration:none" href="` + href + "\">Verify Email</a></button></center>",
+				<center style="margin-top: 10px;"><a style="color:black;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none;text-decoration:none;display:inline-block;" href="` + href + `">Verify Email</a></center>`,
 		}
 	} else {
 		templateData = struct {
@@ -248,10 +248,10 @@ func requestVerification(q *db.Queries, r *http.Request, user db.User, newEmail 
 			Body    string
 		}{
 			Subject: "Verify Email",
-			Body: `
-				<p>Hello ` + user.Username + `,</p>
-				<p>You have requested to verify your email ` + newEmail + `. Click the link below to verify your email. The link will expire in 1 hour.</p>
-				<center style="margin-top: 10px;"><button style="color:white;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none"><a style="color:black;text-decoration:none" href="` + href + "\">Verify Email</a></button></center>",
+			Body: `<p>Hello ` + user.Username + `,</p>
+			<p>You have requested to verify your email ` + newEmail + `. Click the link below to verify your email. The link will expire in 1 hour.</p>
+			<center style="margin-top: 10px;"><a style="color:black;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none;text-decoration:none;display:inline-block;" href="` + href + `">Verify Email</a></center>
+			`,
 		}
 	}
 

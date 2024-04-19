@@ -118,8 +118,7 @@ func PostPasswordReset(app *app.App) http.HandlerFunc {
 					<p>သင််သည်လျှိဝှက်နံပါတ်ပြန်လည်သတ်မှတ်ရန်ခွင့်တောင်းထားပါသည်။</p>
 					<p>လျှိဝှက်နံပါတ်ကိုပြန်လည်သတ်မှတ်ရန်အောက်မှာချပေးထားတဲ့linkကိုနှိပ်ပေးပါ။</p>
 					<p>linkသည်၁နာရီအတွင်းတွင်သက်တမ်းကုန်မည်။ သင်သည်လျှိဝှက်နံပါတ်ပြန်လည်သတ်မှတ်ဖိုမတောင်းဆိုထားလျှင်, ဒီemailကိုလျစ်လျူရှုပေးပါ။ <p/>
-					<center><button style="color:white;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none"><a style="color:black;text-decoration:none" href="` + href + "\">ပစ်စဝက်စ် ပြန်ပေးမည်</a></button></center>",
-			}
+					<center style="margin-top: 10px;"><a style="color:black;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none;text-decoration:none;display:inline-block;" href="` + href + `">Verify Email</a></center>`}
 		} else {
 			templateData = struct {
 				Subject string
@@ -130,7 +129,7 @@ func PostPasswordReset(app *app.App) http.HandlerFunc {
 					<p>Hello ` + user.Username + `,<p/>
 					<p>You have requested to reset your password. Please click the link below to reset your password. The link will expire in 1 hour.<p/>
 					<p>If you didn't request to reset your password, please ignore this email.<p/>
-					<center><button style="color:white;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none"><a style="color:black;text-decoration:none" href="` + href + "\">Reset Password</a></button></center>",
+					<center style="margin-top: 10px;"><a style="color:black;background:#f3b83d;padding:.5rem .8rem;border-radius:999px;border:none;text-decoration:none;display:inline-block;" href="` + href + `">Verify Email</a></center>`,
 			}
 		}
 
