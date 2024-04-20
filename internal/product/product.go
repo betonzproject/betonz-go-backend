@@ -260,7 +260,7 @@ var WalletGroup2 = []Product{Jdb, Jili, SexyBaccarat, SV388}
 
 func HasGameList(productType ProductType, product Product) bool {
 	if productType == Slots {
-		return product == CreativeGaming || product == Joker || product == PragmaticPlay || product == Spadegaming || product == PGSoft || product == PlayNGo
+		return product == CreativeGaming || product == Joker || product == PragmaticPlay || product == Spadegaming || product == PlayNGo
 	} else if productType == CardAndBoard {
 		return product == _1GPoker
 	}
