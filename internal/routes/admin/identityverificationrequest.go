@@ -110,7 +110,7 @@ func PostIdentityVerificationRequest(app *app.App) http.HandlerFunc {
 			log.Panicln("Can't update identity verification: " + err.Error())
 		}
 
-		err = qtx.UpdateUserDob(r.Context(), db.UpdateUserDobParams{Dob: ivr.Dob})
+		err = qtx.UpdateUserDob(r.Context(), db.UpdateUserDobParams{Dob: ivr.Dob, ID: ivr.UserId})
 		if err != nil {
 			log.Panicln("Can't update user dob: " + err.Error())
 		}

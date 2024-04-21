@@ -70,3 +70,6 @@ DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1 RETURN
 
 -- name: DeleteSystemBankById :one
 DELETE FROM "Bank" b USING "User" u WHERE b."userId" = u.id AND b.id = $1 AND u.role = 'SYSTEM' RETURNING b.*;
+
+-- name: GetSupportedBanks :many
+SELECT DISTINCT b.name AS bank_name FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role='SYSTEM' AND b.disabled=false;

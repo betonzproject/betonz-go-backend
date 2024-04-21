@@ -84,7 +84,6 @@ const (
 	Allbet         Product = 7
 	AsiaGaming     Product = 1002
 	CreativeGaming Product = 127
-	GamingSoft     Product = 2
 	IBCbet         Product = 86
 	Jdb            Product = 41
 	Jili           Product = 59
@@ -92,10 +91,9 @@ const (
 	M8Bet          Product = 17
 	MPoker         Product = 162
 	PGSoft         Product = 102
+	Live22         Product = 9
 	PlayNGo        Product = 204
 	PragmaticPlay  Product = 6
-	RedTiger       Product = 116
-	SAGaming       Product = 1001
 	SBObet         Product = 80
 	SexyBaccarat   Product = 3
 	Spadegaming    Product = 12
@@ -119,8 +117,6 @@ func (p Product) String() string {
 		return "Asia Gaming"
 	case CreativeGaming:
 		return "Creative Gaming"
-	case GamingSoft:
-		return "Gaming Soft"
 	case IBCbet:
 		return "IBCbet"
 	case Jdb:
@@ -135,14 +131,12 @@ func (p Product) String() string {
 		return "M Poker"
 	case PGSoft:
 		return "PG Soft"
+	case Live22:
+		return "Live22"
 	case PlayNGo:
 		return "Play N Go"
 	case PragmaticPlay:
 		return "Pragmatic Play"
-	case RedTiger:
-		return "Red Tiger"
-	case SAGaming:
-		return "SA Gaming"
 	case SBObet:
 		return "SBObet"
 	case SexyBaccarat:
@@ -168,7 +162,6 @@ var productToUriComponentMap = map[Product]string{
 	Allbet:         "allbet",
 	AsiaGaming:     "asia-gaming",
 	CreativeGaming: "creative-gaming",
-	GamingSoft:     "gaming-soft",
 	IBCbet:         "ibcbet",
 	Jdb:            "jdb",
 	Jili:           "jili",
@@ -178,8 +171,6 @@ var productToUriComponentMap = map[Product]string{
 	PGSoft:         "pgsoft",
 	PlayNGo:        "playngo",
 	PragmaticPlay:  "pragmatic-play",
-	RedTiger:       "red-tiger",
-	SAGaming:       "sa-gaming",
 	SBObet:         "sbobet",
 	SexyBaccarat:   "sexy-baccarat",
 	Spadegaming:    "spadegaming",
@@ -187,6 +178,7 @@ var productToUriComponentMap = map[Product]string{
 	TFGaming:       "tf-gaming",
 	WMCasino:       "wm-casino",
 	WSGaming:       "ws-gaming",
+	Live22:         "live-22",
 }
 
 func (p Product) UriComponent() string {
@@ -208,7 +200,6 @@ var AllProducts = []Product{
 	Allbet,
 	AsiaGaming,
 	CreativeGaming,
-	GamingSoft,
 	IBCbet,
 	Jdb,
 	Jili,
@@ -216,10 +207,9 @@ var AllProducts = []Product{
 	M8Bet,
 	MPoker,
 	PGSoft,
+	Live22,
 	PlayNGo,
 	PragmaticPlay,
-	RedTiger,
-	SAGaming,
 	SBObet,
 	SexyBaccarat,
 	Spadegaming,
@@ -233,21 +223,19 @@ var LiveCasinoProducts = []Product{
 	SexyBaccarat,
 	Allbet,
 	AsiaGaming,
-	SAGaming,
 	WMCasino,
 }
 var SlotsProducts = []Product{
 	PragmaticPlay,
-	RedTiger,
 	Jdb,
 	Joker,
 	Jili,
 	PGSoft,
+	Live22,
 	PlayNGo,
 	_3Win8,
 	AsiaGaming,
 	CreativeGaming,
-	GamingSoft,
 	Spadegaming,
 }
 var SportsProducts = []Product{SBObet, IBCbet, M8Bet, TFGaming, WSGaming}
@@ -255,7 +243,7 @@ var CardAndBoardProducts = []Product{_1GPoker, MPoker}
 var FishingProducts = []Product{Jdb, Jili}
 var CockfightingProducts = []Product{SV388}
 
-var WalletGroup1 = []Product{AsiaGaming, SAGaming}
+var WalletGroup1 = []Product{AsiaGaming}
 var WalletGroup2 = []Product{Jdb, Jili, SexyBaccarat, SV388}
 
 func HasGameList(productType ProductType, product Product) bool {

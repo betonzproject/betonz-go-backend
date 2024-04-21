@@ -208,6 +208,30 @@ func (q *Queries) GetBanksByUserId(ctx context.Context, userid pgtype.UUID) ([]B
 	return items, nil
 }
 
+const getSupportedBanks = `-- name: GetSupportedBanks :many
+SELECT DISTINCT b.name AS bank_name FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role='SYSTEM' AND b.disabled=false
+`
+
+func (q *Queries) GetSupportedBanks(ctx context.Context) ([]BankName, error) {
+	rows, err := q.db.Query(ctx, getSupportedBanks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BankName{}
+	for rows.Next() {
+		var bank_name BankName
+		if err := rows.Scan(&bank_name); err != nil {
+			return nil, err
+		}
+		items = append(items, bank_name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSystemBankById = `-- name: GetSystemBankById :one
 SELECT b.id, b."userId", b.name, b."accountName", b."accountNumber", b."createdAt", b."updatedAt", b.disabled FROM "Bank" b JOIN "User" u ON b."userId" = u.id WHERE u.role = 'SYSTEM' AND b.id = $1
 `

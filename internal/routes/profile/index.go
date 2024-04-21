@@ -28,7 +28,8 @@ import (
 )
 
 type GetProfileResponse struct {
-	*db.IdentityVerificationStatus `json:"identityVerificationStatus"`
+	IdentityVerificationStatus *db.IdentityVerificationStatus `json:"identityVerificationStatus"`
+	SupportBanks               []db.BankName                  `json:"supportBanks"`
 }
 
 func GetProfile(app *app.App) http.HandlerFunc {
@@ -45,7 +46,13 @@ func GetProfile(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		jsonutils.Write(w, GetProfileResponse{IdentityVerificationStatus: &request.Status}, http.StatusOK)
+		supportBanks, err := app.DB.GetSupportedBanks(r.Context())
+		if err != nil {
+			jsonutils.Write(w, GetProfileResponse{IdentityVerificationStatus: &request.Status}, http.StatusOK)
+			return
+		}
+
+		jsonutils.Write(w, GetProfileResponse{IdentityVerificationStatus: &request.Status, SupportBanks: supportBanks}, http.StatusOK)
 	}
 }
 
