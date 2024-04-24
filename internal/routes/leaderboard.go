@@ -26,6 +26,7 @@ func GetLeaderboard(app *app.App) http.HandlerFunc {
 
 		rankings := make([]Ranking, 0)
 		for _, p := range payout {
+
 			name := p.DisplayName.String
 			if name == "" {
 				name = p.Username

@@ -152,7 +152,7 @@ WHERE
 		OR b1."productType" = $1
 		OR $1 = 0
 	)
-	AND u.status = 'NORMAL'
+	AND u.status = 'NORMAL' AND b1."etgUsername" != 'g2rmlmeqvk13'
 `
 
 type GetTopPayoutRow struct {

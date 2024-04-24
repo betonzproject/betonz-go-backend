@@ -54,7 +54,7 @@ WHERE
 		OR b1."productType" = @productType
 		OR @productType = 0
 	)
-	AND u.status = 'NORMAL';
+	AND u.status = 'NORMAL' AND b1."etgUsername" != 'g2rmlmeqvk13' ;
 
 -- name: GetTurnoverByUserId :many
 SELECT
