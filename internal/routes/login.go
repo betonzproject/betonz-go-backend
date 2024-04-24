@@ -14,6 +14,7 @@ import (
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/formutils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
+	"github.com/doorman2137/betonz-go/internal/utils/mailutils"
 	"github.com/doorman2137/betonz-go/internal/utils/ratelimiter"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -33,10 +34,12 @@ func GetLogin(app *app.App) http.HandlerFunc {
 type LoginForm struct {
 	Username string `form:"username" validate:"required,min=3,max=20,username" key:"user.username"`
 	Password string `form:"password" validate:"required,min=8,max=512"`
+	Pin      string `form:"pin"`
 }
 
 type LoginResponse struct {
 	Email string `json:"email"`
+	Pin   bool   `json:"pin"`
 }
 
 var loginIpLimitOpts = ratelimiter.LimiterOptions{
@@ -134,6 +137,86 @@ func PostLogin(app *app.App) http.HandlerFunc {
 
 			http.Error(w, "login.usernameOrPasswordIncorrect.message", http.StatusUnauthorized)
 			return
+		}
+
+		if adminMode && loginForm.Pin == "" {
+			var templateData struct {
+				Subject string
+				Body    string
+			}
+
+			cookie, err := r.Cookie("i18next")
+			var lng string
+			if err != nil {
+				lng = "en"
+			} else {
+				lng = cookie.Value
+			}
+
+			code := utils.GeneratePIN(8)
+
+			err = app.DB.UpsertVerificationPin(r.Context(), db.UpsertVerificationPinParams{
+				Pin:    code,
+				UserId: user.ID,
+			})
+			if err != nil {
+				log.Panicln("Cannot create verification pin: ", err.Error())
+			}
+
+			if lng == "my" {
+				templateData = struct {
+					Subject string
+					Body    string
+				}{
+					Subject: "Verification Code",
+					Body: `<h3 style="color:white;">Account ဝင်ရင် အောက်ကကုဒ်ကို ဖြည့်ပါ</h3>
+					<center>
+						<h1 style="background: #f3b83d; border-radius: 1rem; color: black; padding: 1rem; letter-spacing: 1rem;">` + code + `</h1>
+					</center>`,
+				}
+			} else {
+				templateData = struct {
+					Subject string
+					Body    string
+				}{
+					Subject: "Verification Code",
+					Body: `<h3 style="color:white;">Use the following code to access your account.</h3>
+					<center>
+						<h1 style="background: #f3b83d; border-radius: 1rem; color: black; padding: 1rem; letter-spacing: 1rem;">` + code + `</h1>
+					</center>`,
+				}
+			}
+
+			body, err := utils.ParseTemplate("template.html", templateData)
+			if err != nil {
+				log.Panicln("Can't parse template: ", err.Error())
+			}
+
+			go func() {
+				err := mailutils.SendMail(user.Email, body, templateData.Subject)
+				if err != nil {
+					log.Println("Can't send mail: " + err.Error())
+				}
+			}()
+
+			return
+		} else if adminMode {
+			verificationPIN, err := app.DB.GetVerificationPinByUserId(r.Context(), user.ID)
+			if err != nil {
+				return
+			}
+
+			expired := !time.Now().Before(verificationPIN.CreatedAt.Time.Add(10 * time.Minute))
+
+			if verificationPIN.Pin != loginForm.Pin || expired {
+				jsonutils.Write(w, LoginResponse{Pin: true}, http.StatusOK)
+				return
+			}
+
+			err = app.DB.DeleteVerificationPin(r.Context(), verificationPIN.Pin)
+			if err != nil {
+				log.Panicln("Error deleting pin: ", err.Error())
+			}
 		}
 
 		app.Scs.RenewToken(r.Context())

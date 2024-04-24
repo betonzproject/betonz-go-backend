@@ -493,6 +493,18 @@ CREATE TABLE betonz."User" (
 
 
 --
+-- Name: VerificationPin; Type: TABLE; Schema: betonz; Owner: -
+--
+
+CREATE TABLE betonz."VerificationPin" (
+    pin text NOT NULL,
+    "userId" uuid NOT NULL,
+    "createdAt" timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) with time zone NOT NULL
+);
+
+
+--
 -- Name: VerificationToken; Type: TABLE; Schema: betonz; Owner: -
 --
 
@@ -661,6 +673,14 @@ ALTER TABLE ONLY betonz."User"
 
 
 --
+-- Name: VerificationPin VerificationPin_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."VerificationPin"
+    ADD CONSTRAINT "VerificationPin_pkey" PRIMARY KEY (pin);
+
+
+--
 -- Name: VerificationToken VerificationToken_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
 --
 
@@ -718,6 +738,13 @@ CREATE UNIQUE INDEX "User_lastUsedBankId_key" ON betonz."User" USING btree ("las
 --
 
 CREATE UNIQUE INDEX "User_username_key" ON betonz."User" USING btree (username);
+
+
+--
+-- Name: VerificationPin_userId_key; Type: INDEX; Schema: betonz; Owner: -
+--
+
+CREATE UNIQUE INDEX "VerificationPin_userId_key" ON betonz."VerificationPin" USING btree ("userId");
 
 
 --
@@ -832,6 +859,14 @@ ALTER TABLE ONLY betonz."User"
 
 
 --
+-- Name: VerificationPin VerificationPin_userId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."VerificationPin"
+    ADD CONSTRAINT "VerificationPin_userId_fkey" FOREIGN KEY ("userId") REFERENCES betonz."User"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: VerificationToken VerificationToken_userId_fkey; Type: FK CONSTRAINT; Schema: betonz; Owner: -
 --
 
@@ -857,4 +892,5 @@ INSERT INTO betonz.schema_migrations (version) VALUES
     ('20240223031215'),
     ('20240224161223'),
     ('20240228111636'),
-    ('20240309151446');
+    ('20240309151446'),
+    ('20240424150346');

@@ -671,6 +671,13 @@ type User struct {
 	PendingEmail    pgtype.Text        `json:"pendingEmail"`
 }
 
+type VerificationPin struct {
+	Pin       string             `json:"pin"`
+	UserId    pgtype.UUID        `json:"userId"`
+	CreatedAt pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt pgtype.Timestamptz `json:"updatedAt"`
+}
+
 type VerificationToken struct {
 	TokenHash    string             `json:"tokenHash"`
 	UserId       pgtype.UUID        `json:"userId"`
