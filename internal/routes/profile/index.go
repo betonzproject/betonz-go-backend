@@ -40,15 +40,15 @@ func GetProfile(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		request, err := app.DB.GetLatestIdentityVerificationRequestByUserId(r.Context(), user.ID)
+		supportBanks, err := app.DB.GetSupportedBanks(r.Context())
 		if err != nil {
 			jsonutils.Write(w, GetProfileResponse{}, http.StatusOK)
 			return
 		}
 
-		supportBanks, err := app.DB.GetSupportedBanks(r.Context())
+		request, err := app.DB.GetLatestIdentityVerificationRequestByUserId(r.Context(), user.ID)
 		if err != nil {
-			jsonutils.Write(w, GetProfileResponse{IdentityVerificationStatus: &request.Status}, http.StatusOK)
+			jsonutils.Write(w, GetProfileResponse{SupportBanks: supportBanks}, http.StatusOK)
 			return
 		}
 

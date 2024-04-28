@@ -219,6 +219,27 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 				if err != nil {
 					log.Panicln("Can't update transaction request: " + err.Error())
 				}
+
+				depositAmount, _ := tr.Amount.Int64Value()
+				if depositAmount.Int64 >= 100000 {
+					err = qtx.DepositUserMainWallet(r.Context(), db.DepositUserMainWalletParams{
+						ID:     tr.UserId,
+						Amount: pgtype.Numeric{Int: big.NewInt(depositAmount.Int64 * 5 / 100), Valid: true},
+					})
+					if err != nil {
+						log.Panicln("Error depositing user's wallet: ", err.Error())
+					}
+					invitor, err := qtx.GetPlayerByReferralCode(r.Context(), initiator.InvitedBy)
+					if err == nil {
+						err = qtx.DepositUserMainWallet(r.Context(), db.DepositUserMainWalletParams{
+							ID:     invitor.ID,
+							Amount: pgtype.Numeric{Int: big.NewInt(depositAmount.Int64 * 5 / 100), Valid: true},
+						})
+						if err != nil {
+							log.Panicln("Error depositing invitor's wallet: ", err.Error())
+						}
+					}
+				}
 			} else {
 				// Withdraw
 				if numericutils.Cmp(initiator.MainWallet, tr.Amount) < 0 {

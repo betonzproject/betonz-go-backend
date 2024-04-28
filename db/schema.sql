@@ -488,7 +488,9 @@ CREATE TABLE betonz."User" (
     status betonz."UserStatus" DEFAULT 'NORMAL'::betonz."UserStatus" NOT NULL,
     "isEmailVerified" boolean DEFAULT false NOT NULL,
     dob date,
-    "pendingEmail" text
+    "pendingEmail" text,
+    "referralCode" character varying(7),
+    "invitedBy" character varying(7)
 );
 
 
@@ -893,4 +895,5 @@ INSERT INTO betonz.schema_migrations (version) VALUES
     ('20240224161223'),
     ('20240228111636'),
     ('20240309151446'),
-    ('20240424150346');
+    ('20240424150346'),
+    ('20240428131701');

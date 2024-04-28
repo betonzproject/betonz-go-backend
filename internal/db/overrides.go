@@ -10,4 +10,5 @@ type RegisterInfo struct {
 	Username     string `json:"username"`
 	Email        string `json:"email"`
 	PasswordHash string `json:"passwordHash"`
+	InvitedBy    string `json:"invitedBY"`
 }

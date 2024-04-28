@@ -19,9 +19,10 @@ import (
 )
 
 type RegisterForm struct {
-	Username string `form:"username" validate:"required,min=3,max=20,username" key:"user.username"`
-	Email    string `form:"email" validate:"required,email" key:"user.email"`
-	Password string `form:"password" validate:"required,min=8,max=512"`
+	Username  string `form:"username" validate:"required,min=3,max=20,username" key:"user.username"`
+	Email     string `form:"email" validate:"required,email" key:"user.email"`
+	Password  string `form:"password" validate:"required,min=8,max=512"`
+	InvitedBy string `form:"invitedBy"`
 }
 
 var registerIpLimitOpts = ratelimiter.LimiterOptions{
@@ -75,6 +76,7 @@ func PostRegister(app *app.App) http.HandlerFunc {
 			Username:     registerForm.Username,
 			Email:        registerForm.Email,
 			PasswordHash: passwordHash,
+			InvitedBy:    registerForm.InvitedBy,
 		})
 
 		err = utils.LogEvent(qtx, r, pgtype.UUID{}, db.EventTypeREGISTER, db.EventResultSUCCESS, "", map[string]any{

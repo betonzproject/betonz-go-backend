@@ -669,6 +669,8 @@ type User struct {
 	IsEmailVerified bool               `json:"isEmailVerified"`
 	Dob             pgtype.Date        `json:"dob"`
 	PendingEmail    pgtype.Text        `json:"pendingEmail"`
+	ReferralCode    pgtype.Text        `json:"referralCode"`
+	InvitedBy       pgtype.Text        `json:"invitedBy"`
 }
 
 type VerificationPin struct {

@@ -94,12 +94,20 @@ func GetVerifyEmailToken(app *app.App) http.HandlerFunc {
 				log.Panicln("Can't create player: ", err)
 			}
 
+			const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+			referralCode := make([]byte, 7)
+			for i := range referralCode {
+				referralCode[i] = charset[rand.IntN(len(charset))]
+			}
+
 			registerInfo := emailVerificationToken.RegisterInfo
 			user, err := qtx.CreateUser(r.Context(), db.CreateUserParams{
 				Username:     registerInfo.Username,
 				Email:        registerInfo.Email,
 				PasswordHash: registerInfo.PasswordHash,
 				EtgUsername:  etgUsername,
+				ReferralCode: pgtype.Text{String: string(referralCode), Valid: true},
+				InvitedBy:    pgtype.Text{String: registerInfo.InvitedBy, Valid: registerInfo.InvitedBy != ""},
 			})
 			if err != nil {
 				log.Panicln("Can't create new user: ", err)

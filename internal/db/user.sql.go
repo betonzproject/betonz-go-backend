@@ -13,18 +13,30 @@ import (
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO
-	"User" (id, username, email, "passwordHash", "etgUsername", "isEmailVerified", "updatedAt")
+	"User" (
+		id,
+		username,
+		email,
+		"passwordHash",
+		"etgUsername",
+		"isEmailVerified",
+		"referralCode",
+		"invitedBy",
+		"updatedAt"
+	)
 VALUES
-	(gen_random_uuid (), $1, $2, $3, $4, true, now())
+	(gen_random_uuid (), $1, $2, $3, $4, TRUE, $5, $6, now())
 RETURNING
-	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail"
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy"
 `
 
 type CreateUserParams struct {
-	Username     string `json:"username"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"passwordHash"`
-	EtgUsername  string `json:"etgUsername"`
+	Username     string      `json:"username"`
+	Email        string      `json:"email"`
+	PasswordHash string      `json:"passwordHash"`
+	EtgUsername  string      `json:"etgUsername"`
+	ReferralCode pgtype.Text `json:"referralCode"`
+	InvitedBy    pgtype.Text `json:"invitedBy"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -33,6 +45,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Email,
 		arg.PasswordHash,
 		arg.EtgUsername,
+		arg.ReferralCode,
+		arg.InvitedBy,
 	)
 	var i User
 	err := row.Scan(
@@ -53,12 +67,19 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.IsEmailVerified,
 		&i.Dob,
 		&i.PendingEmail,
+		&i.ReferralCode,
+		&i.InvitedBy,
 	)
 	return i, err
 }
 
 const depositUserMainWallet = `-- name: DepositUserMainWallet :exec
-UPDATE "User" SET "mainWallet" = "mainWallet" + $2, "updatedAt" = now() WHERE id = $1
+UPDATE "User"
+SET
+	"mainWallet" = "mainWallet" + $2,
+	"updatedAt" = now()
+WHERE
+	id = $1
 `
 
 type DepositUserMainWalletParams struct {
@@ -72,7 +93,12 @@ func (q *Queries) DepositUserMainWallet(ctx context.Context, arg DepositUserMain
 }
 
 const getExtendedUserById = `-- name: GetExtendedUserById :one
-SELECT id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail" FROM "User" WHERE id = $1
+SELECT
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy"
+FROM
+	"User"
+WHERE
+	id = $1
 `
 
 func (q *Queries) GetExtendedUserById(ctx context.Context, id pgtype.UUID) (User, error) {
@@ -96,13 +122,15 @@ func (q *Queries) GetExtendedUserById(ctx context.Context, id pgtype.UUID) (User
 		&i.IsEmailVerified,
 		&i.Dob,
 		&i.PendingEmail,
+		&i.ReferralCode,
+		&i.InvitedBy,
 	)
 	return i, err
 }
 
 const getExtendedUserByUsername = `-- name: GetExtendedUserByUsername :one
 SELECT
-	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail"
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy"
 FROM
 	"User"
 WHERE
@@ -139,6 +167,8 @@ func (q *Queries) GetExtendedUserByUsername(ctx context.Context, arg GetExtended
 		&i.IsEmailVerified,
 		&i.Dob,
 		&i.PendingEmail,
+		&i.ReferralCode,
+		&i.InvitedBy,
 	)
 	return i, err
 }
@@ -164,6 +194,42 @@ func (q *Queries) GetNewPlayerCount(ctx context.Context, arg GetNewPlayerCountPa
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const getPlayerByReferralCode = `-- name: GetPlayerByReferralCode :one
+SELECT
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy"
+FROM
+	"User"
+WHERE
+	"referralCode" = $1
+`
+
+func (q *Queries) GetPlayerByReferralCode(ctx context.Context, referralcode pgtype.Text) (User, error) {
+	row := q.db.QueryRow(ctx, getPlayerByReferralCode, referralcode)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.DisplayName,
+		&i.PhoneNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.EtgUsername,
+		&i.Role,
+		&i.MainWallet,
+		&i.LastUsedBankId,
+		&i.ProfileImage,
+		&i.Status,
+		&i.IsEmailVerified,
+		&i.Dob,
+		&i.PendingEmail,
+		&i.ReferralCode,
+		&i.InvitedBy,
+	)
+	return i, err
 }
 
 const getPlayerInfoById = `-- name: GetPlayerInfoById :one
@@ -255,7 +321,22 @@ func (q *Queries) GetPlayerInfoById(ctx context.Context, id pgtype.UUID) (GetPla
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, username, role, email, "pendingEmail", "displayName", "phoneNumber", "mainWallet", dob, "profileImage" FROM "User" WHERE id = $1
+SELECT
+	id,
+	username,
+	role,
+	email,
+	"pendingEmail",
+	"displayName",
+	"phoneNumber",
+	"mainWallet",
+	dob,
+	"referralCode",
+	"profileImage"
+FROM
+	"User"
+WHERE
+	id = $1
 `
 
 type GetUserByIdRow struct {
@@ -268,6 +349,7 @@ type GetUserByIdRow struct {
 	PhoneNumber  pgtype.Text    `json:"phoneNumber"`
 	MainWallet   pgtype.Numeric `json:"mainWallet"`
 	Dob          pgtype.Date    `json:"dob"`
+	ReferralCode pgtype.Text    `json:"referralCode"`
 	ProfileImage pgtype.Text    `json:"profileImage"`
 }
 
@@ -284,80 +366,86 @@ func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (GetUserByIdR
 		&i.PhoneNumber,
 		&i.MainWallet,
 		&i.Dob,
+		&i.ReferralCode,
 		&i.ProfileImage,
 	)
 	return i, err
 }
 
 const getUsers = `-- name: GetUsers :many
-WITH q AS (
-	SELECT
-		ROW_NUMBER() OVER (ORDER BY u."createdAt") "rowNumber",
-		u.id,
-		u.username,
-		u.role,
-		u.email,
-		u.dob,
-		u."displayName",
-		u."phoneNumber",
-		u."profileImage",
-		u."mainWallet",
-		u.status,
-		u."createdAt",
-		e."sourceIp" AS "lastLoginIp",
-		e."createdAt"::timestamptz AS "lastLogin",
-		tr1."lastDeposit"::timestamptz AS "lastDeposit",
-		tr2."lastWithdraw"::timestamptz AS "lastWithdraw"
-	FROM
-		"User" u
-		LEFT JOIN (
-			-- Get last login IP and time
-			SELECT DISTINCT
-				ON ("userId") "userId",
-				"sourceIp",
-				"createdAt"
-			FROM
-				"Event"
-			WHERE
-				result = 'SUCCESS'
-				AND type = 'LOGIN'
-			ORDER BY
-				"userId",
-				"createdAt" DESC
-		) e ON u.id = e."userId"
-		LEFT JOIN (
-			-- Get last deposit time
-			SELECT
-				"userId",
-				max("updatedAt") "lastDeposit"
-			FROM
-				"TransactionRequest"
-			WHERE
-				type = 'DEPOSIT'
-				AND status = 'APPROVED'
-			GROUP BY
-				"userId"
-		) tr1 ON u.id = tr1."userId"
-		LEFT JOIN (
-			-- Get last withdraw time
-			SELECT
-				"userId",
-				max("updatedAt") "lastWithdraw"
-			FROM
-				"TransactionRequest"
-			WHERE
-				type = 'WITHDRAW'
-				AND status = 'APPROVED'
-			GROUP BY
-				"userId"
-		) tr2 ON u.id = tr2."userId"
-	WHERE
-		u.role <> 'SYSTEM'
-	ORDER BY
-		u."createdAt"
-)
+WITH
+	q AS (
+		SELECT
+			ROW_NUMBER() OVER (
+				ORDER BY
+					u."createdAt"
+			) "rowNumber",
+			u.id,
+			u.username,
+			u.role,
+			u.email,
+			u.dob,
+			u."displayName",
+			u."phoneNumber",
+			u."profileImage",
+			u."mainWallet",
+			u.status,
+			u."referralCode",
+			u."createdAt",
+			e."sourceIp" AS "lastLoginIp",
+			e."createdAt"::timestamptz AS "lastLogin",
+			tr1."lastDeposit"::timestamptz AS "lastDeposit",
+			tr2."lastWithdraw"::timestamptz AS "lastWithdraw"
+		FROM
+			"User" u
+			LEFT JOIN (
+				-- Get last login IP and time
+				SELECT DISTINCT
+					ON ("userId") "userId",
+					"sourceIp",
+					"createdAt"
+				FROM
+					"Event"
+				WHERE
+					result = 'SUCCESS'
+					AND type = 'LOGIN'
+				ORDER BY
+					"userId",
+					"createdAt" DESC
+			) e ON u.id = e."userId"
+			LEFT JOIN (
+				-- Get last deposit time
+				SELECT
+					"userId",
+					max("updatedAt") "lastDeposit"
+				FROM
+					"TransactionRequest"
+				WHERE
+					type = 'DEPOSIT'
+					AND status = 'APPROVED'
+				GROUP BY
+					"userId"
+			) tr1 ON u.id = tr1."userId"
+			LEFT JOIN (
+				-- Get last withdraw time
+				SELECT
+					"userId",
+					max("updatedAt") "lastWithdraw"
+				FROM
+					"TransactionRequest"
+				WHERE
+					type = 'WITHDRAW'
+					AND status = 'APPROVED'
+				GROUP BY
+					"userId"
+			) tr2 ON u.id = tr2."userId"
+		WHERE
+			u.role <> 'SYSTEM'
+		ORDER BY
+			u."createdAt"
+	)
 SELECT
-	"rowNumber", id, username, role, email, dob, "displayName", "phoneNumber", "profileImage", "mainWallet", status, "createdAt", "lastLoginIp", "lastLogin", "lastDeposit", "lastWithdraw"
+	"rowNumber", id, username, role, email, dob, "displayName", "phoneNumber", "profileImage", "mainWallet", status, "referralCode", "createdAt", "lastLoginIp", "lastLogin", "lastDeposit", "lastWithdraw"
 FROM
 	q
 WHERE
@@ -399,6 +487,7 @@ type GetUsersRow struct {
 	ProfileImage pgtype.Text        `json:"profileImage"`
 	MainWallet   pgtype.Numeric     `json:"mainWallet"`
 	Status       UserStatus         `json:"status"`
+	ReferralCode pgtype.Text        `json:"referralCode"`
 	CreatedAt    pgtype.Timestamptz `json:"createdAt"`
 	LastLoginIp  pgtype.Text        `json:"lastLoginIp"`
 	LastLogin    pgtype.Timestamptz `json:"lastLogin"`
@@ -432,6 +521,7 @@ func (q *Queries) GetUsers(ctx context.Context, arg GetUsersParams) ([]GetUsersR
 			&i.ProfileImage,
 			&i.MainWallet,
 			&i.Status,
+			&i.ReferralCode,
 			&i.CreatedAt,
 			&i.LastLoginIp,
 			&i.LastLogin,
@@ -449,7 +539,13 @@ func (q *Queries) GetUsers(ctx context.Context, arg GetUsersParams) ([]GetUsersR
 }
 
 const markUserEmailAsVerified = `-- name: MarkUserEmailAsVerified :exec
-UPDATE "User" SET "isEmailVerified" = true, email = $2, "updatedAt" = now() WHERE id = $1
+UPDATE "User"
+SET
+	"isEmailVerified" = TRUE,
+	email = $2,
+	"updatedAt" = now()
+WHERE
+	id = $1
 `
 
 type MarkUserEmailAsVerifiedParams struct {
@@ -468,7 +564,7 @@ SET
 	"displayName" = $2,
 	"pendingEmail" = COALESCE($5, "pendingEmail"),
 	"phoneNumber" = $3,
-    "isEmailVerified"= $4,
+	"isEmailVerified" = $4,
 	"updatedAt" = now()
 WHERE
 	id = $1
@@ -494,7 +590,12 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 }
 
 const updateUserDob = `-- name: UpdateUserDob :exec
-UPDATE "User" SET dob = $2, "updatedAt" = now() WHERE id = $1
+UPDATE "User"
+SET
+	dob = $2,
+	"updatedAt" = now()
+WHERE
+	id = $1
 `
 
 type UpdateUserDobParams struct {
@@ -508,7 +609,12 @@ func (q *Queries) UpdateUserDob(ctx context.Context, arg UpdateUserDobParams) er
 }
 
 const updateUserLastUsedBank = `-- name: UpdateUserLastUsedBank :exec
-UPDATE "User" SET "lastUsedBankId" = $2, "updatedAt" = now() WHERE id = $1
+UPDATE "User"
+SET
+	"lastUsedBankId" = $2,
+	"updatedAt" = now()
+WHERE
+	id = $1
 `
 
 type UpdateUserLastUsedBankParams struct {
@@ -522,7 +628,12 @@ func (q *Queries) UpdateUserLastUsedBank(ctx context.Context, arg UpdateUserLast
 }
 
 const updateUserPasswordHash = `-- name: UpdateUserPasswordHash :exec
-UPDATE "User" SET "passwordHash" = $2, "updatedAt" = now() WHERE id = $1
+UPDATE "User"
+SET
+	"passwordHash" = $2,
+	"updatedAt" = now()
+WHERE
+	id = $1
 `
 
 type UpdateUserPasswordHashParams struct {
@@ -536,7 +647,12 @@ func (q *Queries) UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPass
 }
 
 const updateUserProfileImage = `-- name: UpdateUserProfileImage :exec
-UPDATE "User" SET "profileImage" = $2, "updatedAt" = now() WHERE id = $1
+UPDATE "User"
+SET
+	"profileImage" = $2,
+	"updatedAt" = now()
+WHERE
+	id = $1
 `
 
 type UpdateUserProfileImageParams struct {
@@ -550,7 +666,12 @@ func (q *Queries) UpdateUserProfileImage(ctx context.Context, arg UpdateUserProf
 }
 
 const updateUserStatus = `-- name: UpdateUserStatus :exec
-UPDATE "User" SET status = $2, "updatedAt" = now() WHERE id = $1
+UPDATE "User"
+SET
+	status = $2,
+	"updatedAt" = now()
+WHERE
+	id = $1
 `
 
 type UpdateUserStatusParams struct {
@@ -564,7 +685,12 @@ func (q *Queries) UpdateUserStatus(ctx context.Context, arg UpdateUserStatusPara
 }
 
 const updateUsername = `-- name: UpdateUsername :exec
-UPDATE "User" SET username = $2, "updatedAt" = now() WHERE id = $1
+UPDATE "User"
+SET
+	username = $2,
+	"updatedAt" = now()
+WHERE
+	id = $1
 `
 
 type UpdateUsernameParams struct {
@@ -578,7 +704,12 @@ func (q *Queries) UpdateUsername(ctx context.Context, arg UpdateUsernameParams) 
 }
 
 const withdrawUserMainWallet = `-- name: WithdrawUserMainWallet :exec
-UPDATE "User" SET "mainWallet" = "mainWallet" - $2, "updatedAt" = now() WHERE id = $1
+UPDATE "User"
+SET
+	"mainWallet" = "mainWallet" - $2,
+	"updatedAt" = now()
+WHERE
+	id = $1
 `
 
 type WithdrawUserMainWalletParams struct {
