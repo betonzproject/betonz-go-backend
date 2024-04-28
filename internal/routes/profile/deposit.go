@@ -229,7 +229,7 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 				BankName: db.BankName(depositForm.BankName),
 				Valid:    true,
 			},
-			BankAccountName:              pgtype.Text{},
+			BankAccountName:              pgtype.Text{String: depositForm.AccountName, Valid: true},
 			BankAccountNumber:            pgtype.Text{String: depositForm.AccountNumber, Valid: true},
 			BeneficiaryBankAccountName:   pgtype.Text{String: receivingBank.AccountName, Valid: true},
 			BeneficiaryBankAccountNumber: pgtype.Text{String: receivingBank.AccountNumber, Valid: true},

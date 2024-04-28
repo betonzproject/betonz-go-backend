@@ -83,7 +83,11 @@ const (
 	_3Win8         Product = 110
 	Allbet         Product = 7
 	AsiaGaming     Product = 1002
+	BigGaming      Product = 5
 	CreativeGaming Product = 127
+	CQ9            Product = 39
+	Dreamtech      Product = 120
+	KingMaker      Product = 117
 	IBCbet         Product = 86
 	Jdb            Product = 41
 	Jili           Product = 59
@@ -101,6 +105,7 @@ const (
 	TFGaming       Product = 138
 	WMCasino       Product = 70
 	WSGaming       Product = 147
+	YLfishing      Product = 52
 )
 
 func (p Product) String() string {
@@ -115,8 +120,14 @@ func (p Product) String() string {
 		return "Allbet"
 	case AsiaGaming:
 		return "Asia Gaming"
+	case BigGaming:
+		return "Big Gaming"
 	case CreativeGaming:
 		return "Creative Gaming"
+	case CQ9:
+		return "CQ9"
+	case Dreamtech:
+		return "Dream Tech"
 	case IBCbet:
 		return "IBCbet"
 	case Jdb:
@@ -125,6 +136,8 @@ func (p Product) String() string {
 		return "JILI"
 	case Joker:
 		return "Joker"
+	case KingMaker:
+		return "King Maker"
 	case M8Bet:
 		return "M8Bet"
 	case MPoker:
@@ -151,6 +164,8 @@ func (p Product) String() string {
 		return "WM Casino"
 	case WSGaming:
 		return "WS Gaming"
+	case YLfishing:
+		return "YL Fishing"
 	default:
 		return ""
 	}
@@ -161,11 +176,15 @@ var productToUriComponentMap = map[Product]string{
 	_3Win8:         "3win8",
 	Allbet:         "allbet",
 	AsiaGaming:     "asia-gaming",
+	BigGaming:      "big-gaming",
 	CreativeGaming: "creative-gaming",
+	CQ9:            "cq9",
+	Dreamtech:      "dream-tech",
 	IBCbet:         "ibcbet",
 	Jdb:            "jdb",
 	Jili:           "jili",
 	Joker:          "joker",
+	KingMaker:      "king-maker",
 	M8Bet:          "m8bet",
 	MPoker:         "m-poker",
 	PGSoft:         "pgsoft",
@@ -179,6 +198,7 @@ var productToUriComponentMap = map[Product]string{
 	WMCasino:       "wm-casino",
 	WSGaming:       "ws-gaming",
 	Live22:         "live-22",
+	YLfishing:      "yl-fishing",
 }
 
 func (p Product) UriComponent() string {
@@ -199,11 +219,15 @@ var AllProducts = []Product{
 	_3Win8,
 	Allbet,
 	AsiaGaming,
+	BigGaming,
 	CreativeGaming,
+	CQ9,
+	Dreamtech,
 	IBCbet,
 	Jdb,
 	Jili,
 	Joker,
+	KingMaker,
 	M8Bet,
 	MPoker,
 	PGSoft,
@@ -217,12 +241,14 @@ var AllProducts = []Product{
 	TFGaming,
 	WMCasino,
 	WSGaming,
+	YLfishing,
 }
 var LiveCasinoProducts = []Product{
 	PragmaticPlay,
 	SexyBaccarat,
 	Allbet,
 	AsiaGaming,
+	BigGaming,
 	WMCasino,
 }
 var SlotsProducts = []Product{
@@ -236,11 +262,13 @@ var SlotsProducts = []Product{
 	_3Win8,
 	AsiaGaming,
 	CreativeGaming,
+	CQ9,
+	Dreamtech,
 	Spadegaming,
 }
 var SportsProducts = []Product{SBObet, IBCbet, M8Bet, TFGaming, WSGaming}
-var CardAndBoardProducts = []Product{_1GPoker, MPoker}
-var FishingProducts = []Product{Jdb, Jili}
+var CardAndBoardProducts = []Product{_1GPoker, MPoker, KingMaker}
+var FishingProducts = []Product{Jdb, Jili, YLfishing}
 var CockfightingProducts = []Product{SV388}
 
 var WalletGroup1 = []Product{AsiaGaming}
@@ -248,7 +276,7 @@ var WalletGroup2 = []Product{Jdb, Jili, SexyBaccarat, SV388}
 
 func HasGameList(productType ProductType, product Product) bool {
 	if productType == Slots {
-		return product == CreativeGaming || product == Joker || product == PragmaticPlay || product == Spadegaming || product == PlayNGo
+		return product == CreativeGaming || product == Joker || product == PragmaticPlay || product == Spadegaming || product == PlayNGo || product == CQ9 || product == Dreamtech
 	} else if productType == CardAndBoard {
 		return product == _1GPoker
 	}
