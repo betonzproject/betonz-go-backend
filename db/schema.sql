@@ -410,7 +410,8 @@ CREATE TABLE betonz."TransactionRequest" (
     bonus numeric(32,2) DEFAULT 0 NOT NULL,
     "withdrawBankFees" numeric(32,2) DEFAULT 0 NOT NULL,
     "depositToWallet" integer,
-    promotion betonz."PromotionType"
+    promotion betonz."PromotionType",
+    "transactionNo" text
 );
 
 
@@ -896,4 +897,5 @@ INSERT INTO betonz.schema_migrations (version) VALUES
     ('20240228111636'),
     ('20240309151446'),
     ('20240424150346'),
-    ('20240428131701');
+    ('20240428131701'),
+    ('20240501123346');

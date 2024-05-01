@@ -140,6 +140,7 @@ type DepositForm struct {
 	Promotion       db.PromotionType `form:"promotion" validate:"omitempty,oneof=INACTIVE_BONUS FIVE_PERCENT_UNLIMITED_BONUS TEN_PERCENT_UNLIMITED_BONUS" key:"deposit.promotion"`
 	DepositTo       product.Product  `form:"depositTo" validate:"product"`
 	ReceiptData     string           `form:"receiptData"`
+	TransactionNo   string           `form:"transactionNo"`
 }
 
 func PostDeposit(app *app.App) http.HandlerFunc {
@@ -268,6 +269,7 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 			Promotion:                    db.NullPromotionType{PromotionType: depositForm.Promotion, Valid: depositForm.Promotion != ""},
 			ReceiptPath:                  pgtype.Text{String: depositForm.ReceiptData, Valid: true},
 			Status:                       db.TransactionStatusPENDING,
+			TransactionNo:                pgtype.Text{String: depositForm.TransactionNo, Valid: depositForm.TransactionNo != ""},
 		})
 		if err != nil {
 			log.Panicln("Can't create deposit request: " + err.Error())

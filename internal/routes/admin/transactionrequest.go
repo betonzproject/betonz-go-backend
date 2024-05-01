@@ -43,6 +43,7 @@ type TransactionRequest struct {
 	Promotion                    db.NullPromotionType `json:"promotion"`
 	Username                     string               `json:"username"`
 	Role                         db.Role              `json:"role"`
+	TransactionNo                string               `json:"transactionNo"`
 	ModifiedByUsername           pgtype.Text          `json:"modifiedByUsername"`
 	ModifiedByRole               db.NullRole          `json:"modifiedByRole"`
 }
@@ -122,6 +123,7 @@ func GetTransactionRequest(app *app.App) http.HandlerFunc {
 				Promotion:                    r.Promotion,
 				Username:                     r.Username,
 				Role:                         r.Role,
+				TransactionNo:                r.TransactionNo.String,
 				ModifiedByUsername:           r.ModifiedByUsername,
 				ModifiedByRole:               r.ModifiedByRole,
 			}

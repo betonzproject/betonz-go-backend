@@ -641,6 +641,7 @@ type TransactionRequest struct {
 	WithdrawBankFees             pgtype.Numeric     `json:"withdrawBankFees"`
 	DepositToWallet              pgtype.Int4        `json:"depositToWallet"`
 	Promotion                    NullPromotionType  `json:"promotion"`
+	TransactionNo                pgtype.Text        `json:"transactionNo"`
 }
 
 type TurnoverTarget struct {

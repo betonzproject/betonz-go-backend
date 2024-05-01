@@ -33,7 +33,12 @@ ORDER BY
 	tr.id DESC;
 
 -- name: GetTransactionRequestById :one
-SELECT * FROM "TransactionRequest" WHERE id = $1;
+SELECT
+	*
+FROM
+	"TransactionRequest"
+WHERE
+	id = $1;
 
 -- name: GetTransactionRequestsByUserId :many
 SELECT
@@ -62,64 +67,73 @@ ORDER BY
 	tr.id DESC;
 
 -- name: GetPendingTransactionRequestCount :one
-SELECT COUNT(*) FROM "TransactionRequest" WHERE status = 'PENDING';
+SELECT
+	COUNT(*)
+FROM
+	"TransactionRequest"
+WHERE
+	status = 'PENDING';
 
 -- name: HasRecentDepositRequestsByUserId :one
-SELECT EXISTS (
-	SELECT
-		*
-	FROM
-		"TransactionRequest"
-	WHERE
-		"userId" = $1
-		AND type = 'DEPOSIT'
-		AND status = 'PENDING'
-		AND "createdAt" >= now() - INTERVAL '1 minute'
-);
+SELECT
+	EXISTS (
+		SELECT
+			*
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'DEPOSIT'
+			AND status = 'PENDING'
+			AND "createdAt" >= now() - INTERVAL '1 minute'
+	);
 
 -- name: HasRecentWithdrawRequestsByUserId :one
-SELECT EXISTS (
-	SELECT
-		*
-	FROM
-		"TransactionRequest"
-	WHERE
-		"userId" = $1
-		AND type = 'WITHDRAW'
-		AND status = 'PENDING'
-		AND "createdAt" >= now() - INTERVAL '5 minutes'
-);
+SELECT
+	EXISTS (
+		SELECT
+			*
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'WITHDRAW'
+			AND status = 'PENDING'
+			AND "createdAt" >= now() - INTERVAL '5 minutes'
+	);
 
 -- name: HasApprovedDepositRequestsWithin30DaysByUserId :one
-SELECT EXISTS (
-	SELECT
-		*
-	FROM
-		"TransactionRequest"
-	WHERE
-		"userId" = $1
-		AND type = 'DEPOSIT'
-		AND status = 'APPROVED'
-		AND "updatedAt" >= now() - INTERVAL '30 days'
-);
+SELECT
+	EXISTS (
+		SELECT
+			*
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'DEPOSIT'
+			AND status = 'APPROVED'
+			AND "updatedAt" >= now() - INTERVAL '30 days'
+	);
 
 -- name: HasPendingTransactionRequestsWithPromotion :one
-SELECT EXISTS (
-	SELECT
-		*
-	FROM
-		"TransactionRequest"
-	WHERE
-		"userId" = $1
-		AND type = 'DEPOSIT'
-		AND status = 'PENDING'
-		AND promotion = $2
-);
+SELECT
+	EXISTS (
+		SELECT
+			*
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'DEPOSIT'
+			AND status = 'PENDING'
+			AND promotion = $2
+	);
 
 -- name: GetTotalTransactionAmountAndCount :one
 SELECT
 	COALESCE(sum(tr.amount), 0)::bigint AS total,
-	COALESCE(count(*), 0)::bigint AS count,
+	COALESCE(count(*), 0)::bigint AS COUNT,
 	COALESCE(sum(tr.bonus), 0)::bigint AS "bonusTotal"
 FROM
 	"TransactionRequest" tr
@@ -136,8 +150,8 @@ SELECT
 	count(*)
 FROM
 	(
-		SELECT
-			DISTINCT "userId"
+		SELECT DISTINCT
+			"userId"
 		FROM
 			"TransactionRequest"
 		WHERE
@@ -151,8 +165,8 @@ SELECT
 	count(*)
 FROM
 	(
-		SELECT
-			DISTINCT "userId"
+		SELECT DISTINCT
+			"userId"
 		FROM
 			"TransactionRequest" tr
 			JOIN "User" u ON tr."userId" = u.id
@@ -172,7 +186,10 @@ FROM
 WHERE
 	"userId" = $1
 	AND type = 'DEPOSIT'
-	AND (status = 'PENDING' OR status = 'APPROVED')
+	AND (
+		status = 'PENDING'
+		OR status = 'APPROVED'
+	)
 	AND promotion = $2
 	AND "updatedAt" >= sqlc.arg('fromDate')
 	AND "updatedAt" <= sqlc.arg('toDate');
@@ -195,10 +212,11 @@ INSERT INTO
 		status,
 		"modifiedById",
 		"remarks",
+		"transactionNo",
 		"updatedAt"
 	)
 VALUES
-	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, now());
+	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, now());
 
 -- name: UpdateTransactionRequest :exec
 UPDATE "TransactionRequest"
@@ -209,4 +227,5 @@ SET
 	"withdrawBankFees" = COALESCE($5, 0),
 	remarks = $6,
 	"updatedAt" = now()
-WHERE id = $1;
+WHERE
+	id = $1;

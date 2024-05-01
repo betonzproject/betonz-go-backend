@@ -29,10 +29,11 @@ INSERT INTO
 		status,
 		"modifiedById",
 		"remarks",
+		"transactionNo",
 		"updatedAt"
 	)
 VALUES
-	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, now())
+	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, now())
 `
 
 type CreateTransactionRequestParams struct {
@@ -51,6 +52,7 @@ type CreateTransactionRequestParams struct {
 	Status                       TransactionStatus `json:"status"`
 	ModifiedById                 pgtype.UUID       `json:"modifiedById"`
 	Remarks                      pgtype.Text       `json:"remarks"`
+	TransactionNo                pgtype.Text       `json:"transactionNo"`
 }
 
 func (q *Queries) CreateTransactionRequest(ctx context.Context, arg CreateTransactionRequestParams) error {
@@ -70,6 +72,7 @@ func (q *Queries) CreateTransactionRequest(ctx context.Context, arg CreateTransa
 		arg.Status,
 		arg.ModifiedById,
 		arg.Remarks,
+		arg.TransactionNo,
 	)
 	return err
 }
@@ -82,7 +85,10 @@ FROM
 WHERE
 	"userId" = $1
 	AND type = 'DEPOSIT'
-	AND (status = 'PENDING' OR status = 'APPROVED')
+	AND (
+		status = 'PENDING'
+		OR status = 'APPROVED'
+	)
 	AND promotion = $2
 	AND "updatedAt" >= $4
 	AND "updatedAt" <= $5
@@ -114,8 +120,8 @@ SELECT
 	count(*)
 FROM
 	(
-		SELECT
-			DISTINCT "userId"
+		SELECT DISTINCT
+			"userId"
 		FROM
 			"TransactionRequest" tr
 			JOIN "User" u ON tr."userId" = u.id
@@ -141,7 +147,12 @@ func (q *Queries) GetNewPlayerWithTransactionsCount(ctx context.Context, arg Get
 }
 
 const getPendingTransactionRequestCount = `-- name: GetPendingTransactionRequestCount :one
-SELECT COUNT(*) FROM "TransactionRequest" WHERE status = 'PENDING'
+SELECT
+	COUNT(*)
+FROM
+	"TransactionRequest"
+WHERE
+	status = 'PENDING'
 `
 
 func (q *Queries) GetPendingTransactionRequestCount(ctx context.Context) (int64, error) {
@@ -156,8 +167,8 @@ SELECT
 	count(*)
 FROM
 	(
-		SELECT
-			DISTINCT "userId"
+		SELECT DISTINCT
+			"userId"
 		FROM
 			"TransactionRequest"
 		WHERE
@@ -182,7 +193,7 @@ func (q *Queries) GetPlayerWithTransactionsCount(ctx context.Context, arg GetPla
 const getTotalTransactionAmountAndCount = `-- name: GetTotalTransactionAmountAndCount :one
 SELECT
 	COALESCE(sum(tr.amount), 0)::bigint AS total,
-	COALESCE(count(*), 0)::bigint AS count,
+	COALESCE(count(*), 0)::bigint AS COUNT,
 	COALESCE(sum(tr.bonus), 0)::bigint AS "bonusTotal"
 FROM
 	"TransactionRequest" tr
@@ -215,7 +226,12 @@ func (q *Queries) GetTotalTransactionAmountAndCount(ctx context.Context, arg Get
 }
 
 const getTransactionRequestById = `-- name: GetTransactionRequestById :one
-SELECT id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion FROM "TransactionRequest" WHERE id = $1
+SELECT
+	id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion, "transactionNo"
+FROM
+	"TransactionRequest"
+WHERE
+	id = $1
 `
 
 func (q *Queries) GetTransactionRequestById(ctx context.Context, id int32) (TransactionRequest, error) {
@@ -241,13 +257,14 @@ func (q *Queries) GetTransactionRequestById(ctx context.Context, id int32) (Tran
 		&i.WithdrawBankFees,
 		&i.DepositToWallet,
 		&i.Promotion,
+		&i.TransactionNo,
 	)
 	return i, err
 }
 
 const getTransactionRequests = `-- name: GetTransactionRequests :many
 SELECT
-	tr.id, tr."userId", tr."modifiedById", tr."bankName", tr."bankAccountName", tr."bankAccountNumber", tr."beneficiaryBankAccountName", tr."beneficiaryBankAccountNumber", tr.amount, tr.type, tr."receiptPath", tr.status, tr.remarks, tr."createdAt", tr."updatedAt", tr.bonus, tr."withdrawBankFees", tr."depositToWallet", tr.promotion,
+	tr.id, tr."userId", tr."modifiedById", tr."bankName", tr."bankAccountName", tr."bankAccountNumber", tr."beneficiaryBankAccountName", tr."beneficiaryBankAccountNumber", tr.amount, tr.type, tr."receiptPath", tr.status, tr.remarks, tr."createdAt", tr."updatedAt", tr.bonus, tr."withdrawBankFees", tr."depositToWallet", tr.promotion, tr."transactionNo",
 	u.username,
 	u.role,
 	u2.username AS "modifiedByUsername",
@@ -308,6 +325,7 @@ type GetTransactionRequestsRow struct {
 	WithdrawBankFees             pgtype.Numeric     `json:"withdrawBankFees"`
 	DepositToWallet              pgtype.Int4        `json:"depositToWallet"`
 	Promotion                    NullPromotionType  `json:"promotion"`
+	TransactionNo                pgtype.Text        `json:"transactionNo"`
 	Username                     string             `json:"username"`
 	Role                         Role               `json:"role"`
 	ModifiedByUsername           pgtype.Text        `json:"modifiedByUsername"`
@@ -349,6 +367,7 @@ func (q *Queries) GetTransactionRequests(ctx context.Context, arg GetTransaction
 			&i.WithdrawBankFees,
 			&i.DepositToWallet,
 			&i.Promotion,
+			&i.TransactionNo,
 			&i.Username,
 			&i.Role,
 			&i.ModifiedByUsername,
@@ -366,7 +385,7 @@ func (q *Queries) GetTransactionRequests(ctx context.Context, arg GetTransaction
 
 const getTransactionRequestsByUserId = `-- name: GetTransactionRequestsByUserId :many
 SELECT
-	tr.id, tr."userId", tr."modifiedById", tr."bankName", tr."bankAccountName", tr."bankAccountNumber", tr."beneficiaryBankAccountName", tr."beneficiaryBankAccountNumber", tr.amount, tr.type, tr."receiptPath", tr.status, tr.remarks, tr."createdAt", tr."updatedAt", tr.bonus, tr."withdrawBankFees", tr."depositToWallet", tr.promotion,
+	tr.id, tr."userId", tr."modifiedById", tr."bankName", tr."bankAccountName", tr."bankAccountNumber", tr."beneficiaryBankAccountName", tr."beneficiaryBankAccountNumber", tr.amount, tr.type, tr."receiptPath", tr.status, tr.remarks, tr."createdAt", tr."updatedAt", tr.bonus, tr."withdrawBankFees", tr."depositToWallet", tr.promotion, tr."transactionNo",
 	u.username,
 	u.role,
 	u2.username AS "modifiedByUsername",
@@ -419,6 +438,7 @@ type GetTransactionRequestsByUserIdRow struct {
 	WithdrawBankFees             pgtype.Numeric     `json:"withdrawBankFees"`
 	DepositToWallet              pgtype.Int4        `json:"depositToWallet"`
 	Promotion                    NullPromotionType  `json:"promotion"`
+	TransactionNo                pgtype.Text        `json:"transactionNo"`
 	Username                     string             `json:"username"`
 	Role                         Role               `json:"role"`
 	ModifiedByUsername           pgtype.Text        `json:"modifiedByUsername"`
@@ -460,6 +480,7 @@ func (q *Queries) GetTransactionRequestsByUserId(ctx context.Context, arg GetTra
 			&i.WithdrawBankFees,
 			&i.DepositToWallet,
 			&i.Promotion,
+			&i.TransactionNo,
 			&i.Username,
 			&i.Role,
 			&i.ModifiedByUsername,
@@ -476,17 +497,18 @@ func (q *Queries) GetTransactionRequestsByUserId(ctx context.Context, arg GetTra
 }
 
 const hasApprovedDepositRequestsWithin30DaysByUserId = `-- name: HasApprovedDepositRequestsWithin30DaysByUserId :one
-SELECT EXISTS (
-	SELECT
-		id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion
-	FROM
-		"TransactionRequest"
-	WHERE
-		"userId" = $1
-		AND type = 'DEPOSIT'
-		AND status = 'APPROVED'
-		AND "updatedAt" >= now() - INTERVAL '30 days'
-)
+SELECT
+	EXISTS (
+		SELECT
+			id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion, "transactionNo"
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'DEPOSIT'
+			AND status = 'APPROVED'
+			AND "updatedAt" >= now() - INTERVAL '30 days'
+	)
 `
 
 func (q *Queries) HasApprovedDepositRequestsWithin30DaysByUserId(ctx context.Context, userid pgtype.UUID) (bool, error) {
@@ -497,17 +519,18 @@ func (q *Queries) HasApprovedDepositRequestsWithin30DaysByUserId(ctx context.Con
 }
 
 const hasPendingTransactionRequestsWithPromotion = `-- name: HasPendingTransactionRequestsWithPromotion :one
-SELECT EXISTS (
-	SELECT
-		id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion
-	FROM
-		"TransactionRequest"
-	WHERE
-		"userId" = $1
-		AND type = 'DEPOSIT'
-		AND status = 'PENDING'
-		AND promotion = $2
-)
+SELECT
+	EXISTS (
+		SELECT
+			id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion, "transactionNo"
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'DEPOSIT'
+			AND status = 'PENDING'
+			AND promotion = $2
+	)
 `
 
 type HasPendingTransactionRequestsWithPromotionParams struct {
@@ -523,17 +546,18 @@ func (q *Queries) HasPendingTransactionRequestsWithPromotion(ctx context.Context
 }
 
 const hasRecentDepositRequestsByUserId = `-- name: HasRecentDepositRequestsByUserId :one
-SELECT EXISTS (
-	SELECT
-		id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion
-	FROM
-		"TransactionRequest"
-	WHERE
-		"userId" = $1
-		AND type = 'DEPOSIT'
-		AND status = 'PENDING'
-		AND "createdAt" >= now() - INTERVAL '1 minute'
-)
+SELECT
+	EXISTS (
+		SELECT
+			id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion, "transactionNo"
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'DEPOSIT'
+			AND status = 'PENDING'
+			AND "createdAt" >= now() - INTERVAL '1 minute'
+	)
 `
 
 func (q *Queries) HasRecentDepositRequestsByUserId(ctx context.Context, userid pgtype.UUID) (bool, error) {
@@ -544,17 +568,18 @@ func (q *Queries) HasRecentDepositRequestsByUserId(ctx context.Context, userid p
 }
 
 const hasRecentWithdrawRequestsByUserId = `-- name: HasRecentWithdrawRequestsByUserId :one
-SELECT EXISTS (
-	SELECT
-		id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion
-	FROM
-		"TransactionRequest"
-	WHERE
-		"userId" = $1
-		AND type = 'WITHDRAW'
-		AND status = 'PENDING'
-		AND "createdAt" >= now() - INTERVAL '5 minutes'
-)
+SELECT
+	EXISTS (
+		SELECT
+			id, "userId", "modifiedById", "bankName", "bankAccountName", "bankAccountNumber", "beneficiaryBankAccountName", "beneficiaryBankAccountNumber", amount, type, "receiptPath", status, remarks, "createdAt", "updatedAt", bonus, "withdrawBankFees", "depositToWallet", promotion, "transactionNo"
+		FROM
+			"TransactionRequest"
+		WHERE
+			"userId" = $1
+			AND type = 'WITHDRAW'
+			AND status = 'PENDING'
+			AND "createdAt" >= now() - INTERVAL '5 minutes'
+	)
 `
 
 func (q *Queries) HasRecentWithdrawRequestsByUserId(ctx context.Context, userid pgtype.UUID) (bool, error) {
@@ -573,7 +598,8 @@ SET
 	"withdrawBankFees" = COALESCE($5, 0),
 	remarks = $6,
 	"updatedAt" = now()
-WHERE id = $1
+WHERE
+	id = $1
 `
 
 type UpdateTransactionRequestParams struct {
