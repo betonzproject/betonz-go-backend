@@ -63,26 +63,11 @@ func GetDeposit(app *app.App) http.HandlerFunc {
 		}
 
 		// Choose a receiving bank depending on the depositor bank
-		depositBankIdParam := r.URL.Query().Get("depositorBankId")
-		depositBankId, _ := utils.ParseUUID(depositBankIdParam)
-		var depositorBank *db.Bank
-		if depositBankId.Valid {
-			i := slices.IndexFunc(banks, func(bank db.Bank) bool { return bank.ID.Bytes == depositBankId.Bytes })
-			if i != -1 {
-				depositorBank = &banks[i]
-			}
-		} else if user.LastUsedBankId.Valid {
-			i := slices.IndexFunc(banks, func(bank db.Bank) bool { return bank.ID.Bytes == user.LastUsedBankId.Bytes })
-			if i != -1 {
-				depositorBank = &banks[i]
-			}
-		} else if len(banks) > 0 {
-			depositorBank = &banks[0]
-		}
+		bankName := r.URL.Query().Get("bankName")
 
 		var receivingBank *db.Bank
-		if depositorBank != nil {
-			systemBanks, err := app.DB.GetSystemBanksByBankName(r.Context(), depositorBank.Name)
+		if bankName != "" {
+			systemBanks, err := app.DB.GetSystemBanksByBankName(r.Context(), db.BankName(bankName))
 			if err != nil {
 				log.Panicln("Can't get system banks: " + err.Error())
 			}
@@ -134,9 +119,10 @@ func GetDeposit(app *app.App) http.HandlerFunc {
 }
 
 type DepositForm struct {
-	DepositorBankId string           `form:"depositorBankId" validate:"uuid4"`
+	BankName        string           `form:"bankName" validate:"oneof=AGD AYA CB KBZ KBZPAY OK_DOLLAR WAVE_PAY YOMA"`
 	ReceivingBankId string           `form:"receivingBankId" validate:"uuid4"`
 	DepositAmount   int64            `form:"depositAmount" validate:"min=10000,max=20000000" key:"deposit.amount"`
+	AccountNumber   string           `form:"accountNumber"`
 	Promotion       db.PromotionType `form:"promotion" validate:"omitempty,oneof=INACTIVE_BONUS FIVE_PERCENT_UNLIMITED_BONUS TEN_PERCENT_UNLIMITED_BONUS" key:"deposit.promotion"`
 	DepositTo       product.Product  `form:"depositTo" validate:"product"`
 	ReceiptData     string           `form:"receiptData"`
@@ -182,17 +168,9 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		// Validate banks
-		depositorBankId, _ := utils.ParseUUID(depositForm.DepositorBankId)
-		depositorBank, err := app.DB.GetBankById(r.Context(), depositorBankId)
-		if err != nil {
-			http.Error(w, "deposit.depositorBankInvalid.message", http.StatusBadRequest)
-			return
-		}
-
 		receivingBankId, _ := utils.ParseUUID(depositForm.ReceivingBankId)
 		receivingBank, err := app.DB.GetSystemBankById(r.Context(), receivingBankId)
-		if err != nil || depositorBank.Name != receivingBank.Name || receivingBank.Disabled {
+		if err != nil || db.BankName(depositForm.BankName) != receivingBank.Name || receivingBank.Disabled {
 			http.Error(w, "deposit.receivingBankInvalid.message", http.StatusBadRequest)
 			return
 		}
@@ -233,14 +211,6 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 		tx, qtx := transactionutils.Begin(app, r.Context())
 		defer tx.Rollback(r.Context())
 
-		err = qtx.UpdateUserLastUsedBank(r.Context(), db.UpdateUserLastUsedBankParams{
-			ID:             user.ID,
-			LastUsedBankId: depositorBank.ID,
-		})
-		if err != nil {
-			log.Panicln("Can't update last used bank: " + err.Error())
-		}
-
 		amount := pgtype.Numeric{Int: big.NewInt(depositForm.DepositAmount), Valid: true}
 		bonus := numericutils.Zero
 		if depositForm.Promotion != "" {
@@ -255,11 +225,11 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 		err = qtx.CreateTransactionRequest(r.Context(), db.CreateTransactionRequestParams{
 			UserId: user.ID,
 			BankName: db.NullBankName{
-				BankName: depositorBank.Name,
+				BankName: db.BankName(depositForm.BankName),
 				Valid:    true,
 			},
-			BankAccountName:              pgtype.Text{String: depositorBank.AccountName, Valid: true},
-			BankAccountNumber:            pgtype.Text{String: depositorBank.AccountNumber, Valid: true},
+			BankAccountName:              pgtype.Text{},
+			BankAccountNumber:            pgtype.Text{String: depositForm.AccountNumber, Valid: true},
 			BeneficiaryBankAccountName:   pgtype.Text{String: receivingBank.AccountName, Valid: true},
 			BeneficiaryBankAccountNumber: pgtype.Text{String: receivingBank.AccountNumber, Valid: true},
 			Amount:                       amount,
