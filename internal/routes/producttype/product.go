@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"slices"
+	"sort"
 
 	"github.com/doorman2137/betonz-go/internal/app"
 	"github.com/doorman2137/betonz-go/internal/auth"
@@ -73,6 +74,40 @@ func GetProduct(app *app.App) http.HandlerFunc {
 		games, err := product.GetGameList(app.Redis, r.Context(), productType, p)
 		if err != nil {
 			log.Panicln("Can't get games: " + err.Error())
+		}
+
+		if p == product.PragmaticPlay {
+			sort.Slice(games, func(i, j int) bool {
+				// Check if games[i] and games[j] are in PragmaticPlayTopGame
+				iIndex := -1
+				jIndex := -1
+				for idx, game := range product.PragmaticPlayTopGame {
+					if games[i].Name == game {
+						iIndex = idx
+					}
+					if games[j].Name == game {
+						jIndex = idx
+					}
+				}
+
+				// If both are in PragmaticPlayTopGame, compare their indexes
+				if iIndex != -1 && jIndex != -1 {
+					return iIndex < jIndex
+				}
+
+				// If only games[i] is in PragmaticPlayTopGame, prioritize it
+				if iIndex != -1 {
+					return true
+				}
+
+				// If only games[j] is in PragmaticPlayTopGame, prioritize it
+				if jIndex != -1 {
+					return false
+				}
+
+				// If none of them are in PragmaticPlayTopGame, compare their names
+				return games[i].Name < games[j].Name
+			})
 		}
 
 		jsonutils.Write(w, GetProductResponse{

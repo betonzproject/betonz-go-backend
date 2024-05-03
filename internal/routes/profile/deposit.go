@@ -122,7 +122,8 @@ type DepositForm struct {
 	BankName        string           `form:"bankName" validate:"oneof=AGD AYA CB KBZ KBZPAY OK_DOLLAR WAVE_PAY YOMA"`
 	ReceivingBankId string           `form:"receivingBankId" validate:"uuid4"`
 	DepositAmount   int64            `form:"depositAmount" validate:"min=10000,max=20000000" key:"deposit.amount"`
-	AccountNumber   string           `form:"accountNumber"`
+	AccountNumber   string           `form:"accountNumber" validate:"required"`
+	AccountName     string           `form:"accountName" validate:"required"`
 	Promotion       db.PromotionType `form:"promotion" validate:"omitempty,oneof=INACTIVE_BONUS FIVE_PERCENT_UNLIMITED_BONUS TEN_PERCENT_UNLIMITED_BONUS" key:"deposit.promotion"`
 	DepositTo       product.Product  `form:"depositTo" validate:"product"`
 	ReceiptData     string           `form:"receiptData"`
@@ -243,6 +244,22 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 		})
 		if err != nil {
 			log.Panicln("Can't create deposit request: " + err.Error())
+		}
+
+		_, err = qtx.GetBankByBankNameAndNumber(r.Context(), db.GetBankByBankNameAndNumberParams{
+			AccountNumber: depositForm.AccountNumber,
+			Name:          db.BankName(depositForm.BankName),
+		})
+		if err != nil {
+			_, err = qtx.CreateBank(r.Context(), db.CreateBankParams{
+				UserId:        user.ID,
+				Name:          db.BankName(depositForm.BankName),
+				AccountName:   depositForm.AccountName,
+				AccountNumber: depositForm.AccountNumber,
+			})
+			if err != nil {
+				log.Panicln("Error creating bank account: ", err.Error())
+			}
 		}
 
 		app.EventServer.NotifyAdmins("request")

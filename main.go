@@ -123,5 +123,5 @@ func main() {
 	}
 
 	log.Println("🥖 Server started at port 8080!")
-	http.ListenAndServe(":8080", app.Scs.LoadAndSave(r))
+	http.ListenAndServe(":8081", app.Scs.LoadAndSave(r))
 }

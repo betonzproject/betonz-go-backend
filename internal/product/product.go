@@ -413,3 +413,21 @@ func LaunchGame(etgUsername string, productType ProductType, product Product, ga
 
 	return gameResponse.Url, nil
 }
+
+var PragmaticPlayTopGame = []string{
+	"Gates of Olympus",
+	"Sweet Bonanza",
+	"Sugar Rush 1000",
+	"Gates of Olympus 1000",
+	"Zeus vs Hades - Gods of War",
+	"The Dog House",
+	"Starlight Princess",
+	"Starlight Princess 1000",
+	"Gates of Olympus DICE",
+	"Fire Portals",
+	"The Dog House - Dog or Alive",
+	"Big Bass - Secrets of the Golden Lake",
+	"Fruit Party",
+	"Sugar Rush",
+	"Cleocatra",
+}
