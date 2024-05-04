@@ -114,6 +114,7 @@ func FetchBets(app *app.App, key int) {
 
 	idsToMark := make([]int32, 0, 100)
 	for _, bet := range fetchResponse.Data {
+		log.Println(bet.Member)
 		err := qtx.UpsertBet(ctx, db.UpsertBetParams{
 			ID:               bet.BetId,
 			RefId:            bet.RefId,
