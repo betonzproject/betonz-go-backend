@@ -11,6 +11,65 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createAdmin = `-- name: CreateAdmin :one
+INSERT INTO
+	"User" (
+		id,
+		username,
+		email,
+		"etgUsername",
+		"passwordHash",
+		"isEmailVerified",
+        "role",
+		"updatedAt"
+	)
+VALUES
+	(gen_random_uuid (), $1, $2, $3, $4, TRUE, $5, now())
+RETURNING
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy"
+`
+
+type CreateAdminParams struct {
+	Username     string `json:"username"`
+	Email        string `json:"email"`
+	EtgUsername  string `json:"etgUsername"`
+	PasswordHash string `json:"passwordHash"`
+	Role         Role   `json:"role"`
+}
+
+func (q *Queries) CreateAdmin(ctx context.Context, arg CreateAdminParams) (User, error) {
+	row := q.db.QueryRow(ctx, createAdmin,
+		arg.Username,
+		arg.Email,
+		arg.EtgUsername,
+		arg.PasswordHash,
+		arg.Role,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.DisplayName,
+		&i.PhoneNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.EtgUsername,
+		&i.Role,
+		&i.MainWallet,
+		&i.LastUsedBankId,
+		&i.ProfileImage,
+		&i.Status,
+		&i.IsEmailVerified,
+		&i.Dob,
+		&i.PendingEmail,
+		&i.ReferralCode,
+		&i.InvitedBy,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO
 	"User" (
@@ -73,6 +132,15 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deleteAdmin = `-- name: DeleteAdmin :exec
+DELETE FROM "User" WHERE id = $1 AND (role='ADMIN' OR role='SUPERADMIN')
+`
+
+func (q *Queries) DeleteAdmin(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteAdmin, id)
+	return err
+}
+
 const depositUserMainWallet = `-- name: DepositUserMainWallet :exec
 UPDATE "User"
 SET
@@ -90,6 +158,148 @@ type DepositUserMainWalletParams struct {
 func (q *Queries) DepositUserMainWallet(ctx context.Context, arg DepositUserMainWalletParams) error {
 	_, err := q.db.Exec(ctx, depositUserMainWallet, arg.ID, arg.Amount)
 	return err
+}
+
+const getAdmins = `-- name: GetAdmins :many
+WITH
+	q AS (
+		SELECT
+			ROW_NUMBER() OVER (
+				ORDER BY
+					u."createdAt"
+			) "rowNumber",
+			u.id,
+			u.username,
+			u.role,
+			u.email,
+			u.dob,
+			u."displayName",
+			u."phoneNumber",
+			u."profileImage",
+			u."mainWallet",
+			u.status,
+			u."referralCode",
+			u."createdAt",
+			e."sourceIp" AS "lastLoginIp",
+			e."createdAt"::timestamptz AS "lastLogin",
+			tr1."lastDeposit"::timestamptz AS "lastDeposit",
+			tr2."lastWithdraw"::timestamptz AS "lastWithdraw"
+		FROM
+			"User" u
+			LEFT JOIN (
+				-- Get last login IP and time
+				SELECT DISTINCT
+					ON ("userId") "userId",
+					"sourceIp",
+					"createdAt"
+				FROM
+					"Event"
+				WHERE
+					result = 'SUCCESS'
+					AND type = 'LOGIN'
+				ORDER BY
+					"userId",
+					"createdAt" DESC
+			) e ON u.id = e."userId"
+			LEFT JOIN (
+				-- Get last deposit time
+				SELECT
+					"userId",
+					max("updatedAt") "lastDeposit"
+				FROM
+					"TransactionRequest"
+				WHERE
+					type = 'DEPOSIT'
+					AND status = 'APPROVED'
+				GROUP BY
+					"userId"
+			) tr1 ON u.id = tr1."userId"
+			LEFT JOIN (
+				-- Get last withdraw time
+				SELECT
+					"userId",
+					max("updatedAt") "lastWithdraw"
+				FROM
+					"TransactionRequest"
+				WHERE
+					type = 'WITHDRAW'
+					AND status = 'APPROVED'
+				GROUP BY
+					"userId"
+			) tr2 ON u.id = tr2."userId"
+		WHERE
+			u.role <> 'SYSTEM'
+		ORDER BY
+			u."createdAt"
+	)
+SELECT
+	"rowNumber", id, username, role, email, dob, "displayName", "phoneNumber", "profileImage", "mainWallet", status, "referralCode", "createdAt", "lastLoginIp", "lastLogin", "lastDeposit", "lastWithdraw"
+FROM
+	q
+WHERE (
+		$1::"Role"[] IS NULL
+		OR role = ANY ($1)
+	)
+ORDER BY
+	"rowNumber" DESC
+`
+
+type GetAdminsRow struct {
+	RowNumber    int64              `json:"rowNumber"`
+	ID           pgtype.UUID        `json:"id"`
+	Username     string             `json:"username"`
+	Role         Role               `json:"role"`
+	Email        string             `json:"email"`
+	Dob          pgtype.Date        `json:"dob"`
+	DisplayName  pgtype.Text        `json:"displayName"`
+	PhoneNumber  pgtype.Text        `json:"phoneNumber"`
+	ProfileImage pgtype.Text        `json:"profileImage"`
+	MainWallet   pgtype.Numeric     `json:"mainWallet"`
+	Status       UserStatus         `json:"status"`
+	ReferralCode pgtype.Text        `json:"referralCode"`
+	CreatedAt    pgtype.Timestamptz `json:"createdAt"`
+	LastLoginIp  pgtype.Text        `json:"lastLoginIp"`
+	LastLogin    pgtype.Timestamptz `json:"lastLogin"`
+	LastDeposit  pgtype.Timestamptz `json:"lastDeposit"`
+	LastWithdraw pgtype.Timestamptz `json:"lastWithdraw"`
+}
+
+func (q *Queries) GetAdmins(ctx context.Context, role []Role) ([]GetAdminsRow, error) {
+	rows, err := q.db.Query(ctx, getAdmins, role)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetAdminsRow{}
+	for rows.Next() {
+		var i GetAdminsRow
+		if err := rows.Scan(
+			&i.RowNumber,
+			&i.ID,
+			&i.Username,
+			&i.Role,
+			&i.Email,
+			&i.Dob,
+			&i.DisplayName,
+			&i.PhoneNumber,
+			&i.ProfileImage,
+			&i.MainWallet,
+			&i.Status,
+			&i.ReferralCode,
+			&i.CreatedAt,
+			&i.LastLoginIp,
+			&i.LastLogin,
+			&i.LastDeposit,
+			&i.LastWithdraw,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getExtendedUserById = `-- name: GetExtendedUserById :one

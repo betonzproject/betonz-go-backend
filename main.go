@@ -103,6 +103,8 @@ func main() {
 		r.Post("/withdraw", admin.PostWithdraw(app))
 		r.Get("/maintenance", admin.GetMaintenance(app))
 		r.Post("/maintenance", admin.PostMaintenance(app))
+		r.Get("/admins", admin.GetAdmin(app))
+		r.Post("/admins", admin.PostAdmin(app))
 	})
 
 	minutes, _ := strconv.Atoi(os.Getenv("FETCH_BETS_INTERVAL_MINUTES"))

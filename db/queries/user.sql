@@ -215,6 +215,109 @@ VALUES
 RETURNING
 	*;
 
+-- name: CreateAdmin :one
+INSERT INTO
+	"User" (
+		id,
+		username,
+		email,
+		"etgUsername",
+		"passwordHash",
+		"isEmailVerified",
+        "role",
+		"updatedAt"
+	)
+VALUES
+	(gen_random_uuid (), $1, $2, $3, $4, TRUE, $5, now())
+RETURNING
+	*;
+
+-- name: GetAdmins :many
+WITH
+	q AS (
+		SELECT
+			ROW_NUMBER() OVER (
+				ORDER BY
+					u."createdAt"
+			) "rowNumber",
+			u.id,
+			u.username,
+			u.role,
+			u.email,
+			u.dob,
+			u."displayName",
+			u."phoneNumber",
+			u."profileImage",
+			u."mainWallet",
+			u.status,
+			u."referralCode",
+			u."createdAt",
+			e."sourceIp" AS "lastLoginIp",
+			e."createdAt"::timestamptz AS "lastLogin",
+			tr1."lastDeposit"::timestamptz AS "lastDeposit",
+			tr2."lastWithdraw"::timestamptz AS "lastWithdraw"
+		FROM
+			"User" u
+			LEFT JOIN (
+				-- Get last login IP and time
+				SELECT DISTINCT
+					ON ("userId") "userId",
+					"sourceIp",
+					"createdAt"
+				FROM
+					"Event"
+				WHERE
+					result = 'SUCCESS'
+					AND type = 'LOGIN'
+				ORDER BY
+					"userId",
+					"createdAt" DESC
+			) e ON u.id = e."userId"
+			LEFT JOIN (
+				-- Get last deposit time
+				SELECT
+					"userId",
+					max("updatedAt") "lastDeposit"
+				FROM
+					"TransactionRequest"
+				WHERE
+					type = 'DEPOSIT'
+					AND status = 'APPROVED'
+				GROUP BY
+					"userId"
+			) tr1 ON u.id = tr1."userId"
+			LEFT JOIN (
+				-- Get last withdraw time
+				SELECT
+					"userId",
+					max("updatedAt") "lastWithdraw"
+				FROM
+					"TransactionRequest"
+				WHERE
+					type = 'WITHDRAW'
+					AND status = 'APPROVED'
+				GROUP BY
+					"userId"
+			) tr2 ON u.id = tr2."userId"
+		WHERE
+			u.role <> 'SYSTEM'
+		ORDER BY
+			u."createdAt"
+	)
+SELECT
+	*
+FROM
+	q
+WHERE (
+		@role::"Role"[] IS NULL
+		OR role = ANY (@role)
+	)
+ORDER BY
+	"rowNumber" DESC;
+
+-- name: DeleteAdmin :exec
+DELETE FROM "User" WHERE id = $1 AND (role='ADMIN' OR role='SUPERADMIN');
+
 -- name: UpdateUser :exec
 UPDATE "User"
 SET
