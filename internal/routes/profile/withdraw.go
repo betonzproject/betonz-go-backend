@@ -109,6 +109,14 @@ func PostWithdraw(app *app.App) http.HandlerFunc {
 			log.Panicln("Can't update last used bank: " + err.Error())
 		}
 
+		err = qtx.WithdrawUserMainWallet(r.Context(), db.WithdrawUserMainWalletParams{
+			ID:     user.ID,
+			Amount: withdrawAmount,
+		})
+		if err != nil {
+			log.Panicln("Error withdrawing user's balance: ", err.Error())
+		}
+
 		err = qtx.CreateTransactionRequest(r.Context(), db.CreateTransactionRequestParams{
 			UserId: user.ID,
 			BankName: db.NullBankName{

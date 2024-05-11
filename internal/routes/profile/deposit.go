@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"net/http"
 	"slices"
+	"strings"
 
 	"github.com/doorman2137/betonz-go/internal/acl"
 	"github.com/doorman2137/betonz-go/internal/app"
@@ -145,6 +146,9 @@ func PostDeposit(app *app.App) http.HandlerFunc {
 		if formutils.ParseDecodeValidateMultipart(app, w, r, &depositForm) != nil {
 			return
 		}
+
+		// Strip spaces
+		depositForm.AccountNumber = strings.ReplaceAll(depositForm.AccountNumber, " ", "")
 
 		productsUnderMaintenance, err := app.DB.GetMaintenanceProductCodes(r.Context())
 		if err != nil {

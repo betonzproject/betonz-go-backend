@@ -132,11 +132,10 @@ func GetTransactionRequest(app *app.App) http.HandlerFunc {
 }
 
 type TransactionRequestForm struct {
-	RequestId   int32  `form:"requestId" validate:"required"`
-	Action      string `form:"action" validate:"required,oneof=approve decline"`
-	Fees        int64  `form:"fees"`
-	Remarks     string `form:"remarks"`
-	ReceiptData string `form:"receiptData"`
+	RequestId int32  `form:"requestId" validate:"required"`
+	Action    string `form:"action" validate:"required,oneof=approve decline"`
+	Fees      int64  `form:"fees"`
+	Remarks   string `form:"remarks"`
 }
 
 func PostTransactionRequest(app *app.App) http.HandlerFunc {
@@ -243,30 +242,10 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 					}
 				}
 			} else {
-				// Withdraw
-				if numericutils.Cmp(initiator.MainWallet, tr.Amount) < 0 {
-					http.Error(w, "transactionRequest.insufficientBalanceInMainWallet.message", http.StatusBadRequest)
-					return
-				}
-
-				if transactionRequestForm.ReceiptData == "" {
-					http.Error(w, "required.message", http.StatusBadRequest)
-					return
-				}
-
-				err := qtx.WithdrawUserMainWallet(r.Context(), db.WithdrawUserMainWalletParams{
-					ID:     initiator.ID,
-					Amount: tr.Amount,
-				})
-				if err != nil {
-					log.Panicln("Can't update user main wallet: " + err.Error())
-				}
-
 				err = qtx.UpdateTransactionRequest(r.Context(), db.UpdateTransactionRequestParams{
 					ID:               transactionRequestForm.RequestId,
 					ModifiedById:     user.ID,
 					Status:           db.TransactionStatusAPPROVED,
-					ReceiptPath:      pgtype.Text{String: transactionRequestForm.ReceiptData, Valid: true},
 					WithdrawBankFees: pgtype.Numeric{Int: big.NewInt(transactionRequestForm.Fees), Valid: true},
 					Remarks:          pgtype.Text{String: transactionRequestForm.Remarks, Valid: transactionRequestForm.Remarks != ""},
 				})
@@ -275,6 +254,16 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 				}
 			}
 		} else {
+			if tr.Type == db.TransactionTypeWITHDRAW {
+				err = qtx.DepositUserMainWallet(r.Context(), db.DepositUserMainWalletParams{
+					ID:     tr.UserId,
+					Amount: tr.Amount,
+				})
+				if err != nil {
+					log.Panicln("Error depositing user's MainWallet: ", err.Error())
+				}
+			}
+
 			// Decline transaction request
 			err := qtx.UpdateTransactionRequest(r.Context(), db.UpdateTransactionRequestParams{
 				ID:           transactionRequestForm.RequestId,
