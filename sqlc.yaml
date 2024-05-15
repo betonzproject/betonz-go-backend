@@ -3,7 +3,6 @@ sql:
   - engine: "postgresql"
     queries: "db/queries"
     schema: "db/migrations"
-    default_schema: "betonz"
     gen:
       go:
         package: "db"
