@@ -106,6 +106,10 @@ const (
 	WMCasino       Product = 70
 	WSGaming       Product = 147
 	YLfishing      Product = 52
+	VPower         Product = 81
+	Habanero       Product = 14
+	MarioClub88    Product = 111
+	Pegasus        Product = 83
 )
 
 func (p Product) String() string {
@@ -166,6 +170,14 @@ func (p Product) String() string {
 		return "WS Gaming"
 	case YLfishing:
 		return "YL Fishing"
+	case VPower:
+		return "VPower"
+	case Habanero:
+		return "Habanero"
+	case MarioClub88:
+		return "Mario Club 88"
+	case Pegasus:
+		return "Pegasus"
 	default:
 		return ""
 	}
@@ -199,6 +211,10 @@ var productToUriComponentMap = map[Product]string{
 	WSGaming:       "ws-gaming",
 	Live22:         "live22",
 	YLfishing:      "yl-fishing",
+	VPower:         "vpower",
+	Habanero:       "habanero",
+	MarioClub88:    "mario-club-88",
+	Pegasus:        "pegasus",
 }
 
 func (p Product) UriComponent() string {
@@ -242,6 +258,10 @@ var AllProducts = []Product{
 	WMCasino,
 	WSGaming,
 	YLfishing,
+	VPower,
+	Habanero,
+	MarioClub88,
+	Pegasus,
 }
 var LiveCasinoProducts = []Product{
 	PragmaticPlay,
@@ -265,6 +285,10 @@ var SlotsProducts = []Product{
 	CQ9,
 	Dreamtech,
 	Spadegaming,
+	VPower,
+	Habanero,
+	MarioClub88,
+	Pegasus,
 }
 var SportsProducts = []Product{SBObet, IBCbet, M8Bet, TFGaming, WSGaming}
 var CardAndBoardProducts = []Product{_1GPoker, MPoker, KingMaker}
@@ -276,7 +300,7 @@ var WalletGroup2 = []Product{Jdb, Jili, SexyBaccarat, SV388}
 
 func HasGameList(productType ProductType, product Product) bool {
 	if productType == Slots {
-		return product == CreativeGaming || product == Joker || product == PragmaticPlay || product == Spadegaming || product == PlayNGo || product == CQ9 || product == Dreamtech
+		return product == CreativeGaming || product == Joker || product == PragmaticPlay || product == Spadegaming || product == PlayNGo || product == CQ9 || product == Dreamtech || product == VPower || product == Habanero || product == MarioClub88 || product == Pegasus
 	} else if productType == CardAndBoard {
 		return product == _1GPoker
 	}
