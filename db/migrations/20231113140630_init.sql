@@ -911,6 +911,9 @@ ALTER TABLE ONLY "VerificationToken"
 	ADD CONSTRAINT "VerificationToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
+
+
+
 --
 -- PostgreSQL database dump complete
 --

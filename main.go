@@ -17,6 +17,7 @@ import (
 	"github.com/BetOnz-Company/betonz-go/internal/routes/profile"
 	"github.com/BetOnz-Company/betonz-go/internal/routes/profile/bankingdetails"
 	"github.com/BetOnz-Company/betonz-go/internal/routes/profile/transfer"
+	"github.com/BetOnz-Company/betonz-go/internal/routes/ranking"
 	"github.com/BetOnz-Company/betonz-go/internal/routes/resetpassword"
 	"github.com/BetOnz-Company/betonz-go/internal/routes/verifyemail"
 
@@ -45,6 +46,7 @@ func main() {
 		r.Get("/{token}", resetpassword.GetPasswordResetToken(app))
 		r.Post("/{token}", resetpassword.PostPasswordResetToken(app))
 	})
+	r.Get("/vip-rank", ranking.GetUserRanking(app))
 	r.Get("/verify-email/{token}", verifyemail.GetVerifyEmailToken(app))
 	r.Get("/leaderboard/{productType}", routes.GetLeaderboard(app))
 	r.Route("/{productType}", func(r chi.Router) {
@@ -76,6 +78,7 @@ func main() {
 		r.Get("/notifications", profile.GetNotifications(app))
 		r.Post("/notifications", profile.PostNotifications(app))
 		r.Post("/account-settings", profile.PostAccountSettings(app))
+		r.Get("/inventory", profile.GetInventory(app))
 	})
 	r.Get("/verify-identity", routes.GetVerifyIdentity(app))
 	r.Post("/verify-identity", routes.PostVerifyIdentity(app))

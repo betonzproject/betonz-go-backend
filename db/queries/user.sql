@@ -12,7 +12,9 @@ SELECT
 	"referralCode",
 	"level",
 	"exp",
-	"profileImage"
+	"betonPoint",
+	"profileImage",
+	"vipLevel"
 FROM
 	"User"
 WHERE
@@ -35,7 +37,7 @@ WHERE
 	username = $1
 	AND (
 		@roles::"Role"[] IS NULL
-		OR ROLE = ANY (@roles)
+		OR role = ANY (@roles)
 	);
 
 -- name: GetUsers :many
@@ -58,11 +60,19 @@ WITH
 			u.status,
 			u."referralCode",
 			u."createdAt",
-			(SELECT COUNT(*) FROM "User" u2 WHERE u."referralCode" = u2."invitedBy") AS "invitedUserCount",
+			(
+				SELECT
+					COUNT(*)
+				FROM
+					"User" u2
+				WHERE
+					u."referralCode" = u2."invitedBy"
+			) AS "invitedUserCount",
 			e."sourceIp" AS "lastLoginIp",
 			e."createdAt"::timestamptz AS "lastLogin",
 			tr1."lastDeposit"::timestamptz AS "lastDeposit",
-			tr2."lastWithdraw"::timestamptz AS "lastWithdraw"
+			tr2."lastWithdraw"::timestamptz AS "lastWithdraw",
+			u."vipLevel"
 		FROM
 			"User" u
 			LEFT JOIN (
@@ -158,7 +168,8 @@ SELECT
 	u."isEmailVerified",
 	u."createdAt",
 	e."sourceIp" AS "lastLoginIp",
-	e2."updatedAt"::timestamptz AS "lastActiveAt"
+	e2."updatedAt"::timestamptz AS "lastActiveAt",
+	u."vipLevel"
 FROM
 	"User" u
 	LEFT JOIN (
@@ -221,16 +232,7 @@ RETURNING
 
 -- name: CreateAdmin :one
 INSERT INTO
-	"User" (
-		id,
-		username,
-		email,
-		"etgUsername",
-		"passwordHash",
-		"isEmailVerified",
-        "role",
-		"updatedAt"
-	)
+	"User" (id, username, email, "etgUsername", "passwordHash", "isEmailVerified", role, "updatedAt")
 VALUES
 	(gen_random_uuid (), $1, $2, $3, $4, TRUE, $5, now())
 RETURNING
@@ -312,7 +314,8 @@ SELECT
 	*
 FROM
 	q
-WHERE (
+WHERE
+	(
 		@role::"Role"[] IS NULL
 		OR role = ANY (@role)
 	)
@@ -320,7 +323,13 @@ ORDER BY
 	"rowNumber" DESC;
 
 -- name: DeleteAdmin :exec
-DELETE FROM "User" WHERE id = $1 AND (role='ADMIN' OR role='SUPERADMIN');
+DELETE FROM "User"
+WHERE
+	id = $1
+	AND (
+		role = 'ADMIN'
+		OR role = 'SUPERADMIN'
+	);
 
 -- name: UpdateUser :exec
 UPDATE "User"
@@ -426,3 +435,19 @@ FROM
 	"User" u
 WHERE
 	u."invitedBy" = @invitedBy;
+
+-- name: AddUserBetonPoint :exec
+UPDATE "User"
+SET
+	"betonPoint" = "betonPoint" + @BP,
+	"updatedAt" = now()
+WHERE
+	id = $1;
+
+-- name: SubUserBetonPoint :exec
+UPDATE "User"
+SET
+	"betonPoint" = "betonPoint" - @BP,
+	"updatedAt" = now()
+WHERE
+	id = $1;

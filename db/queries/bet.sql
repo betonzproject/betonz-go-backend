@@ -81,6 +81,15 @@ WHERE
 	AND b."startTime" >= sqlc.arg('fromDate')
 	AND b."startTime" <= sqlc.arg('toDate');
 
+-- name: GetTotalBetAmount :one
+SELECT
+    COALESCE(sum("bet"), 0)::bigint
+FROM
+    "Bet" b
+	JOIN "User" u USING ("etgUsername")
+WHERE
+    u.id = $1;
+
 -- name: UpsertBet :exec
 INSERT INTO
 	"Bet" (

@@ -40,6 +40,19 @@ func StartOfThisYear() time.Time {
 	return time.Date(now.Year(), time.January, 1, 0, 0, 0, 0, location)
 }
 
+// Returns a int representing the total days of current month.
+func DaysInMonth() int {
+	currentYear, currentMonth, _ := time.Now().Date()
+
+	firstDayOfNextMonth := time.Date(currentYear, currentMonth+1, 1, 0, 0, 0, 0, time.UTC)
+
+	lastDayOfCurrentMonth := firstDayOfNextMonth.Add(-time.Hour * 24)
+
+	totalDays := lastDayOfCurrentMonth.Day()
+
+	return totalDays
+}
+
 // Returns a `time.Time` object representing the end of this year in Asia/Yangon timezone.
 func EndOfThisYear() time.Time {
 	location, _ := time.LoadLocation("Asia/Yangon")

@@ -130,6 +130,7 @@ const (
 	EventTypeMAINTENANCEADD                 EventType = "MAINTENANCE_ADD"
 	EventTypeMAINTENANCEUPDATE              EventType = "MAINTENANCE_UPDATE"
 	EventTypeMAINTENANCEDELETE              EventType = "MAINTENANCE_DELETE"
+	EventTypeREWARDCLAIM                    EventType = "REWARD_CLAIM"
 )
 
 func (e *EventType) Scan(src interface{}) error {
@@ -252,6 +253,53 @@ func (ns NullIdentityVerificationStatus) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.IdentityVerificationStatus), nil
+}
+
+type InventoryItemType string
+
+const (
+	InventoryItemTypeBONUS        InventoryItemType = "BONUS"
+	InventoryItemTypeTOKENA       InventoryItemType = "TOKEN_A"
+	InventoryItemTypeTOKENB       InventoryItemType = "TOKEN_B"
+	InventoryItemTypeBETONPOINT   InventoryItemType = "BETON_POINT"
+	InventoryItemTypeREDPACK      InventoryItemType = "RED_PACK"
+	InventoryItemTypeROYALREDPACK InventoryItemType = "ROYAL_RED_PACK"
+	InventoryItemTypeRAFFLETICKET InventoryItemType = "RAFFLE_TICKET"
+)
+
+func (e *InventoryItemType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = InventoryItemType(s)
+	case string:
+		*e = InventoryItemType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for InventoryItemType: %T", src)
+	}
+	return nil
+}
+
+type NullInventoryItemType struct {
+	InventoryItemType InventoryItemType `json:"InventoryItemType"`
+	Valid             bool              `json:"valid"` // Valid is true if InventoryItemType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullInventoryItemType) Scan(value interface{}) error {
+	if value == nil {
+		ns.InventoryItemType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.InventoryItemType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullInventoryItemType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.InventoryItemType), nil
 }
 
 type NotificationType string
@@ -510,6 +558,59 @@ func (ns NullUserStatus) Value() (driver.Value, error) {
 	return string(ns.UserStatus), nil
 }
 
+type VipType string
+
+const (
+	VipTypeBRONZE      VipType = "BRONZE"
+	VipTypeSILVER      VipType = "SILVER"
+	VipTypeGOLD        VipType = "GOLD"
+	VipTypePLATINUMI   VipType = "PLATINUM_I"
+	VipTypePLATINUMII  VipType = "PLATINUM_II"
+	VipTypePLATINUMIII VipType = "PLATINUM_III"
+	VipTypePLATINUMIV  VipType = "PLATINUM_IV"
+	VipTypeDIAMONDI    VipType = "DIAMOND_I"
+	VipTypeDIAMONDII   VipType = "DIAMOND_II"
+	VipTypeDIAMONDIII  VipType = "DIAMOND_III"
+	VipTypeDIAMONDIV   VipType = "DIAMOND_IV"
+	VipTypeJADE        VipType = "JADE"
+	VipTypeKYAWTHUITE  VipType = "KYAWTHUITE"
+)
+
+func (e *VipType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = VipType(s)
+	case string:
+		*e = VipType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for VipType: %T", src)
+	}
+	return nil
+}
+
+type NullVipType struct {
+	VipType VipType `json:"VipType"`
+	Valid   bool    `json:"valid"` // Valid is true if VipType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullVipType) Scan(value interface{}) error {
+	if value == nil {
+		ns.VipType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.VipType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullVipType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.VipType), nil
+}
+
 type Bank struct {
 	ID            pgtype.UUID        `json:"id"`
 	UserId        pgtype.UUID        `json:"userId"`
@@ -581,6 +682,13 @@ type IdentityVerificationRequest struct {
 	CreatedAt    pgtype.Timestamptz         `json:"createdAt"`
 	UpdatedAt    pgtype.Timestamptz         `json:"updatedAt"`
 	Dob          pgtype.Date                `json:"dob"`
+}
+
+type Inventory struct {
+	ID     int32             `json:"id"`
+	UserId pgtype.UUID       `json:"userId"`
+	Item   InventoryItemType `json:"item"`
+	Count  pgtype.Numeric    `json:"count"`
 }
 
 type Maintenance struct {
@@ -674,6 +782,8 @@ type User struct {
 	InvitedBy       pgtype.Text        `json:"invitedBy"`
 	Level           pgtype.Int4        `json:"level"`
 	Exp             pgtype.Numeric     `json:"exp"`
+	BetonPoint      pgtype.Numeric     `json:"betonPoint"`
+	VipLevel        NullVipType        `json:"vipLevel"`
 }
 
 type VerificationPin struct {

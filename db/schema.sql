@@ -72,7 +72,8 @@ CREATE TYPE betonz."EventType" AS ENUM (
     'SYSTEM_BANK_DELETE',
     'MAINTENANCE_ADD',
     'MAINTENANCE_UPDATE',
-    'MAINTENANCE_DELETE'
+    'MAINTENANCE_DELETE',
+    'REWARD_CLAIM'
 );
 
 
@@ -96,6 +97,21 @@ CREATE TYPE betonz."IdentityVerificationStatus" AS ENUM (
     'REJECTED',
     'PENDING',
     'INCOMPLETE'
+);
+
+
+--
+-- Name: InventoryItemType; Type: TYPE; Schema: betonz; Owner: -
+--
+
+CREATE TYPE betonz."InventoryItemType" AS ENUM (
+    'BONUS',
+    'TOKEN_A',
+    'TOKEN_B',
+    'BETON_POINT',
+    'RED_PACK',
+    'ROYAL_RED_PACK',
+    'RAFFLE_TICKET'
 );
 
 
@@ -160,6 +176,27 @@ CREATE TYPE betonz."TransactionType" AS ENUM (
 CREATE TYPE betonz."UserStatus" AS ENUM (
     'NORMAL',
     'RESTRICTED'
+);
+
+
+--
+-- Name: VipType; Type: TYPE; Schema: betonz; Owner: -
+--
+
+CREATE TYPE betonz."VipType" AS ENUM (
+    'BRONZE',
+    'SILVER',
+    'GOLD',
+    'PLATINUM_I',
+    'PLATINUM_II',
+    'PLATINUM_III',
+    'PLATINUM_IV',
+    'DIAMOND_I',
+    'DIAMOND_II',
+    'DIAMOND_III',
+    'DIAMOND_IV',
+    'JADE',
+    'KYAWTHUITE'
 );
 
 
@@ -303,6 +340,38 @@ CREATE SEQUENCE betonz."IdentityVerificationRequests_id_seq"
 --
 
 ALTER SEQUENCE betonz."IdentityVerificationRequests_id_seq" OWNED BY betonz."IdentityVerificationRequest".id;
+
+
+--
+-- Name: Inventory; Type: TABLE; Schema: betonz; Owner: -
+--
+
+CREATE TABLE betonz."Inventory" (
+    id integer NOT NULL,
+    "userId" uuid NOT NULL,
+    item betonz."InventoryItemType" NOT NULL,
+    count numeric(32,2) DEFAULT 0 NOT NULL
+);
+
+
+--
+-- Name: Inventory_id_seq; Type: SEQUENCE; Schema: betonz; Owner: -
+--
+
+CREATE SEQUENCE betonz."Inventory_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: Inventory_id_seq; Type: SEQUENCE OWNED BY; Schema: betonz; Owner: -
+--
+
+ALTER SEQUENCE betonz."Inventory_id_seq" OWNED BY betonz."Inventory".id;
 
 
 --
@@ -494,6 +563,8 @@ CREATE TABLE betonz."User" (
     "invitedBy" character varying(7),
     level integer DEFAULT 1,
     exp numeric(65,30) DEFAULT 0 NOT NULL,
+    "betonPoint" numeric(32,2) DEFAULT 0 NOT NULL,
+    "vipLevel" betonz."VipType" DEFAULT 'BRONZE'::betonz."VipType",
     CONSTRAINT "User_level_check" CHECK ((level <= LEAST(80, level)))
 );
 
@@ -563,6 +634,13 @@ ALTER TABLE ONLY betonz."IdentityVerificationRequest" ALTER COLUMN id SET DEFAUL
 
 
 --
+-- Name: Inventory id; Type: DEFAULT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."Inventory" ALTER COLUMN id SET DEFAULT nextval('betonz."Inventory_id_seq"'::regclass);
+
+
+--
 -- Name: Maintenance id; Type: DEFAULT; Schema: betonz; Owner: -
 --
 
@@ -628,6 +706,14 @@ ALTER TABLE ONLY betonz."Flag"
 
 ALTER TABLE ONLY betonz."IdentityVerificationRequest"
     ADD CONSTRAINT "IdentityVerificationRequests_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Inventory Inventory_pkey; Type: CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."Inventory"
+    ADD CONSTRAINT "Inventory_pkey" PRIMARY KEY (id);
 
 
 --
@@ -716,6 +802,14 @@ ALTER TABLE ONLY betonz.schema_migrations
 
 ALTER TABLE ONLY betonz."Bank"
     ADD CONSTRAINT unique_account_bank UNIQUE ("accountNumber", name);
+
+
+--
+-- Name: Inventory unique_user_item; Type: CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."Inventory"
+    ADD CONSTRAINT unique_user_item UNIQUE ("userId", item);
 
 
 --
@@ -881,6 +975,14 @@ ALTER TABLE ONLY betonz."VerificationToken"
 
 
 --
+-- Name: Inventory fk_user; Type: FK CONSTRAINT; Schema: betonz; Owner: -
+--
+
+ALTER TABLE ONLY betonz."Inventory"
+    ADD CONSTRAINT fk_user FOREIGN KEY ("userId") REFERENCES betonz."User"(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -902,4 +1004,6 @@ INSERT INTO betonz.schema_migrations (version) VALUES
     ('20240424150346'),
     ('20240428131701'),
     ('20240501123346'),
-    ('20240516171816');
+    ('20240516171816'),
+    ('20240518061842'),
+    ('20240526085053');

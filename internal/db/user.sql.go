@@ -11,22 +11,32 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addUserBetonPoint = `-- name: AddUserBetonPoint :exec
+UPDATE "User"
+SET
+	"betonPoint" = "betonPoint" + $2,
+	"updatedAt" = now()
+WHERE
+	id = $1
+`
+
+type AddUserBetonPointParams struct {
+	ID pgtype.UUID    `json:"id"`
+	Bp pgtype.Numeric `json:"bp"`
+}
+
+func (q *Queries) AddUserBetonPoint(ctx context.Context, arg AddUserBetonPointParams) error {
+	_, err := q.db.Exec(ctx, addUserBetonPoint, arg.ID, arg.Bp)
+	return err
+}
+
 const createAdmin = `-- name: CreateAdmin :one
 INSERT INTO
-	"User" (
-		id,
-		username,
-		email,
-		"etgUsername",
-		"passwordHash",
-		"isEmailVerified",
-        "role",
-		"updatedAt"
-	)
+	"User" (id, username, email, "etgUsername", "passwordHash", "isEmailVerified", role, "updatedAt")
 VALUES
 	(gen_random_uuid (), $1, $2, $3, $4, TRUE, $5, now())
 RETURNING
-	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy", level, exp
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy", level, exp, "betonPoint", "vipLevel"
 `
 
 type CreateAdminParams struct {
@@ -68,6 +78,8 @@ func (q *Queries) CreateAdmin(ctx context.Context, arg CreateAdminParams) (User,
 		&i.InvitedBy,
 		&i.Level,
 		&i.Exp,
+		&i.BetonPoint,
+		&i.VipLevel,
 	)
 	return i, err
 }
@@ -88,7 +100,7 @@ INSERT INTO
 VALUES
 	(gen_random_uuid (), $1, $2, $3, $4, TRUE, $5, $6, now())
 RETURNING
-	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy", level, exp
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy", level, exp, "betonPoint", "vipLevel"
 `
 
 type CreateUserParams struct {
@@ -132,12 +144,20 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.InvitedBy,
 		&i.Level,
 		&i.Exp,
+		&i.BetonPoint,
+		&i.VipLevel,
 	)
 	return i, err
 }
 
 const deleteAdmin = `-- name: DeleteAdmin :exec
-DELETE FROM "User" WHERE id = $1 AND (role='ADMIN' OR role='SUPERADMIN')
+DELETE FROM "User"
+WHERE
+	id = $1
+	AND (
+		role = 'ADMIN'
+		OR role = 'SUPERADMIN'
+	)
 `
 
 func (q *Queries) DeleteAdmin(ctx context.Context, id pgtype.UUID) error {
@@ -240,7 +260,8 @@ SELECT
 	"rowNumber", id, username, role, email, dob, "displayName", "phoneNumber", "profileImage", "mainWallet", status, "referralCode", "createdAt", "lastLoginIp", "lastLogin", "lastDeposit", "lastWithdraw"
 FROM
 	q
-WHERE (
+WHERE
+	(
 		$1::"Role"[] IS NULL
 		OR role = ANY ($1)
 	)
@@ -308,7 +329,7 @@ func (q *Queries) GetAdmins(ctx context.Context, role []Role) ([]GetAdminsRow, e
 
 const getExtendedUserById = `-- name: GetExtendedUserById :one
 SELECT
-	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy", level, exp
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy", level, exp, "betonPoint", "vipLevel"
 FROM
 	"User"
 WHERE
@@ -340,20 +361,22 @@ func (q *Queries) GetExtendedUserById(ctx context.Context, id pgtype.UUID) (User
 		&i.InvitedBy,
 		&i.Level,
 		&i.Exp,
+		&i.BetonPoint,
+		&i.VipLevel,
 	)
 	return i, err
 }
 
 const getExtendedUserByUsername = `-- name: GetExtendedUserByUsername :one
 SELECT
-	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy", level, exp
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy", level, exp, "betonPoint", "vipLevel"
 FROM
 	"User"
 WHERE
 	username = $1
 	AND (
 		$2::"Role"[] IS NULL
-		OR ROLE = ANY ($2)
+		OR role = ANY ($2)
 	)
 `
 
@@ -387,6 +410,8 @@ func (q *Queries) GetExtendedUserByUsername(ctx context.Context, arg GetExtended
 		&i.InvitedBy,
 		&i.Level,
 		&i.Exp,
+		&i.BetonPoint,
+		&i.VipLevel,
 	)
 	return i, err
 }
@@ -463,7 +488,7 @@ func (q *Queries) GetNewPlayerCount(ctx context.Context, arg GetNewPlayerCountPa
 
 const getPlayerByReferralCode = `-- name: GetPlayerByReferralCode :one
 SELECT
-	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy", level, exp
+	id, username, email, "passwordHash", "displayName", "phoneNumber", "createdAt", "updatedAt", "etgUsername", role, "mainWallet", "lastUsedBankId", "profileImage", status, "isEmailVerified", dob, "pendingEmail", "referralCode", "invitedBy", level, exp, "betonPoint", "vipLevel"
 FROM
 	"User"
 WHERE
@@ -495,6 +520,8 @@ func (q *Queries) GetPlayerByReferralCode(ctx context.Context, referralcode pgty
 		&i.InvitedBy,
 		&i.Level,
 		&i.Exp,
+		&i.BetonPoint,
+		&i.VipLevel,
 	)
 	return i, err
 }
@@ -515,7 +542,8 @@ SELECT
 	u."isEmailVerified",
 	u."createdAt",
 	e."sourceIp" AS "lastLoginIp",
-	e2."updatedAt"::timestamptz AS "lastActiveAt"
+	e2."updatedAt"::timestamptz AS "lastActiveAt",
+	u."vipLevel"
 FROM
 	"User" u
 	LEFT JOIN (
@@ -565,6 +593,7 @@ type GetPlayerInfoByIdRow struct {
 	CreatedAt       pgtype.Timestamptz `json:"createdAt"`
 	LastLoginIp     pgtype.Text        `json:"lastLoginIp"`
 	LastActiveAt    pgtype.Timestamptz `json:"lastActiveAt"`
+	VipLevel        NullVipType        `json:"vipLevel"`
 }
 
 func (q *Queries) GetPlayerInfoById(ctx context.Context, id pgtype.UUID) (GetPlayerInfoByIdRow, error) {
@@ -586,6 +615,7 @@ func (q *Queries) GetPlayerInfoById(ctx context.Context, id pgtype.UUID) (GetPla
 		&i.CreatedAt,
 		&i.LastLoginIp,
 		&i.LastActiveAt,
+		&i.VipLevel,
 	)
 	return i, err
 }
@@ -604,7 +634,9 @@ SELECT
 	"referralCode",
 	"level",
 	"exp",
-	"profileImage"
+	"betonPoint",
+	"profileImage",
+	"vipLevel"
 FROM
 	"User"
 WHERE
@@ -624,7 +656,9 @@ type GetUserByIdRow struct {
 	ReferralCode pgtype.Text    `json:"referralCode"`
 	Level        pgtype.Int4    `json:"level"`
 	Exp          pgtype.Numeric `json:"exp"`
+	BetonPoint   pgtype.Numeric `json:"betonPoint"`
 	ProfileImage pgtype.Text    `json:"profileImage"`
+	VipLevel     NullVipType    `json:"vipLevel"`
 }
 
 func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (GetUserByIdRow, error) {
@@ -643,7 +677,9 @@ func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (GetUserByIdR
 		&i.ReferralCode,
 		&i.Level,
 		&i.Exp,
+		&i.BetonPoint,
 		&i.ProfileImage,
+		&i.VipLevel,
 	)
 	return i, err
 }
@@ -668,11 +704,19 @@ WITH
 			u.status,
 			u."referralCode",
 			u."createdAt",
-			(SELECT COUNT(*) FROM "User" u2 WHERE u."referralCode" = u2."invitedBy") AS "invitedUserCount",
+			(
+				SELECT
+					COUNT(*)
+				FROM
+					"User" u2
+				WHERE
+					u."referralCode" = u2."invitedBy"
+			) AS "invitedUserCount",
 			e."sourceIp" AS "lastLoginIp",
 			e."createdAt"::timestamptz AS "lastLogin",
 			tr1."lastDeposit"::timestamptz AS "lastDeposit",
-			tr2."lastWithdraw"::timestamptz AS "lastWithdraw"
+			tr2."lastWithdraw"::timestamptz AS "lastWithdraw",
+			u."vipLevel"
 		FROM
 			"User" u
 			LEFT JOIN (
@@ -722,7 +766,7 @@ WITH
 			u."createdAt"
 	)
 SELECT
-	"rowNumber", id, username, role, email, dob, "displayName", "phoneNumber", "profileImage", "mainWallet", status, "referralCode", "createdAt", "invitedUserCount", "lastLoginIp", "lastLogin", "lastDeposit", "lastWithdraw"
+	"rowNumber", id, username, role, email, dob, "displayName", "phoneNumber", "profileImage", "mainWallet", status, "referralCode", "createdAt", "invitedUserCount", "lastLoginIp", "lastLogin", "lastDeposit", "lastWithdraw", "vipLevel"
 FROM
 	q
 WHERE
@@ -771,6 +815,7 @@ type GetUsersRow struct {
 	LastLogin        pgtype.Timestamptz `json:"lastLogin"`
 	LastDeposit      pgtype.Timestamptz `json:"lastDeposit"`
 	LastWithdraw     pgtype.Timestamptz `json:"lastWithdraw"`
+	VipLevel         NullVipType        `json:"vipLevel"`
 }
 
 func (q *Queries) GetUsers(ctx context.Context, arg GetUsersParams) ([]GetUsersRow, error) {
@@ -806,6 +851,7 @@ func (q *Queries) GetUsers(ctx context.Context, arg GetUsersParams) ([]GetUsersR
 			&i.LastLogin,
 			&i.LastDeposit,
 			&i.LastWithdraw,
+			&i.VipLevel,
 		); err != nil {
 			return nil, err
 		}
@@ -854,6 +900,25 @@ type MarkUserEmailAsVerifiedParams struct {
 
 func (q *Queries) MarkUserEmailAsVerified(ctx context.Context, arg MarkUserEmailAsVerifiedParams) error {
 	_, err := q.db.Exec(ctx, markUserEmailAsVerified, arg.ID, arg.Email)
+	return err
+}
+
+const subUserBetonPoint = `-- name: SubUserBetonPoint :exec
+UPDATE "User"
+SET
+	"betonPoint" = "betonPoint" - $2,
+	"updatedAt" = now()
+WHERE
+	id = $1
+`
+
+type SubUserBetonPointParams struct {
+	ID pgtype.UUID    `json:"id"`
+	Bp pgtype.Numeric `json:"bp"`
+}
+
+func (q *Queries) SubUserBetonPoint(ctx context.Context, arg SubUserBetonPointParams) error {
+	_, err := q.db.Exec(ctx, subUserBetonPoint, arg.ID, arg.Bp)
 	return err
 }
 

@@ -189,6 +189,23 @@ func (q *Queries) GetTopPayout(ctx context.Context, producttype int32) ([]GetTop
 	return items, nil
 }
 
+const getTotalBetAmount = `-- name: GetTotalBetAmount :one
+SELECT
+    COALESCE(sum("bet"), 0)::bigint
+FROM
+    "Bet" b
+	JOIN "User" u USING ("etgUsername")
+WHERE
+    u.id = $1
+`
+
+func (q *Queries) GetTotalBetAmount(ctx context.Context, id pgtype.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, getTotalBetAmount, id)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const getTotalWinLoss = `-- name: GetTotalWinLoss :one
 SELECT
 	COALESCE(sum("winLoss"), 0)::bigint
