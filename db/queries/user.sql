@@ -10,6 +10,8 @@ SELECT
 	"mainWallet",
 	dob,
 	"referralCode",
+	"level",
+	"exp",
 	"profileImage"
 FROM
 	"User"
@@ -398,6 +400,15 @@ UPDATE "User"
 SET
 	"isEmailVerified" = TRUE,
 	email = $2,
+	"updatedAt" = now()
+WHERE
+	id = $1;
+
+-- name: IncreaseUserLevelAndExp :exec
+UPDATE "User"
+SET
+	"level" = "level" + 1,
+	"exp" = @exp,
 	"updatedAt" = now()
 WHERE
 	id = $1;

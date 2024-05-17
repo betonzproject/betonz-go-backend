@@ -72,7 +72,8 @@ CREATE TYPE betonz."EventType" AS ENUM (
     'SYSTEM_BANK_DELETE',
     'MAINTENANCE_ADD',
     'MAINTENANCE_UPDATE',
-    'MAINTENANCE_DELETE'
+    'MAINTENANCE_DELETE',
+    'REWARD_CLAIM'
 );
 
 
@@ -491,7 +492,10 @@ CREATE TABLE betonz."User" (
     dob date,
     "pendingEmail" text,
     "referralCode" character varying(7),
-    "invitedBy" character varying(7)
+    "invitedBy" character varying(7),
+    level integer DEFAULT 1,
+    exp numeric(65,30) DEFAULT 0 NOT NULL,
+    CONSTRAINT "User_level_check" CHECK ((level <= LEAST(80, level)))
 );
 
 
@@ -898,4 +902,6 @@ INSERT INTO betonz.schema_migrations (version) VALUES
     ('20240309151446'),
     ('20240424150346'),
     ('20240428131701'),
-    ('20240501123346');
+    ('20240501123346'),
+    ('20240516171816'),
+    ('20240518061842');

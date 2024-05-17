@@ -672,6 +672,8 @@ type User struct {
 	PendingEmail    pgtype.Text        `json:"pendingEmail"`
 	ReferralCode    pgtype.Text        `json:"referralCode"`
 	InvitedBy       pgtype.Text        `json:"invitedBy"`
+	Level           pgtype.Int4        `json:"level"`
+	Exp             pgtype.Numeric     `json:"exp"`
 }
 
 type VerificationPin struct {

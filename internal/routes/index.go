@@ -2,6 +2,7 @@ package routes
 
 import (
 	"log"
+	"math/big"
 	"net/http"
 
 	"github.com/doorman2137/betonz-go/internal/acl"
@@ -10,12 +11,14 @@ import (
 	"github.com/doorman2137/betonz-go/internal/db"
 	"github.com/doorman2137/betonz-go/internal/utils"
 	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Response struct {
 	User                    *db.GetUserByIdRow `json:"user"`
 	UnreadNotificationCount int64              `json:"unreadNotificationCount"`
 	Permissons              []acl.Permission   `json:"permissions"`
+	ExpTarget               int64              `json:"expTarget"`
 }
 
 func GetIndex(app *app.App) http.HandlerFunc {
@@ -24,6 +27,23 @@ func GetIndex(app *app.App) http.HandlerFunc {
 		if err != nil {
 			jsonutils.Write(w, Response{}, http.StatusOK)
 			return
+		}
+
+		userLevel, _ := user.Level.Int64Value()
+		userExp, _ := user.Exp.Int64Value()
+
+		nextLevelExp := utils.AllTargets[userLevel.Int64-1]
+
+		canIncreaseLevel := utils.ExpTarget(userExp.Int64) >= nextLevelExp
+
+		if canIncreaseLevel && userLevel.Int64 != 80 {
+			err = app.DB.IncreaseUserLevelAndExp(r.Context(), db.IncreaseUserLevelAndExpParams{
+				ID:  user.ID,
+				Exp: pgtype.Numeric{Int: big.NewInt(int64(utils.ExpTarget(userExp.Int64) - nextLevelExp)), Valid: true},
+			})
+			if err != nil {
+				log.Panicln("Error updating user's level: ", err.Error())
+			}
 		}
 
 		var unreadNotificationCount int64
@@ -47,6 +67,10 @@ func GetIndex(app *app.App) http.HandlerFunc {
 			}
 		}
 
-		jsonutils.Write(w, Response{User: &user, UnreadNotificationCount: unreadNotificationCount, Permissons: acl.Acl[user.Role]}, http.StatusOK)
+		if canIncreaseLevel && userLevel.Int64 != 80 {
+			jsonutils.Write(w, Response{User: &user, UnreadNotificationCount: unreadNotificationCount, Permissons: acl.Acl[user.Role], ExpTarget: int64(utils.ExpTarget(userExp.Int64) - nextLevelExp)}, http.StatusOK)
+		} else {
+			jsonutils.Write(w, Response{User: &user, UnreadNotificationCount: unreadNotificationCount, Permissons: acl.Acl[user.Role], ExpTarget: int64(nextLevelExp)}, http.StatusOK)
+		}
 	}
 }
