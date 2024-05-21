@@ -6,12 +6,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/BetOnz-Company/betonz-go/internal/db"
+	"github.com/BetOnz-Company/betonz-go/internal/sse"
+	"github.com/BetOnz-Company/betonz-go/internal/utils"
+	"github.com/BetOnz-Company/betonz-go/internal/utils/ratelimiter"
+
 	"github.com/alexedwards/scs/goredisstore"
 	"github.com/alexedwards/scs/v2"
-	"github.com/doorman2137/betonz-go/internal/db"
-	"github.com/doorman2137/betonz-go/internal/sse"
-	"github.com/doorman2137/betonz-go/internal/utils"
-	"github.com/doorman2137/betonz-go/internal/utils/ratelimiter"
 	"github.com/go-playground/form/v4"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"

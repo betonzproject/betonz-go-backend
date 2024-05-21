@@ -1,4 +1,4 @@
-module github.com/doorman2137/betonz-go
+module github.com/BetOnz-Company/betonz-go
 
 go 1.22.0
 

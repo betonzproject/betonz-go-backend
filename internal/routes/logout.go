@@ -3,7 +3,7 @@ package routes
 import (
 	"net/http"
 
-	"github.com/doorman2137/betonz-go/internal/app"
+	"github.com/BetOnz-Company/betonz-go/internal/app"
 )
 
 func PostLogout(app *app.App) http.HandlerFunc {

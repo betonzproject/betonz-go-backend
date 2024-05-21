@@ -3,9 +3,10 @@ package routes
 import (
 	"net/http"
 
-	"github.com/doorman2137/betonz-go/internal/app"
-	"github.com/doorman2137/betonz-go/internal/product"
-	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
+	"github.com/BetOnz-Company/betonz-go/internal/app"
+	"github.com/BetOnz-Company/betonz-go/internal/product"
+	"github.com/BetOnz-Company/betonz-go/internal/utils/jsonutils"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )

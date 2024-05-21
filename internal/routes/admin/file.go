@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/doorman2137/betonz-go/internal/acl"
-	"github.com/doorman2137/betonz-go/internal/app"
-	"github.com/doorman2137/betonz-go/internal/auth"
-	"github.com/doorman2137/betonz-go/internal/utils/fileutils"
+	"github.com/BetOnz-Company/betonz-go/internal/acl"
+	"github.com/BetOnz-Company/betonz-go/internal/app"
+	"github.com/BetOnz-Company/betonz-go/internal/auth"
+	"github.com/BetOnz-Company/betonz-go/internal/utils/fileutils"
+
 	"github.com/go-chi/chi/v5"
 )
 

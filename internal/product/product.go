@@ -9,8 +9,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/doorman2137/betonz-go/internal/etg"
-	"github.com/doorman2137/betonz-go/internal/utils/sliceutils"
+	"github.com/BetOnz-Company/betonz-go/internal/etg"
+	"github.com/BetOnz-Company/betonz-go/internal/utils/sliceutils"
+
 	"github.com/redis/go-redis/v9"
 )
 

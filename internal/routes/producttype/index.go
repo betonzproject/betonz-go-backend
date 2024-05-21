@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/doorman2137/betonz-go/internal/app"
-	"github.com/doorman2137/betonz-go/internal/product"
-	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
-	"github.com/doorman2137/betonz-go/internal/utils/sliceutils"
+	"github.com/BetOnz-Company/betonz-go/internal/app"
+	"github.com/BetOnz-Company/betonz-go/internal/product"
+	"github.com/BetOnz-Company/betonz-go/internal/utils/jsonutils"
+	"github.com/BetOnz-Company/betonz-go/internal/utils/sliceutils"
+
 	"github.com/go-chi/chi/v5"
 )
 

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/doorman2137/betonz-go/internal/app"
-	"github.com/doorman2137/betonz-go/internal/db"
+	"github.com/BetOnz-Company/betonz-go/internal/app"
+	"github.com/BetOnz-Company/betonz-go/internal/db"
 )
 
 type Permission string

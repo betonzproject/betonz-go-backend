@@ -6,8 +6,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/doorman2137/betonz-go/internal/db"
-	"github.com/doorman2137/betonz-go/internal/utils/numericutils"
+	"github.com/BetOnz-Company/betonz-go/internal/db"
+	"github.com/BetOnz-Company/betonz-go/internal/utils/numericutils"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 

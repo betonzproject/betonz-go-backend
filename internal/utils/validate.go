@@ -4,7 +4,8 @@ import (
 	"regexp"
 	"slices"
 
-	"github.com/doorman2137/betonz-go/internal/product"
+	"github.com/BetOnz-Company/betonz-go/internal/product"
+
 	"github.com/go-playground/validator/v10"
 )
 

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/doorman2137/betonz-go/internal/app"
-	"github.com/doorman2137/betonz-go/internal/auth"
+	"github.com/BetOnz-Company/betonz-go/internal/app"
+	"github.com/BetOnz-Company/betonz-go/internal/auth"
 )
 
 func GetSse(app *app.App) http.HandlerFunc {

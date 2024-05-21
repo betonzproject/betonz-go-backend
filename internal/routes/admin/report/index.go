@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/doorman2137/betonz-go/internal/acl"
-	"github.com/doorman2137/betonz-go/internal/app"
-	"github.com/doorman2137/betonz-go/internal/auth"
-	"github.com/doorman2137/betonz-go/internal/db"
-	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
-	"github.com/doorman2137/betonz-go/internal/utils/timeutils"
+	"github.com/BetOnz-Company/betonz-go/internal/acl"
+	"github.com/BetOnz-Company/betonz-go/internal/app"
+	"github.com/BetOnz-Company/betonz-go/internal/auth"
+	"github.com/BetOnz-Company/betonz-go/internal/db"
+	"github.com/BetOnz-Company/betonz-go/internal/utils/jsonutils"
+	"github.com/BetOnz-Company/betonz-go/internal/utils/timeutils"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 

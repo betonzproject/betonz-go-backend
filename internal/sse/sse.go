@@ -1,7 +1,8 @@
 package sse
 
 import (
-	"github.com/doorman2137/betonz-go/internal/db"
+	"github.com/BetOnz-Company/betonz-go/internal/db"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 

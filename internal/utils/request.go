@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/doorman2137/betonz-go/internal/db"
+	"github.com/BetOnz-Company/betonz-go/internal/db"
 )
 
 func ParseRequest(request *http.Request) db.HttpRequest {

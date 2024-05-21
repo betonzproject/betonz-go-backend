@@ -13,10 +13,11 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"github.com/doorman2137/betonz-go/internal/app"
-	"github.com/doorman2137/betonz-go/internal/utils"
-	"github.com/doorman2137/betonz-go/internal/utils/fileutils"
-	"github.com/doorman2137/betonz-go/internal/utils/jsonutils"
+	"github.com/BetOnz-Company/betonz-go/internal/app"
+	"github.com/BetOnz-Company/betonz-go/internal/utils"
+	"github.com/BetOnz-Company/betonz-go/internal/utils/fileutils"
+	"github.com/BetOnz-Company/betonz-go/internal/utils/jsonutils"
+
 	"github.com/go-playground/validator/v10"
 )
 
