@@ -19,11 +19,12 @@ import (
 )
 
 type Response struct {
-	Player                     db.GetPlayerInfoByIdRow              `json:"player"`
-	IdentityVerificationStatus *db.IdentityVerificationStatus       `json:"identityVerificationStatus"`
-	RestrictionEvents          []db.GetRestrictionEventsByUserIdRow `json:"restrictionEvents"`
-	Banks                      []db.Bank                            `json:"banks"`
-	Turnover                   map[string]int64                     `json:"turnover"`
+	Player                     db.GetPlayerInfoByIdRow                 `json:"player"`
+	IdentityVerificationStatus *db.IdentityVerificationStatus          `json:"identityVerificationStatus"`
+	RestrictionEvents          []db.GetRestrictionEventsByUserIdRow    `json:"restrictionEvents"`
+	Banks                      []db.Bank                               `json:"banks"`
+	Turnover                   map[string]int64                        `json:"turnover"`
+	InvitedPlayers             []db.GetInvitedPlayersByReferralCodeRow `json:"invitedPlayers"`
 }
 
 func GetPlayersById(app *app.App) http.HandlerFunc {
@@ -48,6 +49,11 @@ func GetPlayersById(app *app.App) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, "404 page not found", http.StatusNotFound)
 			return
+		}
+
+		invitedPlayers, err := app.DB.GetInvitedPlayersByReferralCode(r.Context(), pgtype.Text{String: player.ReferralCode.String, Valid: true})
+		if err != nil {
+			log.Panicln("Error getting invited players: ", err.Error())
 		}
 
 		var status *db.IdentityVerificationStatus
@@ -121,6 +127,7 @@ func GetPlayersById(app *app.App) http.HandlerFunc {
 			RestrictionEvents:          restrictionEvents,
 			Banks:                      banks,
 			Turnover:                   toMap(turnover),
+			InvitedPlayers:             invitedPlayers,
 		}, http.StatusOK)
 	}
 }

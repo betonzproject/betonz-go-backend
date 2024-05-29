@@ -58,6 +58,7 @@ WITH
 			u.status,
 			u."referralCode",
 			u."createdAt",
+			(SELECT COUNT(*) FROM "User" u2 WHERE u."referralCode" = u2."invitedBy") AS "invitedUserCount",
 			e."sourceIp" AS "lastLoginIp",
 			e."createdAt"::timestamptz AS "lastLogin",
 			tr1."lastDeposit"::timestamptz AS "lastDeposit",
@@ -153,6 +154,7 @@ SELECT
 	u."profileImage",
 	u."mainWallet",
 	u.status,
+	u."referralCode",
 	u."isEmailVerified",
 	u."createdAt",
 	e."sourceIp" AS "lastLoginIp",
@@ -412,3 +414,15 @@ SET
 	"updatedAt" = now()
 WHERE
 	id = $1;
+
+-- name: GetInvitedPlayersByReferralCode :many
+SELECT
+	u.id,
+	u.username,
+	u.email,
+	u.role,
+	u."createdAt"
+FROM
+	"User" u
+WHERE
+	u."invitedBy" = @invitedBy;

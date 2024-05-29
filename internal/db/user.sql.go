@@ -391,6 +391,53 @@ func (q *Queries) GetExtendedUserByUsername(ctx context.Context, arg GetExtended
 	return i, err
 }
 
+const getInvitedPlayersByReferralCode = `-- name: GetInvitedPlayersByReferralCode :many
+SELECT
+	u.id,
+	u.username,
+	u.email,
+	u.role,
+	u."createdAt"
+FROM
+	"User" u
+WHERE
+	u."invitedBy" = $1
+`
+
+type GetInvitedPlayersByReferralCodeRow struct {
+	ID        pgtype.UUID        `json:"id"`
+	Username  string             `json:"username"`
+	Email     string             `json:"email"`
+	Role      Role               `json:"role"`
+	CreatedAt pgtype.Timestamptz `json:"createdAt"`
+}
+
+func (q *Queries) GetInvitedPlayersByReferralCode(ctx context.Context, invitedby pgtype.Text) ([]GetInvitedPlayersByReferralCodeRow, error) {
+	rows, err := q.db.Query(ctx, getInvitedPlayersByReferralCode, invitedby)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetInvitedPlayersByReferralCodeRow{}
+	for rows.Next() {
+		var i GetInvitedPlayersByReferralCodeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Email,
+			&i.Role,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getNewPlayerCount = `-- name: GetNewPlayerCount :one
 SELECT
 	COUNT(*)
@@ -464,6 +511,7 @@ SELECT
 	u."profileImage",
 	u."mainWallet",
 	u.status,
+	u."referralCode",
 	u."isEmailVerified",
 	u."createdAt",
 	e."sourceIp" AS "lastLoginIp",
@@ -512,6 +560,7 @@ type GetPlayerInfoByIdRow struct {
 	ProfileImage    pgtype.Text        `json:"profileImage"`
 	MainWallet      pgtype.Numeric     `json:"mainWallet"`
 	Status          UserStatus         `json:"status"`
+	ReferralCode    pgtype.Text        `json:"referralCode"`
 	IsEmailVerified bool               `json:"isEmailVerified"`
 	CreatedAt       pgtype.Timestamptz `json:"createdAt"`
 	LastLoginIp     pgtype.Text        `json:"lastLoginIp"`
@@ -532,6 +581,7 @@ func (q *Queries) GetPlayerInfoById(ctx context.Context, id pgtype.UUID) (GetPla
 		&i.ProfileImage,
 		&i.MainWallet,
 		&i.Status,
+		&i.ReferralCode,
 		&i.IsEmailVerified,
 		&i.CreatedAt,
 		&i.LastLoginIp,
@@ -618,6 +668,7 @@ WITH
 			u.status,
 			u."referralCode",
 			u."createdAt",
+			(SELECT COUNT(*) FROM "User" u2 WHERE u."referralCode" = u2."invitedBy") AS "invitedUserCount",
 			e."sourceIp" AS "lastLoginIp",
 			e."createdAt"::timestamptz AS "lastLogin",
 			tr1."lastDeposit"::timestamptz AS "lastDeposit",
@@ -671,7 +722,7 @@ WITH
 			u."createdAt"
 	)
 SELECT
-	"rowNumber", id, username, role, email, dob, "displayName", "phoneNumber", "profileImage", "mainWallet", status, "referralCode", "createdAt", "lastLoginIp", "lastLogin", "lastDeposit", "lastWithdraw"
+	"rowNumber", id, username, role, email, dob, "displayName", "phoneNumber", "profileImage", "mainWallet", status, "referralCode", "createdAt", "invitedUserCount", "lastLoginIp", "lastLogin", "lastDeposit", "lastWithdraw"
 FROM
 	q
 WHERE
@@ -702,23 +753,24 @@ type GetUsersParams struct {
 }
 
 type GetUsersRow struct {
-	RowNumber    int64              `json:"rowNumber"`
-	ID           pgtype.UUID        `json:"id"`
-	Username     string             `json:"username"`
-	Role         Role               `json:"role"`
-	Email        string             `json:"email"`
-	Dob          pgtype.Date        `json:"dob"`
-	DisplayName  pgtype.Text        `json:"displayName"`
-	PhoneNumber  pgtype.Text        `json:"phoneNumber"`
-	ProfileImage pgtype.Text        `json:"profileImage"`
-	MainWallet   pgtype.Numeric     `json:"mainWallet"`
-	Status       UserStatus         `json:"status"`
-	ReferralCode pgtype.Text        `json:"referralCode"`
-	CreatedAt    pgtype.Timestamptz `json:"createdAt"`
-	LastLoginIp  pgtype.Text        `json:"lastLoginIp"`
-	LastLogin    pgtype.Timestamptz `json:"lastLogin"`
-	LastDeposit  pgtype.Timestamptz `json:"lastDeposit"`
-	LastWithdraw pgtype.Timestamptz `json:"lastWithdraw"`
+	RowNumber        int64              `json:"rowNumber"`
+	ID               pgtype.UUID        `json:"id"`
+	Username         string             `json:"username"`
+	Role             Role               `json:"role"`
+	Email            string             `json:"email"`
+	Dob              pgtype.Date        `json:"dob"`
+	DisplayName      pgtype.Text        `json:"displayName"`
+	PhoneNumber      pgtype.Text        `json:"phoneNumber"`
+	ProfileImage     pgtype.Text        `json:"profileImage"`
+	MainWallet       pgtype.Numeric     `json:"mainWallet"`
+	Status           UserStatus         `json:"status"`
+	ReferralCode     pgtype.Text        `json:"referralCode"`
+	CreatedAt        pgtype.Timestamptz `json:"createdAt"`
+	InvitedUserCount int64              `json:"invitedUserCount"`
+	LastLoginIp      pgtype.Text        `json:"lastLoginIp"`
+	LastLogin        pgtype.Timestamptz `json:"lastLogin"`
+	LastDeposit      pgtype.Timestamptz `json:"lastDeposit"`
+	LastWithdraw     pgtype.Timestamptz `json:"lastWithdraw"`
 }
 
 func (q *Queries) GetUsers(ctx context.Context, arg GetUsersParams) ([]GetUsersRow, error) {
@@ -749,6 +801,7 @@ func (q *Queries) GetUsers(ctx context.Context, arg GetUsersParams) ([]GetUsersR
 			&i.Status,
 			&i.ReferralCode,
 			&i.CreatedAt,
+			&i.InvitedUserCount,
 			&i.LastLoginIp,
 			&i.LastLogin,
 			&i.LastDeposit,
