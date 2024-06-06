@@ -2,6 +2,7 @@ package profile
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/BetOnz-Company/betonz-go/internal/app"
 	"github.com/BetOnz-Company/betonz-go/internal/auth"
@@ -24,6 +25,10 @@ func GetInventory(app *app.App) http.HandlerFunc {
 		if err != nil {
 			return
 		}
+
+		sort.Slice(userInventory, func(i, j int) bool {
+			return userInventory[i].Item < userInventory[j].Item
+		})
 
 		jsonutils.Write(w, InventoryResponse{
 			Inventory: userInventory,
