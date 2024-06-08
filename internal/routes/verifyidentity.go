@@ -98,6 +98,11 @@ func PostVerifyIdentity(app *app.App) http.HandlerFunc {
 			}
 
 			dob, _ := timeutils.ParseDate(identityVerificationForm.Dob)
+			if timeutils.CheckIfAtLeast18(dob) != nil {
+				http.Error(w, "User must be 18", http.StatusBadRequest)
+				return
+			}
+
 			if errors.Is(err, pgx.ErrNoRows) {
 				err2 := app.DB.CreateIdentityVerificationRequest(r.Context(), db.CreateIdentityVerificationRequestParams{
 					UserId:   user.ID,

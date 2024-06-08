@@ -63,7 +63,7 @@ func GetUserRanking(app *app.App) http.HandlerFunc {
 			BirthdayGift:    benefits.Birthdaygift,
 			MonthlyGift:     benefits.Monthlygift,
 			AnniversaryGift: benefits.Anniversarygift,
-			RankProgress:    float64(ranking.Rankprogress.Exp),
+			RankProgress:    float64(ranking.Rankprogress),
 		}
 
 		jsonutils.Write(w, response, http.StatusOK)

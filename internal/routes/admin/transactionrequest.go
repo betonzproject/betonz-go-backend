@@ -277,6 +277,13 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 			}
 		}
 
+		var depositToWallet string
+		if !tr.DepositToWallet.Valid {
+			depositToWallet = "Main Wallet"
+		} else {
+			depositToWallet = product.Product(tr.DepositToWallet.Int32).String()
+		}
+
 		err = qtx.CreateNotification(r.Context(), db.CreateNotificationParams{
 			UserId: tr.UserId,
 			Type:   db.NotificationTypeTRANSACTION,
@@ -286,6 +293,9 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 				"transactionType": tr.Type,
 				"amount":          tr.Amount,
 				"action":          transactionRequestForm.Action,
+				"promotion":       tr.Promotion.PromotionType,
+				"bonus":           tr.Bonus,
+				"depositToWallet": depositToWallet,
 			},
 		})
 		if err != nil {

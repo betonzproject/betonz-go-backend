@@ -106,15 +106,13 @@ func ClaimReward(app *app.App, w http.ResponseWriter, r *http.Request) bool {
 	lastRewardById, err := app.DB.GetLastRewardClaimedById(r.Context(), user.ID)
 	// If user login for the first time, he will receive the first reward
 	if err != nil {
-		err = qtx.DepositUserMainWallet(r.Context(), db.DepositUserMainWalletParams{
-			ID: user.ID,
-			Amount: pgtype.Numeric{
-				Int:   big.NewInt(2000),
-				Valid: true,
-			},
+		err = qtx.AddItemToInventory(r.Context(), db.AddItemToInventoryParams{
+			UserId: user.ID,
+			Item:   db.InventoryItemTypeTOKENA,
+			Count:  pgtype.Numeric{Int: big.NewInt(3), Valid: true},
 		})
 		if err != nil {
-			log.Panicln("Error depositing user's Main Wallet", err.Error())
+			log.Panicln("Error inserting to Inventory table: ", err.Error())
 		}
 
 		err = utils.LogEvent(qtx, r, user.ID, db.EventTypeREWARDCLAIM, db.EventResultSUCCESS, "", map[string]any{
@@ -122,22 +120,6 @@ func ClaimReward(app *app.App, w http.ResponseWriter, r *http.Request) bool {
 		})
 		if err != nil {
 			log.Panicln("Error creating event", err.Error())
-		}
-
-		err = qtx.CreateTransactionRequest(r.Context(), db.CreateTransactionRequestParams{
-			UserId: user.ID,
-			Amount: pgtype.Numeric{
-				Int:   big.NewInt(2000),
-				Valid: true,
-			},
-			DepositToWallet: pgtype.Int4{Int32: int32(product.MainWallet), Valid: true},
-			Type:            db.TransactionTypeDEPOSIT,
-			ReceiptPath:     pgtype.Text{Valid: true},
-			Bonus:           numericutils.Zero,
-			Status:          db.TransactionStatusAPPROVED,
-			Remarks:         pgtype.Text{String: "Daily Reward", Valid: true}})
-		if err != nil {
-			log.Panicln("Error creating transaction request: ", err.Error())
 		}
 
 		tx.Commit(r.Context())

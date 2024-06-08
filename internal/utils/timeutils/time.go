@@ -1,6 +1,7 @@
 package timeutils
 
 import (
+	"errors"
 	"strings"
 	"time"
 )
@@ -65,6 +66,22 @@ func ParseDate(s string) (time.Time, error) {
 	location, _ := time.LoadLocation("Asia/Yangon")
 	t, err := time.ParseInLocation("2006/01/02", s, location)
 	return t, err
+}
+
+// CheckIfAtLeast18 function checks if the user is 18 or older based on their birth date
+func CheckIfAtLeast18(birthDate time.Time) error {
+	now := time.Now()
+
+	age := now.Year() - birthDate.Year()
+
+	if now.YearDay() < birthDate.YearDay() {
+		age--
+	}
+
+	if age < 18 {
+		return errors.New("user is under 18")
+	}
+	return nil
 }
 
 // Parses a string in the format "YYYY/MM/DD hh:mm:ss" (24-hour format) or "YYYY/MM/DD h:mm:ss AA" (12-hour format)
