@@ -54,7 +54,8 @@ WHERE
 		OR b1."productType" = @productType
 		OR @productType = 0
 	)
-	AND u.status = 'NORMAL' AND b1."etgUsername" != 'g2rmlmeqvk13' ;
+	AND u.status = 'NORMAL' AND b1."etgUsername" != 'g2rmlmeqvk13'
+ORDER BY b1.payout DESC;
 
 -- name: GetTurnoverByUserId :many
 SELECT

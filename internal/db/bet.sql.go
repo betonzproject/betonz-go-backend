@@ -153,6 +153,7 @@ WHERE
 		OR $1 = 0
 	)
 	AND u.status = 'NORMAL' AND b1."etgUsername" != 'g2rmlmeqvk13'
+ORDER BY b1.payout DESC
 `
 
 type GetTopPayoutRow struct {
