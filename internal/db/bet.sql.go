@@ -126,14 +126,16 @@ func (q *Queries) GetBets(ctx context.Context, arg GetBetsParams) ([]GetBetsRow,
 }
 
 const getTopPayout = `-- name: GetTopPayout :many
-SELECT
-	b1.id,
-	u.username,
-	u."displayName",
-	u."profileImage",
-	b1.payout
-FROM
-	"Bet" b1
+WITH RankedBets AS (
+	SELECT
+		b1.id,
+		u.username,
+		u."displayName",
+		u."profileImage",
+		b1.payout,
+		ROW_NUMBER() OVER (PARTITION BY b1."etgUsername" ORDER BY b1.payout DESC) AS rn
+	FROM
+		"Bet" b1
 	INNER JOIN (
 		SELECT
 			b."etgUsername",
@@ -146,14 +148,26 @@ FROM
 			MAX(b.payout) > 0
 	) b2 ON b1."etgUsername" = b2."etgUsername" AND b1.payout = b2.payout
 	INNER JOIN "User" u ON b1."etgUsername" = u."etgUsername"
+	WHERE
+		(
+			$1::int IS NULL
+			OR b1."productType" = $1
+			OR $1 = 0
+		)
+		AND u.status = 'NORMAL' AND b1."etgUsername" != 'g2rmlmeqvk13'
+)
+SELECT
+	id,
+	username,
+	"displayName",
+	"profileImage",
+	payout
+FROM
+	RankedBets
 WHERE
-	(
-		$1::int IS NULL
-		OR b1."productType" = $1
-		OR $1 = 0
-	)
-	AND u.status = 'NORMAL' AND b1."etgUsername" != 'g2rmlmeqvk13'
-ORDER BY b1.payout DESC
+	rn = 1
+ORDER BY
+	payout DESC
 `
 
 type GetTopPayoutRow struct {
@@ -192,12 +206,12 @@ func (q *Queries) GetTopPayout(ctx context.Context, producttype int32) ([]GetTop
 
 const getTotalBetAmount = `-- name: GetTotalBetAmount :one
 SELECT
-    COALESCE(sum("bet"), 0)::bigint
+	COALESCE(sum("bet"), 0)::bigint
 FROM
-    "Bet" b
+	"Bet" b
 	JOIN "User" u USING ("etgUsername")
 WHERE
-    u.id = $1
+	u.id = $1
 `
 
 func (q *Queries) GetTotalBetAmount(ctx context.Context, id pgtype.UUID) (int64, error) {
