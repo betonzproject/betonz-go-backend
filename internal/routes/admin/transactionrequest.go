@@ -187,7 +187,7 @@ func PostTransactionRequest(app *app.App) http.HandlerFunc {
 					}
 
 					p := product.Product(tr.DepositToWallet.Int32)
-					err := product.Deposit(refId, user.EtgUsername, p, numericutils.Add(tr.Amount, tr.Bonus))
+					err := product.Deposit(refId, initiator.EtgUsername, p, numericutils.Add(tr.Amount, tr.Bonus))
 					if err != nil {
 						log.Printf("Can't deposit to %s (%d) for %s: %s", p, p, user.Username, err)
 						http.Error(w, "Deposit failed", http.StatusServiceUnavailable)
